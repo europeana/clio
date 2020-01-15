@@ -68,11 +68,17 @@ public class SolrDao {
     // Get result.
     return queryResult.getResults().stream().map(result -> {
       final Map<LinkType, Set<String>> links = new EnumMap<>(LinkType.class);
-      for (Object link : ((List<?>) result.getFieldValue(IS_SHOWN_AT_FIELD))) {
-        links.computeIfAbsent(LinkType.IS_SHOWN_AT, key -> new HashSet<>()).add(link.toString());
+      final List<?> isShownAtLinks = (List<?>) result.getFieldValue(IS_SHOWN_AT_FIELD);
+      if (isShownAtLinks != null) {
+        for (Object link : isShownAtLinks) {
+          links.computeIfAbsent(LinkType.IS_SHOWN_AT, key -> new HashSet<>()).add(link.toString());
+        }
       }
-      for (Object link : ((List<?>) result.getFieldValue(IS_SHOWN_BY_FIELD))) {
-        links.computeIfAbsent(LinkType.IS_SHOWN_BY, key -> new HashSet<>()).add(link.toString());
+      final List<?> isShownByLinks = (List<?>) result.getFieldValue(IS_SHOWN_BY_FIELD);
+      if (isShownByLinks != null) {
+        for (Object link : isShownByLinks) {
+          links.computeIfAbsent(LinkType.IS_SHOWN_BY, key -> new HashSet<>()).add(link.toString());
+        }
       }
       return new SampleRecord((String) result.getFieldValue(RECORD_ID_FIELD), links);
     }).collect(Collectors.toList());

@@ -120,12 +120,9 @@
                     <configuration>
                         <source>11</source>
                         <target>11</target>
-                        <release>11</release>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
     </build>
-
-
 </project>

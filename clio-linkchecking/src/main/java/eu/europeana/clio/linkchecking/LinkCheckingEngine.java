@@ -7,7 +7,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
-import eu.europeana.clio.common.persistence.ConnectionProvider;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
@@ -28,16 +28,31 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class provides core functionality for the link checking module of Clio.
+ */
 public final class LinkCheckingEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingEngine.class);
 
   private final PropertiesHolder properties;
 
+  /**
+   * Constrcutor.
+   *
+   * @param properties The properties of this module.
+   */
   public LinkCheckingEngine(PropertiesHolder properties) {
     this.properties = properties;
   }
 
+  /**
+   * This method starts a new run for the give dataset. It determines which links are to be part of
+   * the run, but it doesn't perform any link checking.
+   *
+   * @param datasetId The (Metis) dataset ID of the dataset for which to create the run.
+   * @throws ClioException In case of a problem with accessing or storing the required data.
+   */
   public void createRunWithUncheckedLinksForDataset(String datasetId) throws ClioException {
 
     // Obtain the dataset from the Metis database
@@ -46,7 +61,7 @@ public final class LinkCheckingEngine {
     final Dataset dataset;
     try (final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
       dataset = new MongoCoreDao(mongoClient, properties.getMongoDatabase())
-              .getDatasetById(datasetId);
+              .getPublishedDatasetById(datasetId);
     }
 
     // Obtain the sample records from the Solr database.
@@ -61,7 +76,7 @@ public final class LinkCheckingEngine {
     }
 
     // Save the information to the Clio database
-    final ConnectionProvider databaseConnection = properties.getPostGreSQLConnection();
+    final ClioPersistenceConnection databaseConnection = properties.createPersistenceConnection();
     new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
     final long runId = new RunDao(databaseConnection).createRunStartingNow(dataset.getDatasetId());
     final LinkDao linkDao = new LinkDao(databaseConnection);
@@ -74,8 +89,13 @@ public final class LinkCheckingEngine {
     }
   }
 
+  /**
+   * This method performs link checking on all unchecked links currently in persistence.
+   *
+   * @throws ClioException In case of a problem with accessing or storing the required data.
+   */
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
-    final LinkDao linkDao = new LinkDao(properties.getPostGreSQLConnection());
+    final LinkDao linkDao = new LinkDao(properties.createPersistenceConnection());
     try (final LinkChecker linkChecker = createLinkChecker()) {
       boolean linksChecked;
       do {

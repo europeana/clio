@@ -9,6 +9,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+/**
+ * This represents the persistent form of a run (a checking iteration for a given dataset).
+ */
 @Entity
 @Table(name = "run")
 public class RunRow {
@@ -22,12 +25,21 @@ public class RunRow {
   private long startingTime;
 
   @ManyToOne
-  @JoinColumn(name = "dataset_id", referencedColumnName = "dataset_id", updatable = false, nullable = false)
+  @JoinColumn(name = "dataset_id", referencedColumnName = "dataset_id", nullable = false, updatable = false)
   private DatasetRow dataset;
 
-  public RunRow() {
+  /**
+   * Constructor for the use of JPA. Don't use from code.
+   */
+  protected RunRow() {
   }
 
+  /**
+   * Constructor.
+   *
+   * @param startingTime The starting time of this run.
+   * @param dataset The dataset to which this run belongs.
+   */
   public RunRow(long startingTime, DatasetRow dataset) {
     this.startingTime = startingTime;
     this.dataset = dataset;

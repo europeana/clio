@@ -10,21 +10,21 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * This represents the persistent form of a link (to be checked once as part of a run).
+ */
 @Entity
 @Table(name = "link", uniqueConstraints = @UniqueConstraint(columnNames = {"run_id", "link_url"}),
         indexes = @Index(columnList = "server"))
-@NamedQueries({
-        @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query =
-                "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL"),
-        @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
-                "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
-                        + " AND l.checkingTime IS NULL")})
+@NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query = "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL")
+@NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
+        "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
+                + " AND l.checkingTime IS NULL")
 public class LinkRow {
 
   public static final String GET_UNCHECKED_LINKS = "getUncheckedLinks";
@@ -36,7 +36,20 @@ public class LinkRow {
   private static final int MAX_SERVER_LENGTH = 128;
   private static final int MAX_ERROR_LENGTH = 512;
 
-  public enum LinkType {IS_SHOWN_AT, IS_SHOWN_BY}
+  /**
+   * This represents the persistent form of a link type.
+   */
+  public enum LinkType {
+    /**
+     * edm:isShownAt links.
+     */
+    IS_SHOWN_AT,
+
+    /**
+     * edm:isShownBy links.
+     */
+    IS_SHOWN_BY
+  }
 
   @Id
   @Column(name = "link_id")
@@ -44,7 +57,7 @@ public class LinkRow {
   private long linkId;
 
   @ManyToOne
-  @JoinColumn(name = "run_id", referencedColumnName = "run_id", updatable = false, nullable = false)
+  @JoinColumn(name = "run_id", referencedColumnName = "run_id", nullable = false, updatable = false)
   private RunRow run;
 
   @Column(name = "record_id", nullable = false, updatable = false, length = MAX_RECORD_ID_LENGTH)
@@ -66,9 +79,20 @@ public class LinkRow {
   @Column(name = "checking_time")
   private Long checkingTime;
 
-  LinkRow() {
+  /**
+   * Constructor for the use of JPA. Don't use from code.
+   */
+  protected LinkRow() {
   }
 
+  /**
+   * Constructor.
+   * @param run The run to which this link belongs.
+   * @param recordId The Europeana record ID in which this link is present.
+   * @param linkType The type of the link reference in the record.
+   * @param linkUrl The actual link.
+   * @param server The server of the link. Can be null if the server could not be computed.
+   */
   public LinkRow(RunRow run, String recordId, LinkType linkType, String linkUrl, String server) {
     if (recordId.length() > MAX_RECORD_ID_LENGTH) {
       throw new IllegalArgumentException("Record ID is too long: " + recordId);

@@ -6,6 +6,9 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * This represents the persistent form of a (Clio) dataset.
+ */
 @Entity
 @Table(name = "dataset")
 public class DatasetRow {
@@ -19,7 +22,7 @@ public class DatasetRow {
   @Column(name = "dataset_id", length = MAX_DATASET_ID_LENGTH)
   private String datasetId;
 
-  @Column(name = "name", length = MAX_NAME_LENGTH, nullable = false)
+  @Column(name = "name", nullable = false, length = MAX_NAME_LENGTH)
   private String name;
 
   @Column(name = "size", nullable = false)
@@ -31,9 +34,17 @@ public class DatasetRow {
   @Column(name = "data_provider", length = MAX_DATA_PROVIDER_LENGTH)
   private String dataProvider;
 
-  DatasetRow() {
+  /**
+   * Constructor for the use of JPA. Don't use from code.
+   */
+  protected DatasetRow() {
   }
 
+  /**
+   * Constructor.
+   *
+   * @param datasetId The (Metis) dataset ID.
+   */
   public DatasetRow(String datasetId) {
     if (datasetId.length() > MAX_DATASET_ID_LENGTH) {
       throw new IllegalArgumentException("Dataset ID is too long: " + datasetId);

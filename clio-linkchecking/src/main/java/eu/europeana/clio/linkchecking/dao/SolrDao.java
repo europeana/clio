@@ -17,6 +17,9 @@ import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 
+/**
+ * Data access object for the Solr.
+ */
 public class SolrDao {
 
   private static final String IS_SHOWN_AT_FIELD = "provider_aggregation_edm_isShownAt";
@@ -25,11 +28,26 @@ public class SolrDao {
 
   private final SolrClient solrClient;
 
+  /**
+   * Constructor.
+   *
+   * @param solrClient The Solr client.
+   */
   public SolrDao(SolrClient solrClient) {
     this.solrClient = solrClient;
   }
 
-  public List<SampleRecord> getRandomSampleRecords(String datasetId, int numberOfSampleRecords) throws PersistenceException {
+  /**
+   * Get random sample records for a given dataset.
+   *
+   * @param datasetId The (Metis) dataset ID of the dataset for which to get random records.
+   * @param numberOfSampleRecords The number of random records needed.
+   * @return The list containing the required number of random records (or fewer if the dataset
+   * doesn't have that many).
+   * @throws PersistenceException In case of problems obtaining the sample records.
+   */
+  public List<SampleRecord> getRandomSampleRecords(String datasetId, int numberOfSampleRecords)
+          throws PersistenceException {
 
     // Create query
     final SolrQuery solrQuery = new SolrQuery("*.*");

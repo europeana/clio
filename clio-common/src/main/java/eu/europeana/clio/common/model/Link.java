@@ -2,6 +2,9 @@ package eu.europeana.clio.common.model;
 
 import java.time.Instant;
 
+/**
+ * This class represents a link (to be checked once as part of a run).
+ */
 public class Link {
 
   private final long linkId;
@@ -12,6 +15,17 @@ public class Link {
   private final String error;
   private final Instant checkingTime;
 
+  /**
+   * Constructor.
+   *
+   * @param linkId The ID of the link.
+   * @param recordId The Europeana record ID in which this link is present.
+   * @param linkType The type of the link reference in the record.
+   * @param linkUrl The actual link.
+   * @param server The server of the link. Can be null if the server could not be computed.
+   * @param error The error that occurred during link checking in Clio.
+   * @param checkingTime The time that Clio checked the link.
+   */
   public Link(long linkId, String recordId, LinkType linkType, String linkUrl,
           String server, String error, Instant checkingTime) {
     this.linkId = linkId;

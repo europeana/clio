@@ -1,5 +1,8 @@
 package eu.europeana.clio.common.model;
 
+/**
+ * This represents a dataset as presisted in the Clio database.
+ */
 public class Dataset {
 
   private final String datasetId;
@@ -8,6 +11,15 @@ public class Dataset {
   private final String provider;
   private final String dataProvider;
 
+  /**
+   * Constructor.
+   *
+   * @param datasetId The (Metis) dataset ID.
+   * @param name The name of the dataset.
+   * @param size The size of the dataset (of the last indexing to publish) if known. Otherwise, -1.
+   * @param provider The provider of the dataset.
+   * @param dataProvider The data provider of the dataset.
+   */
   public Dataset(String datasetId, String name, int size, String provider,
           String dataProvider) {
     this.datasetId = datasetId;

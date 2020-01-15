@@ -2,7 +2,7 @@ package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Link;
-import eu.europeana.clio.common.persistence.ConnectionProvider;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
@@ -12,14 +12,33 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Data access object for links (to be checked once as part of a run).
+ */
 public class LinkDao {
 
-  private final ConnectionProvider connectionProvider;
+  private final ClioPersistenceConnection persistenceConnection;
 
-  public LinkDao(ConnectionProvider connectionProvider) {
-    this.connectionProvider = connectionProvider;
+  /**
+   * Constructor.
+   *
+   * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
+   * object does not close the connection.
+   */
+  public LinkDao(ClioPersistenceConnection persistenceConnection) {
+    this.persistenceConnection = persistenceConnection;
   }
 
+  /**
+   * Create (i.e. persist) a link that is not yet checked by Clio.
+   *
+   * @param runId The ID of the run to which to add this link.
+   * @param recordId The Europeana record ID in which this link is present.
+   * @param linkUrl The actual link.
+   * @param linkType The type of the link reference in the record.
+   * @return The ID of the link.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
   public long createUncheckedLink(long runId, String recordId, String linkUrl,
           eu.europeana.clio.common.model.LinkType linkType) throws PersistenceException {
 
@@ -37,7 +56,7 @@ public class LinkDao {
     }
 
     // Create and save the link
-    return connectionProvider.performInTransaction(session -> {
+    return persistenceConnection.performInTransaction(session -> {
       final RunRow runRow = session.get(RunRow.class, runId);
       if (runRow == null) {
         throw new PersistenceException(
@@ -58,16 +77,31 @@ public class LinkDao {
     }
   }
 
+  /**
+   * Get any random link that has not been checked yet.
+   *
+   * @return An unchecked link.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
   public Link getAnyUncheckedLink() throws PersistenceException {
-    final List<LinkRow> linkRows = connectionProvider.performInSession(
+    final List<LinkRow> linkRows = persistenceConnection.performInSession(
             session -> session.createNamedQuery(LinkRow.GET_UNCHECKED_LINKS, LinkRow.class)
                     .setMaxResults(1).getResultList());
     return linkRows.isEmpty() ? null : convert(linkRows.get(0));
   }
 
+  /**
+   * Update a link to add the result of the link checking for this link. This method updates all
+   * unchecked links that have the same link URL (there may theoretically be multiple even though it
+   * is not very likely).
+   *
+   * @param linkUrl The URL of the link that was checked.
+   * @param error The link checking error, if any. Null otherwise.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
   public void registerLinkChecking(String linkUrl, String error) throws PersistenceException {
     final long checkingTime = System.currentTimeMillis();
-    connectionProvider.performInTransaction(session -> {
+    persistenceConnection.performInTransaction(session -> {
       final List<LinkRow> linksToUpdate = session
               .createNamedQuery(LinkRow.GET_UNCHECKED_LINKS_BY_URL, LinkRow.class)
               .setParameter(LinkRow.LINK_URL_PARAMETER, linkUrl).getResultList();

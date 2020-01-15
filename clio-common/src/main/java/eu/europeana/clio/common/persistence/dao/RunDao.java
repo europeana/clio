@@ -1,20 +1,36 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.persistence.ConnectionProvider;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 
+/**
+ * Data access object for runs (a checking iteration for a given dataset).
+ */
 public class RunDao {
 
-  private final ConnectionProvider connectionProvider;
+  private final ClioPersistenceConnection persistenceConnection;
 
-  public RunDao(ConnectionProvider connectionProvider) {
-    this.connectionProvider = connectionProvider;
+  /**
+   * Constructor.
+   *
+   * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
+   * object does not close the connection.
+   */
+  public RunDao(ClioPersistenceConnection persistenceConnection) {
+    this.persistenceConnection = persistenceConnection;
   }
 
+  /**
+   * Create a run with a starting time equal to the current time.
+   *
+   * @param datasetId The (Metis) dataset ID of the dataset to which this run belongs.
+   * @return The ID of the run.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
   public long createRunStartingNow(String datasetId) throws PersistenceException {
-    return connectionProvider.performInTransaction(session -> {
+    return persistenceConnection.performInTransaction(session -> {
       final DatasetRow datasetRow = session.get(DatasetRow.class, datasetId);
       if (datasetRow == null) {
         throw new PersistenceException(

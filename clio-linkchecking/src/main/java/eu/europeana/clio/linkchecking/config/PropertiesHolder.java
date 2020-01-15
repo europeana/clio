@@ -1,7 +1,7 @@
 package eu.europeana.clio.linkchecking.config;
 
 import eu.europeana.clio.common.exception.ConfigurationException;
-import eu.europeana.clio.common.persistence.ConnectionProvider;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
 import eu.europeana.metis.mongo.MongoProperties;
 import eu.europeana.metis.solr.SolrProperties;
@@ -14,11 +14,7 @@ import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Contains all properties that are required for execution.
- * <p>During construction will read properties from the specified file from the classpath.</p>
- *
- * @author Simon Tzanakis (Simon.Tzanakis@europeana.eu)
- * @since 2018-05-02
+ * Contains the properties required for the execution of the link checking functionality.
  */
 public class PropertiesHolder {
 
@@ -55,6 +51,9 @@ public class PropertiesHolder {
   private final int linkCheckingSocketTimeout;
   private final int linkCheckingDownloadTimeout;
 
+  /**
+   * Constructor. Reads the property file and loads the properties.
+   */
   public PropertiesHolder() {
 
     // Load properties file.
@@ -147,12 +146,22 @@ public class PropertiesHolder {
     return mongoCoreDatabase;
   }
 
-  public ConnectionProvider getPostGreSQLConnection() {
-    final ConnectionProvider connectionProvider = new ConnectionProvider();
+  /**
+   * Create a connected persistence connection.
+   *
+   * @return The connection.
+   */
+  public ClioPersistenceConnection createPersistenceConnection() {
+    final ClioPersistenceConnection connectionProvider = new ClioPersistenceConnection();
     connectionProvider.connect(postgresServer, postgresUsername, postgresPassword);
     return connectionProvider;
   }
 
+  /**
+   * Create a media processor factory (from which a link checker can be obtained).
+   *
+   * @return A media processor factory.
+   */
   public MediaProcessorFactory createMediaProcessorFactory() {
     final MediaProcessorFactory mediaProcessorFactory = new MediaProcessorFactory();
     mediaProcessorFactory.setResourceConnectTimeout(this.linkCheckingConnectTimeout);

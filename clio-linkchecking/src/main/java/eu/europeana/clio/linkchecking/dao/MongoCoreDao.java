@@ -17,15 +17,32 @@ import eu.europeana.metis.core.workflow.plugins.PluginType;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Data access object for the Metis core Mongo.
+ */
 public class MongoCoreDao {
 
   private final MorphiaDatastoreProvider datastoreProvider;
 
+  /**
+   * Constructor.
+   *
+   * @param mongoClient The mongo client.
+   * @param mongoDatabaseName The name of the database in the Mongo.
+   */
   public MongoCoreDao(MongoClient mongoClient, String mongoDatabaseName) {
     this.datastoreProvider = new MorphiaDatastoreProviderImpl(mongoClient, mongoDatabaseName);
   }
 
-  public Dataset getDatasetById(String datasetId) throws ClioException {
+  /**
+   * Get a published dataset the Metis core persistence and translate it to a Clio dataset.
+   *
+   * @param datasetId The (Metis) dataset ID of the dataset.
+   * @return The dataset. Is not null.
+   * @throws ClioException In case of problems with obtaining the dataset (including if a dataset
+   * with the given ID doesn't exist or has not been published recently).
+   */
+  public Dataset getPublishedDatasetById(String datasetId) throws ClioException {
 
     // Find the dataset from Metis.
     final eu.europeana.metis.core.dataset.Dataset metisDataset = new DatasetDao(datastoreProvider,

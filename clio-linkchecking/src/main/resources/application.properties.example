@@ -1,0 +1,31 @@
+#Mongo metis-core
+mongo.core.hosts=
+mongo.core.port=
+mongo.core.authentication.db=
+mongo.core.username=
+mongo.core.password=
+mongo.core.enableSSL=
+mongo.core.db=
+
+#Truststore
+truststore.path=
+truststore.password=
+
+#Solr/Zookeeper published records
+solr.publish.hosts=
+zookeeper.publish.hosts=
+zookeeper.publish.port=
+zookeeper.publish.chroot=
+zookeeper.publish.defaultCollection=
+
+#PostGreSQL
+postgresql.server=
+postgresql.username=
+postgresql.password=
+
+#Link Checking
+linkchecking.sample.records.per.dataset=
+linkchecking.connect.timeout=
+linkchecking.socket.timeout=
+linkchecking.download.timeout=
+

@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -11,33 +10,25 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>clio-common</artifactId>
+    <artifactId>clio-linkchecking</artifactId>
+
+    <name>clio-linkchecking</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>${version.hibernate}</version>
+            <artifactId>clio-common</artifactId>
+            <groupId>eu.europeana.clio</groupId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-c3p0</artifactId>
-            <version>${version.hibernate}</version>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-core-service</artifactId>
+            <version>${version.metis}</version>
         </dependency>
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.2.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-media-service</artifactId>
+            <version>${version.metis}</version>
         </dependency>
     </dependencies>
 

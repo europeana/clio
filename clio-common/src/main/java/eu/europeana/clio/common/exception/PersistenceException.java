@@ -1,6 +1,6 @@
 package eu.europeana.clio.common.exception;
 
-public class PersistenceException extends Exception {
+public class PersistenceException extends ClioException {
 
   private static final long serialVersionUID = -718352205887952579L;
 

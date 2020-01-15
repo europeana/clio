@@ -36,6 +36,7 @@ public class ConnectionProvider implements Closeable {
     config.setProperty("hibernate.connection.username", username);
     config.setProperty("hibernate.connection.password", password);
     config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+    config.setProperty("hibernate.c3p0.timeout","1800");
 
     this.sessionFactory = config.buildSessionFactory();
   }

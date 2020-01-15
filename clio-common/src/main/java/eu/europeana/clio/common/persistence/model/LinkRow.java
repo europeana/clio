@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import org.apache.commons.lang3.StringUtils;
@@ -17,12 +19,22 @@ import org.apache.commons.lang3.StringUtils;
 @Entity
 @Table(name = "link", uniqueConstraints = @UniqueConstraint(columnNames = {"run_id", "link_url"}),
         indexes = @Index(columnList = "server"))
+@NamedQueries({
+        @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query =
+                "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL"),
+        @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
+                "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
+                        + " AND l.checkingTime IS NULL")})
 public class LinkRow {
+
+  public static final String GET_UNCHECKED_LINKS = "getUncheckedLinks";
+  public static final String GET_UNCHECKED_LINKS_BY_URL = "getUncheckedLinksByUrl";
+  public static final String LINK_URL_PARAMETER = "linkUrl";
 
   private static final int MAX_RECORD_ID_LENGTH = 256;
   private static final int MAX_LINK_URL_LENGTH = 256;
   private static final int MAX_SERVER_LENGTH = 128;
-  private static final int MAX_RESULT_LENGTH = 512;
+  private static final int MAX_ERROR_LENGTH = 512;
 
   public enum LinkType {IS_SHOWN_AT, IS_SHOWN_BY}
 
@@ -45,14 +57,14 @@ public class LinkRow {
   @Column(name = "link_url", nullable = false, updatable = false, length = MAX_LINK_URL_LENGTH)
   private String linkUrl;
 
-  @Column(name = "server", nullable = false, updatable = false, length = MAX_SERVER_LENGTH)
+  @Column(name = "server", updatable = false, length = MAX_SERVER_LENGTH)
   private String server;
 
-  @Column(name = "result", updatable = false, length = MAX_RESULT_LENGTH)
-  private String result;
+  @Column(name = "error", updatable = false, length = MAX_ERROR_LENGTH)
+  private String error;
 
   @Column(name = "checking_time")
-  private long checkingTime;
+  private Long checkingTime;
 
   LinkRow() {
   }
@@ -74,8 +86,8 @@ public class LinkRow {
     this.server = server;
   }
 
-  public void setResult(String result) {
-    this.result = StringUtils.truncate(result, MAX_RESULT_LENGTH);
+  public void setError(String error) {
+    this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
   }
 
   public void setCheckingTime(long checkingTime) {
@@ -106,11 +118,11 @@ public class LinkRow {
     return server;
   }
 
-  public String getResult() {
-    return result;
+  public String getError() {
+    return error;
   }
 
-  public long getCheckingTime() {
+  public Long getCheckingTime() {
     return checkingTime;
   }
 }

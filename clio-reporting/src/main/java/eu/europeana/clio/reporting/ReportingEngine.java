@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedMap;
 
 /**
@@ -37,6 +38,7 @@ public final class ReportingEngine {
 
   /**
    * Generates a report and saves it to the output file.
+   *
    * @param outputFile The destination/output file.
    * @throws ClioException In case of a problem with accessing or saving the required data.
    */
@@ -60,6 +62,7 @@ public final class ReportingEngine {
       writer.writeNext(new String[]{
               "Dataset ID",
               "Dataset size",
+              "Last index",
               "Link type",
               "Link",
               "Link server",
@@ -71,7 +74,9 @@ public final class ReportingEngine {
       brokenLinks.forEach((run, links) -> links.forEach(link ->
                       writer.writeNext(new String[]{
                               run.getDataset().getDatasetId(),
-                              "" + run.getDataset().getSize(),
+                              Optional.ofNullable(run.getDataset().getSize()).map(Object::toString).orElse(
+                                      null),
+                              convert(run.getDataset().getLastIndexTime()),
                               link.getLinkType().getHumanReadableName(),
                               link.getLinkUrl(),
                               link.getServer(),
@@ -86,7 +91,8 @@ public final class ReportingEngine {
   }
 
   private static String convert(Instant instant) {
-    return DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneOffset.systemDefault())
-            .format(instant);
+    return instant == null ? null
+            : DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneOffset.systemDefault())
+                    .format(instant);
   }
 }

@@ -2,7 +2,8 @@
 CREATE TABLE dataset (
     dataset_id VARCHAR(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
-    size INTEGER NOT NULL,
+    size INTEGER,
+    last_index_time BIGINT,
     provider VARCHAR(64),
     data_provider VARCHAR(64),
     PRIMARY KEY (dataset_id)
@@ -25,7 +26,7 @@ CREATE TABLE link (
     link_url VARCHAR(256) NOT NULL,
     server VARCHAR(128),
     error VARCHAR(512),
-    checking_time int8,
+    checking_time BIGINT,
     PRIMARY KEY (link_id),
     UNIQUE (run_id, link_url, link_type),
     FOREIGN KEY (run_id) REFERENCES run

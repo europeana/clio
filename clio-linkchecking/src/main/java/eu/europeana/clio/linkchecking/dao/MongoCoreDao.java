@@ -14,6 +14,8 @@ import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
 import eu.europeana.metis.core.workflow.plugins.ExecutionProgress;
 import eu.europeana.metis.core.workflow.plugins.MetisPlugin;
 import eu.europeana.metis.core.workflow.plugins.PluginType;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
 
@@ -73,8 +75,10 @@ public class MongoCoreDao {
                     ExecutionProgress::getProcessedRecords).orElse(-1);
 
     // Convert to the dataset object we're interested in.
-    return new Dataset(metisDataset.getDatasetId(), metisDataset.getDatasetName(),
-            datasetSize, metisDataset.getProvider(), metisDataset.getDataProvider());
-
+    final Instant lastIndexTime = Optional.ofNullable(latestSuccessfulExecutableIndex)
+            .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getFinishedDate)
+            .map(Date::toInstant).orElse(null);
+    return new Dataset(metisDataset.getDatasetId(), metisDataset.getDatasetName(), datasetSize,
+            lastIndexTime, metisDataset.getProvider(), metisDataset.getDataProvider());
   }
 }

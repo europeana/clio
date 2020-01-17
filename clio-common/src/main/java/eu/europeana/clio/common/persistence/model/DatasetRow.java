@@ -25,8 +25,11 @@ public class DatasetRow {
   @Column(name = "name", nullable = false, length = MAX_NAME_LENGTH)
   private String name;
 
-  @Column(name = "size", nullable = false)
-  private int size;
+  @Column(name = "size")
+  private Integer size;
+
+  @Column(name = "last_index_time")
+  private Long lastIndexTime;
 
   @Column(name = "provider", length = MAX_PROVIDER_LENGTH)
   private String provider;
@@ -60,8 +63,12 @@ public class DatasetRow {
     return name;
   }
 
-  public int getSize() {
+  public Integer getSize() {
     return size;
+  }
+
+  public Long getLastIndexTime() {
+    return lastIndexTime;
   }
 
   public String getProvider() {
@@ -76,8 +83,12 @@ public class DatasetRow {
     this.name = StringUtils.truncate(name, MAX_NAME_LENGTH);
   }
 
-  public void setSize(int size) {
+  public void setSize(Integer size) {
     this.size = size;
+  }
+
+  public void setLastIndexTime(Long lastIndexTime) {
+    this.lastIndexTime = lastIndexTime;
   }
 
   public void setProvider(String provider) {

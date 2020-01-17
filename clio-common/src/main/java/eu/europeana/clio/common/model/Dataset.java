@@ -1,5 +1,6 @@
 package eu.europeana.clio.common.model;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -9,7 +10,8 @@ public class Dataset {
 
   private final String datasetId;
   private final String name;
-  private final int size;
+  private final Integer size;
+  private final Instant lastIndexTime;
   private final String provider;
   private final String dataProvider;
 
@@ -18,15 +20,17 @@ public class Dataset {
    *
    * @param datasetId The (Metis) dataset ID.
    * @param name The name of the dataset.
-   * @param size The size of the dataset (of the last indexing to publish) if known. Otherwise, -1.
+   * @param size The size of the dataset (of the last indexing to publish) if known. Can be null.
+   * @param lastIndexTime The last index time of the dataset if known. Can be null.
    * @param provider The provider of the dataset.
    * @param dataProvider The data provider of the dataset.
    */
-  public Dataset(String datasetId, String name, int size, String provider,
-          String dataProvider) {
+  public Dataset(String datasetId, String name, Integer size, Instant lastIndexTime,
+          String provider, String dataProvider) {
     this.datasetId = datasetId;
     this.name = name;
     this.size = size;
+    this.lastIndexTime = lastIndexTime;
     this.provider = provider;
     this.dataProvider = dataProvider;
   }
@@ -39,8 +43,12 @@ public class Dataset {
     return name;
   }
 
-  public int getSize() {
+  public Integer getSize() {
     return size;
+  }
+
+  public Instant getLastIndexTime() {
+    return lastIndexTime;
   }
 
   public String getProvider() {

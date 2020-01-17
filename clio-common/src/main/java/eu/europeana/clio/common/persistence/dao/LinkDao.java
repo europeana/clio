@@ -2,6 +2,7 @@ package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Link;
+import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
@@ -9,8 +10,12 @@ import eu.europeana.clio.common.persistence.model.RunRow;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
  * Data access object for links (to be checked once as part of a run).
@@ -111,6 +116,25 @@ public class LinkDao {
       }
       return null;
     });
+  }
+
+  /**
+   * This method returns all broken links that are part of a run that is the latest executed and
+   * completed run for it's dataset. Essentially, this returns the current error state: for each
+   * dataset it looks at the latest completed run and returns any links that are broken.
+   *
+   * @return A map with the runs as keys and the list of associated links as values. The map is
+   * sorted by (Metis) dataset ID.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
+  public SortedMap<Run, List<Link>> getBrokenLinksInLatestCompletedRuns()
+          throws PersistenceException {
+    final List<LinkRow> links = persistenceConnection.performInSession(session -> session
+            .createNamedQuery(LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, LinkRow.class)
+            .getResultList());
+    return links.stream().collect(Collectors.groupingBy(link -> RunDao.convert(link.getRun()),
+            () -> new TreeMap<>(Comparator.comparing(run -> run.getDataset().getDatasetId())),
+            Collectors.mapping(LinkDao::convert, Collectors.toList())));
   }
 
   private static Link convert(LinkRow row) {

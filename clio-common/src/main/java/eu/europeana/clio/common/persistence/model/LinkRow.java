@@ -19,13 +19,26 @@ import org.apache.commons.lang3.StringUtils;
  * This represents the persistent form of a link (to be checked once as part of a run).
  */
 @Entity
-@Table(name = "link", uniqueConstraints = @UniqueConstraint(columnNames = {"run_id", "link_url"}),
-        indexes = @Index(columnList = "server"))
+@Table(name = "link",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"run_id", "link_url", "link_type"}),
+        indexes = {@Index(columnList = "server"), @Index(columnList = "link_url")})
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query = "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL")
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
         "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
                 + " AND l.checkingTime IS NULL")
+@NamedQuery(name = LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, query = "SELECT l"
+        + " FROM LinkRow l"
+        + " WHERE l.error IS NOT NULL"
+        + " AND l.run.startingTime = ("
+        + "   SELECT MAX(r2.startingTime) FROM RunRow AS r2"
+        + "   WHERE r2.dataset = l.run.dataset"
+        + "   AND NOT EXISTS("
+        + "     SELECT l2 FROM LinkRow l2 WHERE l2.run = r2 AND l2.checkingTime IS NULL"
+        + "   )"
+        + " )")
 public class LinkRow {
+
+  public static final String GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS = "getBrokenLinksInLatestCompletedRuns";
 
   public static final String GET_UNCHECKED_LINKS = "getUncheckedLinks";
   public static final String GET_UNCHECKED_LINKS_BY_URL = "getUncheckedLinksByUrl";
@@ -87,6 +100,7 @@ public class LinkRow {
 
   /**
    * Constructor.
+   *
    * @param run The run to which this link belongs.
    * @param recordId The Europeana record ID in which this link is present.
    * @param linkType The type of the link reference in the record.

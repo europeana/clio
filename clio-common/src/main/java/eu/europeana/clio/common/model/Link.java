@@ -64,4 +64,18 @@ public class Link {
   public Instant getCheckingTime() {
     return checkingTime;
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null || obj.getClass() != this.getClass()) {
+      return false;
+    }
+    final Link that = (Link) obj;
+    return this.linkId == that.linkId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Long.hashCode(linkId);
+  }
 }

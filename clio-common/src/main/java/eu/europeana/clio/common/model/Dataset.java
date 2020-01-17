@@ -1,5 +1,7 @@
 package eu.europeana.clio.common.model;
 
+import java.util.Objects;
+
 /**
  * This represents a dataset as presisted in the Clio database.
  */
@@ -47,5 +49,19 @@ public class Dataset {
 
   public String getDataProvider() {
     return dataProvider;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null || obj.getClass() != this.getClass()) {
+      return false;
+    }
+    final Dataset that = (Dataset) obj;
+    return Objects.equals(this.datasetId, that.datasetId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(this.datasetId);
   }
 }

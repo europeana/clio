@@ -60,9 +60,10 @@ public class DatasetDao {
   public Dataset getDataset(String datasetId) throws PersistenceException {
     final DatasetRow row = persistenceConnection
             .performInSession(session -> session.get(DatasetRow.class, datasetId));
-    if (row == null) {
-      return null;
-    }
+    return row == null ? null : convert(row);
+  }
+
+  static Dataset convert(DatasetRow row) {
     return new Dataset(row.getDatasetId(), row.getName(), row.getSize(), row.getProvider(),
             row.getDataProvider());
   }

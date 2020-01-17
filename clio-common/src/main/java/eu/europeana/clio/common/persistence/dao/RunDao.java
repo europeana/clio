@@ -1,9 +1,11 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
+import java.time.Instant;
 
 /**
  * Data access object for runs (a checking iteration for a given dataset).
@@ -39,5 +41,10 @@ public class RunDao {
       final RunRow newRun = new RunRow(System.currentTimeMillis(), datasetRow);
       return (long) session.save(newRun);
     });
+  }
+
+  static Run convert(RunRow row) {
+    return new Run(row.getRunId(), Instant.ofEpochMilli(row.getStartingTime()),
+            DatasetDao.convert(row.getDataset()));
   }
 }

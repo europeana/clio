@@ -13,6 +13,7 @@ CREATE TABLE run (
     starting_time BIGINT NOT NULL,
     dataset_id VARCHAR(16) NOT NULL,
     PRIMARY KEY (run_id),
+    UNIQUE (dataset_id, starting_time),
     FOREIGN KEY (dataset_id) REFERENCES dataset
 );
 

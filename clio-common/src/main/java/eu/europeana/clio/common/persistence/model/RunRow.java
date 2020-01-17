@@ -8,12 +8,14 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 /**
  * This represents the persistent form of a run (a checking iteration for a given dataset).
  */
 @Entity
-@Table(name = "run")
+@Table(name = "run",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"dataset_id", "starting_time"}))
 public class RunRow {
 
   @Id

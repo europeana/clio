@@ -1,0 +1,9 @@
+#Truststore
+truststore.path=
+truststore.password=
+
+#PostGreSQL
+postgresql.server=
+postgresql.username=
+postgresql.password=
+

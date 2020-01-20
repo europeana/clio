@@ -1,5 +1,7 @@
 package eu.europeana.clio.linkchecking;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.mongodb.MongoClient;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
@@ -22,6 +24,8 @@ import eu.europeana.metis.mongo.MongoClientProvider;
 import eu.europeana.metis.solr.CompoundSolrClient;
 import eu.europeana.metis.solr.SolrClientProvider;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -35,6 +39,8 @@ public final class LinkCheckingEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingEngine.class);
 
+  private static Cache<String, Instant> lastCheckPerServerCache = null;
+
   private final PropertiesHolder properties;
 
   /**
@@ -44,6 +50,13 @@ public final class LinkCheckingEngine {
    */
   public LinkCheckingEngine(PropertiesHolder properties) {
     this.properties = properties;
+    synchronized (LinkCheckingEngine.class) {
+      if (lastCheckPerServerCache == null) {
+        lastCheckPerServerCache = Caffeine.newBuilder()
+                .expireAfterWrite(properties.getLinkCheckingMinTimeBetweenSameServerChecks())
+                .build();
+      }
+    }
   }
 
   /**
@@ -106,8 +119,8 @@ public final class LinkCheckingEngine {
     }
   }
 
-  private static boolean checkNextLinkIfAvailable(final LinkChecker linkChecker, LinkDao linkDao)
-          throws PersistenceException {
+  private boolean checkNextLinkIfAvailable(final LinkChecker linkChecker, LinkDao linkDao)
+          throws ClioException {
 
     // Get the next link
     final Link linkToCheck = linkDao.getAnyUncheckedLink();
@@ -115,18 +128,45 @@ public final class LinkCheckingEngine {
       return false;
     }
 
-    // Check the link
+    // Wait, if necessary, before we can access the server again.
+    if (linkToCheck.getServer() != null) {
+      final Instant lastCheckForServer = lastCheckPerServerCache
+              .getIfPresent(linkToCheck.getServer());
+      if (lastCheckForServer != null) {
+        waitUntil(lastCheckForServer
+                .plus(properties.getLinkCheckingMinTimeBetweenSameServerChecks()));
+      }
+    }
+
+    // Check the link and register that we checked the server.
     LOGGER.info("Checking link {}.", linkToCheck.getLinkUrl());
     String error = null;
     try {
       linkChecker.performLinkChecking(linkToCheck.getLinkUrl());
     } catch (LinkCheckingException e) {
       error = convertToErrorString(e);
+    } finally {
+      if (linkToCheck.getServer() != null) {
+        lastCheckPerServerCache.put(linkToCheck.getServer(), Instant.now());
+      }
     }
 
     // Save the result
     linkDao.registerLinkChecking(linkToCheck.getLinkUrl(), error);
     return true;
+  }
+
+  private static void waitUntil(Instant releaseTime) throws ClioException {
+    final long waitingTime = ChronoUnit.MILLIS.between(Instant.now(), releaseTime);
+    if (waitingTime > 0) {
+      try {
+        LOGGER.info("Sleeping for {} milliseconds.", waitingTime);
+        Thread.sleep(waitingTime);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new ClioException("Thread was interrupted", e);
+      }
+    }
   }
 
   private static String convertToErrorString(Exception exception) {

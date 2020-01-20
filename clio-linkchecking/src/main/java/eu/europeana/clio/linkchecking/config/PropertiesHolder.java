@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +48,7 @@ public class PropertiesHolder {
 
   // Link checking
   private final int linkCheckingSampleRecordsPerDataset;
+  private final int linkCheckingMinTimeBetweenSameServerChecks;
   private final int linkCheckingConnectTimeout;
   private final int linkCheckingSocketTimeout;
   private final int linkCheckingDownloadTimeout;
@@ -97,6 +99,8 @@ public class PropertiesHolder {
     // Link Checking
     linkCheckingSampleRecordsPerDataset = Integer
             .parseInt(properties.getProperty("linkchecking.sample.records.per.dataset"));
+    linkCheckingMinTimeBetweenSameServerChecks = Integer
+            .parseInt(properties.getProperty("linkchecking.min.time.between.same.server.checks"));
     linkCheckingConnectTimeout = Integer
             .parseInt(properties.getProperty("linkchecking.connect.timeout"));
     linkCheckingSocketTimeout = Integer
@@ -157,6 +161,14 @@ public class PropertiesHolder {
     return connectionProvider;
   }
 
+  public int getLinkCheckingSampleRecordsPerDataset() {
+    return linkCheckingSampleRecordsPerDataset;
+  }
+
+  public Duration getLinkCheckingMinTimeBetweenSameServerChecks() {
+    return Duration.ofMillis(this.linkCheckingMinTimeBetweenSameServerChecks);
+  }
+
   /**
    * Create a media processor factory (from which a link checker can be obtained).
    *
@@ -168,9 +180,5 @@ public class PropertiesHolder {
     mediaProcessorFactory.setResourceSocketTimeout(this.linkCheckingSocketTimeout);
     mediaProcessorFactory.setResourceDownloadTimeout(this.linkCheckingDownloadTimeout);
     return mediaProcessorFactory;
-  }
-
-  public int getLinkCheckingSampleRecordsPerDataset() {
-    return linkCheckingSampleRecordsPerDataset;
   }
 }

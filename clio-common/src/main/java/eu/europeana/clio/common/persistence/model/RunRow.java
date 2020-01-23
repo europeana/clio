@@ -7,6 +7,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -16,7 +17,16 @@ import javax.persistence.UniqueConstraint;
 @Entity
 @Table(name = "run",
         uniqueConstraints = @UniqueConstraint(columnNames = {"dataset_id", "starting_time"}))
+@NamedQuery(name = RunRow.GET_ACTIVE_RUN_FOR_DATASET, query = "SELECT r"
+        + " FROM RunRow AS r"
+        + " WHERE r.dataset.datasetId = :" + RunRow.DATASET_ID_PARAMETER
+        + " AND EXISTS("
+        + "   SELECT l FROM LinkRow l WHERE l.run = r AND l.checkingTime IS NULL"
+        + " )")
 public class RunRow {
+
+  public static final String GET_ACTIVE_RUN_FOR_DATASET = "getActiveRunForDataset";
+  public static final String DATASET_ID_PARAMETER = "datasetId";
 
   @Id
   @Column(name = "run_id")

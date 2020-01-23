@@ -25,6 +25,8 @@ postgresql.password=
 
 #Link Checking
 linkchecking.sample.records.per.dataset=
+linkchecking.run.create.threads=
+linkchecking.run.execute.threads=
 linkchecking.min.time.between.same.server.checks=
 linkchecking.connect.timeout=
 linkchecking.socket.timeout=

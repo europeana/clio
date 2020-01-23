@@ -48,6 +48,8 @@ public class PropertiesHolder {
 
   // Link checking
   private final int linkCheckingSampleRecordsPerDataset;
+  private final int linkCheckingRunCreateThreads;
+  private final int linkCheckingRunExecuteThreads;
   private final int linkCheckingMinTimeBetweenSameServerChecks;
   private final int linkCheckingConnectTimeout;
   private final int linkCheckingSocketTimeout;
@@ -99,6 +101,10 @@ public class PropertiesHolder {
     // Link Checking
     linkCheckingSampleRecordsPerDataset = Integer
             .parseInt(properties.getProperty("linkchecking.sample.records.per.dataset"));
+    linkCheckingRunCreateThreads = Integer
+            .parseInt(properties.getProperty("linkchecking.run.create.threads"));
+    linkCheckingRunExecuteThreads = Integer
+            .parseInt(properties.getProperty("linkchecking.run.execute.threads"));
     linkCheckingMinTimeBetweenSameServerChecks = Integer
             .parseInt(properties.getProperty("linkchecking.min.time.between.same.server.checks"));
     linkCheckingConnectTimeout = Integer
@@ -167,6 +173,14 @@ public class PropertiesHolder {
 
   public Duration getLinkCheckingMinTimeBetweenSameServerChecks() {
     return Duration.ofMillis(this.linkCheckingMinTimeBetweenSameServerChecks);
+  }
+
+  public int getLinkCheckingRunCreateThreads() {
+    return linkCheckingRunCreateThreads;
+  }
+
+  public int getLinkCheckingRunExecuteThreads() {
+    return linkCheckingRunExecuteThreads;
   }
 
   /**

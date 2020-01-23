@@ -10,6 +10,7 @@ import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection.Result;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
@@ -29,6 +30,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,38 +62,57 @@ public final class LinkCheckingEngine {
   }
 
   /**
-   * This method starts a new run for the give dataset. It determines which links are to be part of
-   * the run, but it doesn't perform any link checking.
+   * This method starts a new run for all datasets that have published data. It determines which
+   * links are to be part of the run, but it doesn't perform any link checking.
    *
-   * @param datasetId The (Metis) dataset ID of the dataset for which to create the run.
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
-  public void createRunWithUncheckedLinksForDataset(String datasetId) throws ClioException {
-
-    // Obtain the dataset from the Metis database
+  public void createRunsForAllAvailableDatasets() throws ClioException {
     final MongoClientProvider<ConfigurationException> mongoClientProvider = new MongoClientProvider<>(
             properties.getMongoProperties());
-    final Dataset dataset;
-    try (final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
-      dataset = new MongoCoreDao(mongoClient, properties.getMongoDatabase())
-              .getPublishedDatasetById(datasetId);
+    final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
+            properties.getSolrProperties());
+    try (final ClioPersistenceConnection databaseConnection = properties
+            .createPersistenceConnection();
+            final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
+            final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
+      final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
+              properties.getMongoDatabase());
+      final SolrDao solrDao = new SolrDao(solrClient.getSolrClient());
+      final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
+      ParallelTaskExecutor.executeAndWait(datasetIds,
+              id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
+                      id),
+              properties.getLinkCheckingRunCreateThreads());
+    } catch (IOException e) {
+      throw new PersistenceException("Problem occurred while connecting to data sources.", e);
+    }
+  }
+
+  private void createRunWithUncheckedLinksForDataset(MongoCoreDao mongoCoreDao, SolrDao solrDao,
+          ClioPersistenceConnection databaseConnection, String datasetId) throws ClioException {
+
+    // If the dataset already has a run in progress, we don't proceed.
+    final RunDao runDao = new RunDao(databaseConnection);
+    if (runDao.datasetHasActiveRun(datasetId)) {
+      LOGGER.info("Skipping dataset {} as it already has an active run.", datasetId);
+      return;
+    }
+
+    // Check and get the dataset from the Metis database
+    final Dataset dataset = mongoCoreDao.getPublishedDatasetById(datasetId);
+    if (dataset == null) {
+      LOGGER.info("Skipping dataset {} as it is not currently published.", datasetId);
+      return;
     }
 
     // Obtain the sample records from the Solr database.
-    final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
-            properties.getSolrProperties());
-    final List<SampleRecord> sampleRecords;
-    try (final CompoundSolrClient solrClient = solrClientProvider.createSolrClient()) {
-      sampleRecords = new SolrDao(solrClient.getSolrClient()).getRandomSampleRecords(datasetId,
-              properties.getLinkCheckingSampleRecordsPerDataset());
-    } catch (IOException e) {
-      throw new PersistenceException("Problem occurred while obtaining a sample record.", e);
-    }
+    final List<SampleRecord> sampleRecords = solrDao
+            .getRandomSampleRecords(datasetId, properties.getLinkCheckingSampleRecordsPerDataset());
 
     // Save the information to the Clio database
-    final ClioPersistenceConnection databaseConnection = properties.createPersistenceConnection();
     new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
-    final long runId = new RunDao(databaseConnection).createRunStartingNow(dataset.getDatasetId());
+    final long runId = runDao.createRunStartingNow(dataset.getDatasetId());
     final LinkDao linkDao = new LinkDao(databaseConnection);
     for (SampleRecord record : sampleRecords) {
       for (Entry<LinkType, Set<String>> links : record.getLinks().entrySet()) {
@@ -100,6 +121,7 @@ public final class LinkCheckingEngine {
         }
       }
     }
+    LOGGER.info("Run created for dataset {}.", datasetId);
   }
 
   /**
@@ -108,25 +130,21 @@ public final class LinkCheckingEngine {
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
-    final LinkDao linkDao = new LinkDao(properties.createPersistenceConnection());
-    try (final LinkChecker linkChecker = createLinkChecker()) {
-      boolean linksChecked;
-      do {
-        linksChecked = checkNextLinkIfAvailable(linkChecker, linkDao);
-      } while (linksChecked);
+    try (final ClioPersistenceConnection databaseConnection = properties
+            .createPersistenceConnection(); final LinkChecker linkChecker = createLinkChecker()) {
+      final LinkDao linkDao = new LinkDao(databaseConnection);
+      try (final Result<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
+        ParallelTaskExecutor.executeAndWait(linksToCheck.getResultStream(),
+                link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao, link),
+                properties.getLinkCheckingRunExecuteThreads());
+      }
     } catch (IOException e) {
       throw new ClioException("Could not close link checker.", e);
     }
   }
 
-  private boolean checkNextLinkIfAvailable(final LinkChecker linkChecker, LinkDao linkDao)
-          throws ClioException {
-
-    // Get the next link
-    final Link linkToCheck = linkDao.getAnyUncheckedLink();
-    if (linkToCheck == null) {
-      return false;
-    }
+  private void performLinkCheckingOnUncheckedLink(final LinkChecker linkChecker, LinkDao linkDao,
+          Link linkToCheck) throws ClioException {
 
     // Wait, if necessary, before we can access the server again.
     if (linkToCheck.getServer() != null) {
@@ -153,7 +171,6 @@ public final class LinkCheckingEngine {
 
     // Save the result
     linkDao.registerLinkChecking(linkToCheck.getLinkUrl(), error);
-    return true;
   }
 
   private static void waitUntil(Instant releaseTime) throws ClioException {

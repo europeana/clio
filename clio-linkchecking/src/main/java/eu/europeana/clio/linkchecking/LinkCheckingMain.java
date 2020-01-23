@@ -17,8 +17,6 @@ public class LinkCheckingMain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingMain.class);
 
-  private static final String DATASET_ID = "7";
-
   /**
    * Main method.
    *
@@ -51,7 +49,7 @@ public class LinkCheckingMain {
 
     // Compute and store the sample records.
     final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(properties);
-    linkCheckingEngine.createRunWithUncheckedLinksForDataset(DATASET_ID);
+    linkCheckingEngine.createRunsForAllAvailableDatasets();
 
     // Perform link checking on the links, updating as we go.
     linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();

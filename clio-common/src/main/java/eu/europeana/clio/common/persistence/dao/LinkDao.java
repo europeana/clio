@@ -4,6 +4,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection.Result;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
@@ -83,16 +84,15 @@ public class LinkDao {
   }
 
   /**
-   * Get any random link that has not been checked yet.
+   * Get a stream of all links that are currently unchecked and need to be checked.
    *
    * @return An unchecked link.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public Link getAnyUncheckedLink() throws PersistenceException {
-    final List<LinkRow> linkRows = persistenceConnection.performInSession(
+  public Result<Link> getAllUncheckedLinks() throws PersistenceException {
+    return persistenceConnection.performForStream(
             session -> session.createNamedQuery(LinkRow.GET_UNCHECKED_LINKS, LinkRow.class)
-                    .setMaxResults(1).getResultList());
-    return linkRows.isEmpty() ? null : convert(linkRows.get(0));
+                    .getResultStream().map(LinkDao::convert));
   }
 
   /**

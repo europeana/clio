@@ -4,7 +4,6 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.reporting.config.PropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
-import java.io.File;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.core.net.ssl.TrustStoreConfigurationException;
 import org.slf4j.Logger;
@@ -18,8 +17,7 @@ public class ReportingMain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportingMain.class);
 
-  private static final String OUTPUT_FILE =
-          System.getProperty("user.home") + File.separator + "report.csv";
+  private static final String OUTPUT_FILE = "/home/jochen/Desktop/clio/report.csv";
 
   /**
    * Main method.

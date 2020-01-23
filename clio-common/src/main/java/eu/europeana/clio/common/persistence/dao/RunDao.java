@@ -43,6 +43,21 @@ public class RunDao {
     });
   }
 
+  /**
+   * Determines whether the dataset in question currently has an active run (i.e. a run for which at
+   * least one link has not been checked yet).
+   *
+   * @param datasetId The dataset ID for which to check.
+   * @return Whether there is an active run.
+   * @throws PersistenceException In case there was a persistence problem.
+   */
+  public boolean datasetHasActiveRun(String datasetId) throws PersistenceException {
+    return persistenceConnection.performInSession(
+            session -> !session.createNamedQuery(RunRow.GET_ACTIVE_RUN_FOR_DATASET)
+                    .setParameter(RunRow.DATASET_ID_PARAMETER, datasetId).getResultList()
+                    .isEmpty());
+  }
+
   static Run convert(RunRow row) {
     return new Run(row.getRunId(), Instant.ofEpochMilli(row.getStartingTime()),
             DatasetDao.convert(row.getDataset()));

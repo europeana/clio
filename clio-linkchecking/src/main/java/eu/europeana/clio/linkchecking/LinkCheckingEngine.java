@@ -72,10 +72,11 @@ public final class LinkCheckingEngine {
             properties.getMongoProperties());
     final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
             properties.getSolrProperties());
-    try (final ClioPersistenceConnection databaseConnection = properties
-            .createPersistenceConnection();
-            final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
-            final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
+    try (
+        final ClioPersistenceConnection databaseConnection =
+            properties.getPersistenceConnectionProvider().createPersistenceConnection();
+        final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
+        final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
       final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
               properties.getMongoDatabase());
       final SolrDao solrDao = new SolrDao(solrClient.getSolrClient());
@@ -130,8 +131,10 @@ public final class LinkCheckingEngine {
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
-    try (final ClioPersistenceConnection databaseConnection = properties
-            .createPersistenceConnection(); final LinkChecker linkChecker = createLinkChecker()) {
+    try (
+        final ClioPersistenceConnection databaseConnection =
+            properties.getPersistenceConnectionProvider().createPersistenceConnection();
+        final LinkChecker linkChecker = createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
       try (final Result<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
         ParallelTaskExecutor.executeAndWait(linksToCheck.getResultStream(),

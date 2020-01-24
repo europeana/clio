@@ -1,5 +1,6 @@
 package eu.europeana.clio.common.persistence;
 
+import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -7,6 +8,7 @@ import eu.europeana.clio.common.persistence.model.RunRow;
 import java.io.Closeable;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -34,8 +36,10 @@ public class ClioPersistenceConnection implements Closeable {
    * @param server The server to connect to.
    * @param username The username.
    * @param password The password.
+   * @throws ConfigurationException 
    */
-  public final synchronized void connect(String server, String username, String password) {
+  public final synchronized void connect(String server, String username, String password)
+      throws ConfigurationException {
 
     if (this.sessionFactory != null) {
       throw new IllegalStateException(
@@ -51,7 +55,11 @@ public class ClioPersistenceConnection implements Closeable {
     config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
     config.setProperty("hibernate.c3p0.timeout", "1800");
 
-    this.sessionFactory = config.buildSessionFactory();
+    try {
+      this.sessionFactory = config.buildSessionFactory();
+    } catch (HibernateException e) {
+      throw new ConfigurationException("Exception while setting up connection to persistence.", e);
+    }
   }
 
   private SessionFactory getSessionFactory() throws PersistenceException {

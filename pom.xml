@@ -22,8 +22,9 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<version.maven.compiler.plugin>3.8.0</version.maven.compiler.plugin>
-		<version.metis>1.7.0-SNAPSHOT</version.metis>
+		<version.metis>1.8.0-SNAPSHOT</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
+		<version.spring>5.2.3.RELEASE</version.spring>
 	</properties>
 
 	<repositories>
@@ -120,6 +121,8 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>${version.maven.compiler.plugin}</version>
 					<configuration>
+						<forceJavacCompilerUse>true</forceJavacCompilerUse>
+						<release>11</release>
 						<source>11</source>
 						<target>11</target>
 					</configuration>

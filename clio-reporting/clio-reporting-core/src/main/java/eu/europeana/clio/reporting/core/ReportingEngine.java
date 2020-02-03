@@ -1,13 +1,12 @@
 package eu.europeana.clio.reporting.core;
 
+import eu.europeana.clio.common.persistence.StreamResult;
 import java.io.IOException;
 import java.io.Writer;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
-import java.util.SortedMap;
 import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Link;
@@ -15,6 +14,7 @@ import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class provides core functionality for the reporting module of Clio.
@@ -44,14 +44,13 @@ public final class ReportingEngine {
     // new execution (we can check the most recent run starting time).
 
     // Get the broken links.
-    // TODO this may be thousands of links (or more). We should not get this all at once.
     final ClioPersistenceConnection databaseConnection =
         properties.getPersistenceConnectionProvider().createPersistenceConnection();
-    final SortedMap<Run, List<Link>> brokenLinks = new LinkDao(databaseConnection)
-            .getBrokenLinksInLatestCompletedRuns();
 
     // Write the report.
-    try (final CSVWriter writer = new CSVWriter(output)) {
+    try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(databaseConnection)
+            .getBrokenLinksInLatestCompletedRuns();
+            final CSVWriter writer = new CSVWriter(output)) {
 
       // Write header
       writer.writeNext(new String[]{
@@ -66,20 +65,17 @@ public final class ReportingEngine {
       });
 
       // Write records
-      brokenLinks.forEach((run, links) -> links.forEach(link ->
-                      writer.writeNext(new String[]{
-                              run.getDataset().getDatasetId(),
-                              Optional.ofNullable(run.getDataset().getSize()).map(Object::toString).orElse(
-                                      null),
-                              convert(run.getDataset().getLastIndexTime()),
-                              link.getLinkType().getHumanReadableName(),
-                              link.getLinkUrl(),
-                              link.getServer(),
-                              convert(link.getCheckingTime()),
-                              link.getError()
-                      })
-              )
-      );
+      brokenLinks.get().forEach(link -> writer.writeNext(new String[]{
+              link.getLeft().getDataset().getDatasetId(),
+              Optional.ofNullable(link.getLeft().getDataset().getSize())
+                      .map(Object::toString).orElse(null),
+              convert(link.getLeft().getDataset().getLastIndexTime()),
+              link.getRight().getLinkType().getHumanReadableName(),
+              link.getRight().getLinkUrl(),
+              link.getRight().getServer(),
+              convert(link.getRight().getCheckingTime()),
+              link.getRight().getError()
+      }));
     } catch (IOException e) {
       throw new ClioException("Error occurred while compiling the report.", e);
     }

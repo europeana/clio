@@ -10,7 +10,7 @@ import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection.Result;
+import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
@@ -136,8 +136,8 @@ public final class LinkCheckingEngine {
             properties.getPersistenceConnectionProvider().createPersistenceConnection();
         final LinkChecker linkChecker = createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
-      try (final Result<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
-        ParallelTaskExecutor.executeAndWait(linksToCheck.getResultStream(),
+      try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
+        ParallelTaskExecutor.executeAndWait(linksToCheck.get(),
                 link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao, link),
                 properties.getLinkCheckingRunExecuteThreads());
       }

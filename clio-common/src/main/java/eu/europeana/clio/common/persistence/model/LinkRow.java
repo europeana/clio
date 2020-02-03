@@ -35,7 +35,8 @@ import org.apache.commons.lang3.StringUtils;
         + "   AND NOT EXISTS("
         + "     SELECT l2 FROM LinkRow l2 WHERE l2.run = r2 AND l2.checkingTime IS NULL"
         + "   )"
-        + " )")
+        + " )"
+        + " ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC")
 public class LinkRow {
 
   public static final String GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS = "getBrokenLinksInLatestCompletedRuns";
@@ -86,7 +87,7 @@ public class LinkRow {
   @Column(name = "server", updatable = false, length = MAX_SERVER_LENGTH)
   private String server;
 
-  @Column(name = "error", updatable = false, length = MAX_ERROR_LENGTH)
+  @Column(name = "error", length = MAX_ERROR_LENGTH)
   private String error;
 
   @Column(name = "checking_time")

@@ -14,9 +14,9 @@ public class ClioPersistenceConnectionProvider {
   /**
    * Constructor.
    * 
-   * @param server The server to connect to.
-   * @param username The username.
-   * @param password The password.
+   * @param postgresServer The server to connect to.
+   * @param postgresUsername The username.
+   * @param postgresPassword The password.
    */
   public ClioPersistenceConnectionProvider(String postgresServer, String postgresUsername,
       String postgresPassword) {

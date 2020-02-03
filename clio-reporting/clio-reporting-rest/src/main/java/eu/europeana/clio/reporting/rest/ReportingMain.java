@@ -1,11 +1,13 @@
-package eu.europeana.clio.reporting.core;
+package eu.europeana.clio.reporting.rest;
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
+import eu.europeana.clio.reporting.core.ReportingEngine;
 import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
 import eu.europeana.clio.reporting.core.config.PropertiesFromFile;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,8 +27,6 @@ public class ReportingMain {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportingMain.class);
 
   private static final String CONFIGURATION_FILE = "application.properties";
-
-  private static final String OUTPUT_FILE = "/home/jochen/Desktop/clio/report.csv";
 
   /**
    * Main method.
@@ -61,8 +61,9 @@ public class ReportingMain {
     }
 
     // Generate the report
-    LOGGER.info("Saving the report to output file: {}", OUTPUT_FILE);
-    final Path path = Paths.get(OUTPUT_FILE);
+    final String outputFile = System.getProperty("user.home") + File.pathSeparator + "clio_report.csv";
+    LOGGER.info("Saving the report to output file: {}", outputFile);
+    final Path path = Paths.get(outputFile);
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
       new ReportingEngine(properties).generateReport(fileWriter);
     } catch (IOException e) {

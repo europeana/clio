@@ -79,11 +79,11 @@ public class ClioPersistenceConnection implements Closeable {
    * @return The {@link Closeable} result of the action.
    * @throws PersistenceException In case there was a persistence problem thrown by the action.
    */
-  public final <T> Result<T> performForStream(DatabaseAction<Stream<T>> action)
+  public final <T> StreamResult<T> performForStream(DatabaseAction<Stream<T>> action)
           throws PersistenceException {
     final Session session = getSessionFactory().openSession();
     final Stream<T> data = action.perform(session);
-    return new Result<>(data, session);
+    return new StreamResult<>(data, session);
   }
 
   /**
@@ -160,29 +160,4 @@ public class ClioPersistenceConnection implements Closeable {
     T perform(Session session) throws PersistenceException;
   }
 
-  /**
-   * This class encapsulates a result stream that is closable. After the client has finished using
-   * the stream, this object is to be closed.
-   *
-   * @param <T> The type of the data in the result stream.
-   */
-  public static class Result<T> implements Closeable {
-
-    private final Stream<T> resultStream;
-    private final Session session;
-
-    Result(Stream<T> resultStream, Session session) {
-      this.resultStream = resultStream;
-      this.session = session;
-    }
-
-    @Override
-    public void close() {
-      this.session.close();
-    }
-
-    public Stream<T> getResultStream() {
-      return resultStream;
-    }
-  }
 }

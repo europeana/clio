@@ -5,6 +5,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
 
+/**
+ * A version of the {@link AbstractPropertiesHolder} that gets the property values from Spring
+ * injection/property loading.
+ */
 @Component
 @PropertySource({"classpath:application.properties"})
 public class PropertiesFromSpring extends AbstractPropertiesHolder {

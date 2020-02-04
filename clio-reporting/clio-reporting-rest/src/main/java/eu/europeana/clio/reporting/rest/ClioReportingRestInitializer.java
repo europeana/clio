@@ -2,6 +2,9 @@ package eu.europeana.clio.reporting.rest;
 
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
+/**
+ * This class is the bootstrap code for Spring. It tells Spring how to start this web application.
+ */
 public class ClioReportingRestInitializer extends
         AbstractAnnotationConfigDispatcherServletInitializer {
 

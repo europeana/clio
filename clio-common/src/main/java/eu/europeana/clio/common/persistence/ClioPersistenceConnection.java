@@ -31,14 +31,14 @@ public class ClioPersistenceConnection implements Closeable {
   private SessionFactory sessionFactory;
 
   /**
-   * Establishes a connection. This method can  only be called once on any given instance.
+   * Establishes a connection. This method can only be called once on any given instance.
    *
    * @param server The server to connect to.
    * @param username The username.
    * @param password The password.
-   * @throws ConfigurationException 
+   * @throws ConfigurationException In case there was an issue setting up this connection.
    */
-  public final synchronized void connect(String server, String username, String password)
+  protected final synchronized void connect(String server, String username, String password)
       throws ConfigurationException {
 
     if (this.sessionFactory != null) {

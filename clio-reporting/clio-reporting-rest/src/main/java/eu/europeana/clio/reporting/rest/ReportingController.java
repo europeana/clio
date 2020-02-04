@@ -1,5 +1,7 @@
 package eu.europeana.clio.reporting.rest;
 
+import eu.europeana.clio.common.exception.ClioException;
+import eu.europeana.clio.reporting.core.ReportingEngine;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,9 +16,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import eu.europeana.clio.common.exception.ClioException;
-import eu.europeana.clio.reporting.core.ReportingEngine;
 
+/**
+ * The controller (web endpoint) that provides functionality related to the link checking report.
+ */
 @Controller
 public class ReportingController {
 
@@ -24,11 +27,26 @@ public class ReportingController {
 
   private final ReportingEngine reportingEngine;
 
+  /**
+   * Constructor.
+   *
+   * @param reportingEngine The engine that can compile link checking reports.
+   */
   @Autowired
   public ReportingController(ReportingEngine reportingEngine) {
     this.reportingEngine = reportingEngine;
   }
 
+  /**
+   * Computes and returns the latest version of the link checking report.
+   *
+   * TODO JV In the future we can cache the result so that we don't have to compute it every time.
+   * We can even invalidate it if we have a new execution (or we can check the most recent run
+   * starting time in the DB).
+   *
+   * @return The link checking report as a byte array (UTF-8 encoded).
+   * @throws ClioException In case there was a problem getting the report.
+   */
   @GetMapping(value = "report", produces = "text/csv")
   @ResponseBody
   public HttpEntity<byte[]> getReport() throws ClioException {
@@ -36,22 +54,23 @@ public class ReportingController {
     // Create the report.
     byte[] report;
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final BufferedWriter outputWriter =
-            new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+            final BufferedWriter outputWriter =
+                    new BufferedWriter(
+                            new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
       this.reportingEngine.generateReport(outputWriter);
       report = outputStream.toByteArray();
-    } catch (IOException  e) {
-      LOGGER.warn("Problem while retrieving report.", e);
+    } catch (IOException e) {
+      LOGGER.warn("IO Problem while retrieving report.", e);
       throw new ClioException("Problem while retrieving report.", e);
     } catch (ClioException | RuntimeException e) {
-      LOGGER.warn("Problem while retrieving report.", e);
+      LOGGER.warn("Unexpected Problem while retrieving report.", e);
       throw e;
     }
 
     // Return the report.
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentDisposition(
-        ContentDisposition.builder("inline").filename("clio_report.csv").build());
+            ContentDisposition.builder("inline").filename("clio_report.csv").build());
     headers.setContentLength(report.length);
     return new HttpEntity<>(report, headers);
   }

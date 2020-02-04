@@ -4,8 +4,8 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.linkchecking.config.PropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
+import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.core.net.ssl.TrustStoreConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

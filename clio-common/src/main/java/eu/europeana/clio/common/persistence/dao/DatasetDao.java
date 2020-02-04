@@ -54,19 +54,6 @@ public class DatasetDao {
     row.setDataProvider(dataset.getDataProvider());
   }
 
-  /**
-   * Get a dataset from the Clio persistence provider.
-   *
-   * @param datasetId The (Metis) dataset ID of the target dataset.
-   * @return The dataset, or null if no such dataset exists.
-   * @throws PersistenceException In case there was a persistence problem.
-   */
-  public Dataset getDataset(String datasetId) throws PersistenceException {
-    final DatasetRow row = persistenceConnection
-            .performInSession(session -> session.get(DatasetRow.class, datasetId));
-    return row == null ? null : convert(row);
-  }
-
   static Dataset convert(DatasetRow row) {
     return new Dataset(row.getDatasetId(), row.getName(), row.getSize(),
             Optional.ofNullable(row.getLastIndexTime()).map(Instant::ofEpochMilli).orElse(null),

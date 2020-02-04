@@ -40,9 +40,6 @@ public final class ReportingEngine {
    */
   public void generateReport(Writer output) throws ClioException {
 
-    // TODO in the furute we can cache the result and invalidate/recompute it as soon as we have a
-    // new execution (we can check the most recent run starting time).
-
     // Get the broken links.
     final ClioPersistenceConnection databaseConnection =
         properties.getPersistenceConnectionProvider().createPersistenceConnection();

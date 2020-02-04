@@ -25,6 +25,16 @@
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-common</artifactId>
             <version>${version.metis}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.zoho.crm</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.opencsv</groupId>

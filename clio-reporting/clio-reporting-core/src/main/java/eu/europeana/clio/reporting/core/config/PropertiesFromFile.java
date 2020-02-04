@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+/**
+ * A version of the {@link AbstractPropertiesHolder} that gets the properties from a file.
+ */
 public class PropertiesFromFile extends AbstractPropertiesHolder {
 
   // truststore
@@ -18,6 +21,8 @@ public class PropertiesFromFile extends AbstractPropertiesHolder {
 
   /**
    * Constructor. Reads the property file and loads the properties.
+   *
+   * @param streamSupplier The supplier for the input stream.
    */
   public PropertiesFromFile(Supplier<InputStream> streamSupplier) {
 

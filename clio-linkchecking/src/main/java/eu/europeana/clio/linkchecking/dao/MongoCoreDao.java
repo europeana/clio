@@ -122,6 +122,9 @@ public class MongoCoreDao {
     });
   }
 
+  /**
+   * A wrapper class for a dataset ID that is used in an aggregation query.
+   */
   private static class DatasetIdWrapper {
 
     // Name depends on the mongo aggregations in which it is used.

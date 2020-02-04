@@ -6,6 +6,7 @@ import eu.europeana.clio.reporting.core.ReportingEngine;
 import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
 import eu.europeana.clio.reporting.core.config.PropertiesFromFile;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
+import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.core.net.ssl.TrustStoreConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

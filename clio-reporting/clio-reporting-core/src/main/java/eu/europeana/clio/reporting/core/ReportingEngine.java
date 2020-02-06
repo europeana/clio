@@ -4,6 +4,7 @@ import eu.europeana.clio.common.persistence.StreamResult;
 import java.io.IOException;
 import java.io.Writer;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -23,6 +24,9 @@ public final class ReportingEngine {
 
   private final AbstractPropertiesHolder properties;
 
+  private static final DateTimeFormatter fileNameFormatter = DateTimeFormatter
+          .ofPattern("'clio_report_'yyyy-MM-dd_kk-mm-ss'.csv'").withZone(ZoneId.systemDefault());
+
   /**
    * Constrcutor.
    *
@@ -40,13 +44,11 @@ public final class ReportingEngine {
    */
   public void generateReport(Writer output) throws ClioException {
 
-    // Get the broken links.
-    final ClioPersistenceConnection databaseConnection =
-        properties.getPersistenceConnectionProvider().createPersistenceConnection();
-
     // Write the report.
-    try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(databaseConnection)
-            .getBrokenLinksInLatestCompletedRuns();
+    try (final ClioPersistenceConnection databaseConnection = properties
+            .getPersistenceConnectionProvider().createPersistenceConnection();
+            final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(databaseConnection)
+                    .getBrokenLinksInLatestCompletedRuns();
             final CSVWriter writer = new CSVWriter(output)) {
 
       // Write header
@@ -82,5 +84,9 @@ public final class ReportingEngine {
     return instant == null ? null
             : DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneOffset.systemDefault())
                     .format(instant);
+  }
+
+  public static String getReportFileNameSuggestion() {
+    return fileNameFormatter.format(Instant.now());
   }
 }

@@ -69,8 +69,8 @@ public class ReportingController {
 
     // Return the report.
     final HttpHeaders headers = new HttpHeaders();
-    headers.setContentDisposition(
-            ContentDisposition.builder("inline").filename("clio_report.csv").build());
+    headers.setContentDisposition(ContentDisposition.builder("inline")
+            .filename(ReportingEngine.getReportFileNameSuggestion()).build());
     headers.setContentLength(report.length);
     return new HttpEntity<>(report, headers);
   }

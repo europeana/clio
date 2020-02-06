@@ -61,7 +61,8 @@ public class ReportingMain {
     }
 
     // Generate the report
-    final String outputFile = System.getProperty("user.home") + File.pathSeparator + "clio_report.csv";
+    final String outputFile = System.getProperty("user.home") + File.separator +
+            ReportingEngine.getReportFileNameSuggestion();
     LOGGER.info("Saving the report to output file: {}", outputFile);
     final Path path = Paths.get(outputFile);
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {

@@ -72,11 +72,13 @@ public class ClioPersistenceConnection implements Closeable {
   }
 
   /**
-   * Perform a persistence action in a session and obtain a {@link Closeable} result.
+   * Perform a persistence action in a session and obtain a ({@link Closeable}) result that the
+   * caller must be sure to close after use.
    *
    * @param action The action to perform.
    * @param <T> The type of the return value.
-   * @return The {@link Closeable} result of the action.
+   * @return The ({@link Closeable}) result of the action that the caller must be sure to close
+   * after use.
    * @throws PersistenceException In case there was a persistence problem thrown by the action.
    */
   public final <T> StreamResult<T> performForStream(DatabaseAction<Stream<T>> action)

@@ -1,7 +1,5 @@
 package eu.europeana.clio.linkchecking;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.mongodb.MongoClient;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
@@ -25,11 +23,16 @@ import eu.europeana.metis.mongo.MongoClientProvider;
 import eu.europeana.metis.solr.CompoundSolrClient;
 import eu.europeana.metis.solr.SolrClientProvider;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,11 @@ public final class LinkCheckingEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingEngine.class);
 
-  private static Cache<String, Instant> lastCheckPerServerCache = null;
+  private static final int NUMBER_OF_CONCURRENT_THREADS_PER_SERVER = 1;
+
+  private static final Duration UNUSED_SEMAPHORE_GRACE_TIME = Duration.ofSeconds(1);
+
+  private static final Map<String, Semaphore> semaphorePerServer = new HashMap<>();
 
   private final PropertiesHolder properties;
 
@@ -52,18 +59,12 @@ public final class LinkCheckingEngine {
    */
   public LinkCheckingEngine(PropertiesHolder properties) {
     this.properties = properties;
-    synchronized (LinkCheckingEngine.class) {
-      if (lastCheckPerServerCache == null) {
-        lastCheckPerServerCache = Caffeine.newBuilder()
-                .expireAfterWrite(properties.getLinkCheckingMinTimeBetweenSameServerChecks())
-                .build();
-      }
-    }
   }
 
   /**
    * This method starts a new run for all datasets that have published data. It determines which
-   * links are to be part of the run, but it doesn't perform any link checking.
+   * links are to be part of the run, but it doesn't perform any link checking. This method is not
+   * thread safe: it assumes that no other process is adding runs at the moment.
    *
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
@@ -131,35 +132,117 @@ public final class LinkCheckingEngine {
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
-    try (
-        final ClioPersistenceConnection databaseConnection =
+    final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
+    try (final ClioPersistenceConnection databaseConnection =
             properties.getPersistenceConnectionProvider().createPersistenceConnection();
-        final LinkChecker linkChecker = createLinkChecker()) {
+            final LinkChecker linkChecker = createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
       try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
         ParallelTaskExecutor.executeAndWait(linksToCheck.get(),
-                link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao, link),
+                link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao,
+                        semaphoreReleasePool, link),
                 properties.getLinkCheckingRunExecuteThreads());
       }
     } catch (IOException e) {
       throw new ClioException("Could not close link checker.", e);
+    } finally {
+      semaphoreReleasePool.shutdown();
     }
   }
 
-  private void performLinkCheckingOnUncheckedLink(final LinkChecker linkChecker, LinkDao linkDao,
-          Link linkToCheck) throws ClioException {
+  private Semaphore acquireSemaphoreAndWait(String server) throws InterruptedException {
 
-    // Wait, if necessary, before we can access the server again.
-    if (linkToCheck.getServer() != null) {
-      final Instant lastCheckForServer = lastCheckPerServerCache
-              .getIfPresent(linkToCheck.getServer());
-      if (lastCheckForServer != null) {
-        waitUntil(lastCheckForServer
-                .plus(properties.getLinkCheckingMinTimeBetweenSameServerChecks()));
-      }
+    // If there is no server to lock, we are done.
+    if (server == null) {
+      return null;
     }
 
-    // Check the link and register that we checked the server.
+    // Try to acquire a semaphore that is still current by the time we have acquired it. Note that
+    // for threading reasons this iteration is constructed so that only one call to the cache is
+    // made per iteration (to avoid status change in between calls).
+    Semaphore acquiredSemaphore = null;
+    while(true) {
+
+      // Get the current semaphore. We immediately acquire the semaphore so that there is no chance
+      // for another thread to come in between.
+      final boolean freshSemaphore;
+      final Semaphore currentSemaphore;
+      synchronized (LinkCheckingEngine.class) {
+        final Semaphore semaphore = semaphorePerServer.get(server);
+        if (semaphore == null) {
+          currentSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
+          currentSemaphore.acquire();
+          semaphorePerServer.put(server, currentSemaphore);
+        } else {
+          currentSemaphore = semaphore;
+        }
+        freshSemaphore = semaphore == null;
+      }
+
+      // If we have acquired a semaphore earlier which was deleted, release it.
+      if (acquiredSemaphore != null && !currentSemaphore.equals(acquiredSemaphore)) {
+        acquiredSemaphore.release();
+      }
+
+      // If we have acquired a semaphore earlier that is still current, or if we created a fresh
+      // (already acquired) semaphore, we are done. The current semaphore is the acquired one.
+      if (currentSemaphore.equals(acquiredSemaphore) || freshSemaphore) {
+        return currentSemaphore;
+      }
+
+      // Acquire the semaphore (can take some time).
+      acquiredSemaphore = currentSemaphore;
+      acquiredSemaphore.acquire();
+    }
+  }
+
+  private void scheduleSemaphoreRelease(String server, Semaphore semaphore,
+          ScheduledExecutorService semaphoreReleasePool) {
+
+    // If the semaphore is null, do nothing.
+    if (semaphore == null) {
+      return;
+    }
+
+    // Schedule release of the semaphore and ping the cache to signal the change.
+    semaphoreReleasePool.schedule(() -> {
+
+      // Release the semaphore.
+      semaphore.release();
+
+      // Give a bit of time for other threads to pick up this semaphore.
+      try {
+        Thread.sleep(0, UNUSED_SEMAPHORE_GRACE_TIME.getNano());
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+
+      // Try to determine whether the semaphore can be removed, and remove it if possible. This is
+      // a heuristic method without guarantees, hence the checks when acquiring the semaphore.
+      synchronized (LinkCheckingEngine.class){
+        final Semaphore storedSemaphore = semaphorePerServer.get(server);
+        if (storedSemaphore != null&&!storedSemaphore.hasQueuedThreads()
+                && storedSemaphore.availablePermits()== NUMBER_OF_CONCURRENT_THREADS_PER_SERVER) {
+          semaphorePerServer.remove(server);
+        }
+      }
+    }, properties.getLinkCheckingMinTimeBetweenSameServerChecks().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void performLinkCheckingOnUncheckedLink(final LinkChecker linkChecker, LinkDao linkDao,
+          ScheduledExecutorService semaphoreReleasePool, Link linkToCheck) throws ClioException {
+
+    // Acquire the semaphore, if necessary, and wait until we do.
+    final Semaphore semaphore;
+    try {
+      semaphore = acquireSemaphoreAndWait(linkToCheck.getServer());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+
+    // Check the link and trigger the waiting period before releasing the semaphore.
     LOGGER.info("Checking link {}.", linkToCheck.getLinkUrl());
     String error = null;
     try {
@@ -167,26 +250,11 @@ public final class LinkCheckingEngine {
     } catch (LinkCheckingException e) {
       error = convertToErrorString(e);
     } finally {
-      if (linkToCheck.getServer() != null) {
-        lastCheckPerServerCache.put(linkToCheck.getServer(), Instant.now());
-      }
+      scheduleSemaphoreRelease(linkToCheck.getServer(), semaphore, semaphoreReleasePool);
     }
 
     // Save the result
     linkDao.registerLinkChecking(linkToCheck.getLinkUrl(), error);
-  }
-
-  private static void waitUntil(Instant releaseTime) throws ClioException {
-    final long waitingTime = ChronoUnit.MILLIS.between(Instant.now(), releaseTime);
-    if (waitingTime > 0) {
-      try {
-        LOGGER.info("Sleeping for {} milliseconds.", waitingTime);
-        Thread.sleep(waitingTime);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new ClioException("Thread was interrupted", e);
-      }
-    }
   }
 
   private static String convertToErrorString(Exception exception) {

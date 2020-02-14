@@ -4,18 +4,17 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Data access object for links (to be checked once as part of a run).
@@ -83,16 +82,15 @@ public class LinkDao {
   }
 
   /**
-   * Get any random link that has not been checked yet.
+   * Get a stream of all links that are currently unchecked and need to be checked.
    *
    * @return An unchecked link.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public Link getAnyUncheckedLink() throws PersistenceException {
-    final List<LinkRow> linkRows = persistenceConnection.performInSession(
+  public StreamResult<Link> getAllUncheckedLinks() throws PersistenceException {
+    return persistenceConnection.performForStream(
             session -> session.createNamedQuery(LinkRow.GET_UNCHECKED_LINKS, LinkRow.class)
-                    .setMaxResults(1).getResultList());
-    return linkRows.isEmpty() ? null : convert(linkRows.get(0));
+                    .getResultStream().map(LinkDao::convert));
   }
 
   /**
@@ -123,18 +121,17 @@ public class LinkDao {
    * completed run for it's dataset. Essentially, this returns the current error state: for each
    * dataset it looks at the latest completed run and returns any links that are broken.
    *
-   * @return A map with the runs as keys and the list of associated links as values. The map is
-   * sorted by (Metis) dataset ID.
+   * @return A list of pairs with runs and links. The list is sorted by (Metis) dataset ID, then
+   * record ID, then link type, then link URL.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public SortedMap<Run, List<Link>> getBrokenLinksInLatestCompletedRuns()
+  public StreamResult<Pair<Run, Link>> getBrokenLinksInLatestCompletedRuns()
           throws PersistenceException {
-    final List<LinkRow> links = persistenceConnection.performInSession(session -> session
+    return persistenceConnection.performForStream(session -> session
             .createNamedQuery(LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, LinkRow.class)
-            .getResultList());
-    return links.stream().collect(Collectors.groupingBy(link -> RunDao.convert(link.getRun()),
-            () -> new TreeMap<>(Comparator.comparing(run -> run.getDataset().getDatasetId())),
-            Collectors.mapping(LinkDao::convert, Collectors.toList())));
+            .getResultStream()
+            .map(link -> new ImmutablePair<>(RunDao.convert(link.getRun()), convert(link)))
+    );
   }
 
   private static Link convert(LinkRow row) {

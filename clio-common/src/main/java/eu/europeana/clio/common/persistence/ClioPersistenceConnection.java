@@ -1,11 +1,14 @@
 package eu.europeana.clio.common.persistence;
 
+import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import java.io.Closeable;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -28,13 +31,15 @@ public class ClioPersistenceConnection implements Closeable {
   private SessionFactory sessionFactory;
 
   /**
-   * Establishes a connection. This method can  only be called once on any given instance.
+   * Establishes a connection. This method can only be called once on any given instance.
    *
    * @param server The server to connect to.
    * @param username The username.
    * @param password The password.
+   * @throws ConfigurationException In case there was an issue setting up this connection.
    */
-  public final synchronized void connect(String server, String username, String password) {
+  protected final synchronized void connect(String server, String username, String password)
+      throws ConfigurationException {
 
     if (this.sessionFactory != null) {
       throw new IllegalStateException(
@@ -50,7 +55,37 @@ public class ClioPersistenceConnection implements Closeable {
     config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
     config.setProperty("hibernate.c3p0.timeout", "1800");
 
-    this.sessionFactory = config.buildSessionFactory();
+    try {
+      this.sessionFactory = config.buildSessionFactory();
+    } catch (HibernateException e) {
+      throw new ConfigurationException("Exception while setting up connection to persistence.", e);
+    }
+  }
+
+  private SessionFactory getSessionFactory() throws PersistenceException {
+    final SessionFactory sessionFactoryToUse = this.sessionFactory;
+    if (sessionFactoryToUse == null) {
+      throw new PersistenceException(
+              "No connection has been established, or the connection has been closed.");
+    }
+    return sessionFactory;
+  }
+
+  /**
+   * Perform a persistence action in a session and obtain a ({@link Closeable}) result that the
+   * caller must be sure to close after use.
+   *
+   * @param action The action to perform.
+   * @param <T> The type of the return value.
+   * @return The ({@link Closeable}) result of the action that the caller must be sure to close
+   * after use.
+   * @throws PersistenceException In case there was a persistence problem thrown by the action.
+   */
+  public final <T> StreamResult<T> performForStream(DatabaseAction<Stream<T>> action)
+          throws PersistenceException {
+    final Session session = getSessionFactory().openSession();
+    final Stream<T> data = action.perform(session);
+    return new StreamResult<>(data, session);
   }
 
   /**
@@ -63,16 +98,7 @@ public class ClioPersistenceConnection implements Closeable {
    */
   public final <T> T performInSession(DatabaseAction<T> action)
           throws PersistenceException {
-
-    // Get the factory.
-    final SessionFactory sessionFactoryToUse = this.sessionFactory;
-    if (sessionFactoryToUse == null) {
-      throw new PersistenceException(
-              "No connection has been established, or the connection has been closed.");
-    }
-
-    // Perform the action.
-    try (final Session session = sessionFactoryToUse.openSession()) {
+    try (final Session session = getSessionFactory().openSession()) {
       return action.perform(session);
     } catch (RuntimeException e) {
       throw new PersistenceException("Something went wrong accessing persistence.", e);
@@ -135,4 +161,5 @@ public class ClioPersistenceConnection implements Closeable {
      */
     T perform(Session session) throws PersistenceException;
   }
+
 }

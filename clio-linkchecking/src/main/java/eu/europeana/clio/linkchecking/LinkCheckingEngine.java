@@ -8,6 +8,7 @@ import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
@@ -22,9 +23,17 @@ import eu.europeana.metis.mongo.MongoClientProvider;
 import eu.europeana.metis.solr.CompoundSolrClient;
 import eu.europeana.metis.solr.SolrClientProvider;
 import java.io.IOException;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +43,12 @@ import org.slf4j.LoggerFactory;
 public final class LinkCheckingEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingEngine.class);
+
+  private static final int NUMBER_OF_CONCURRENT_THREADS_PER_SERVER = 1;
+
+  private static final Duration UNUSED_SEMAPHORE_GRACE_TIME = Duration.ofSeconds(1);
+
+  private static final Map<String, Semaphore> semaphorePerServer = new HashMap<>();
 
   private final PropertiesHolder properties;
 
@@ -47,38 +62,59 @@ public final class LinkCheckingEngine {
   }
 
   /**
-   * This method starts a new run for the give dataset. It determines which links are to be part of
-   * the run, but it doesn't perform any link checking.
+   * This method starts a new run for all datasets that have published data. It determines which
+   * links are to be part of the run, but it doesn't perform any link checking. This method is not
+   * thread safe: it assumes that no other process is adding runs at the moment.
    *
-   * @param datasetId The (Metis) dataset ID of the dataset for which to create the run.
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
-  public void createRunWithUncheckedLinksForDataset(String datasetId) throws ClioException {
-
-    // Obtain the dataset from the Metis database
+  public void createRunsForAllAvailableDatasets() throws ClioException {
     final MongoClientProvider<ConfigurationException> mongoClientProvider = new MongoClientProvider<>(
             properties.getMongoProperties());
-    final Dataset dataset;
-    try (final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
-      dataset = new MongoCoreDao(mongoClient, properties.getMongoDatabase())
-              .getPublishedDatasetById(datasetId);
+    final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
+            properties.getSolrProperties());
+    try (
+        final ClioPersistenceConnection databaseConnection =
+            properties.getPersistenceConnectionProvider().createPersistenceConnection();
+        final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
+        final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
+      final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
+              properties.getMongoDatabase());
+      final SolrDao solrDao = new SolrDao(solrClient.getSolrClient());
+      final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
+      ParallelTaskExecutor.executeAndWait(datasetIds,
+              id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
+                      id),
+              properties.getLinkCheckingRunCreateThreads());
+    } catch (IOException e) {
+      throw new PersistenceException("Problem occurred while connecting to data sources.", e);
+    }
+  }
+
+  private void createRunWithUncheckedLinksForDataset(MongoCoreDao mongoCoreDao, SolrDao solrDao,
+          ClioPersistenceConnection databaseConnection, String datasetId) throws ClioException {
+
+    // If the dataset already has a run in progress, we don't proceed.
+    final RunDao runDao = new RunDao(databaseConnection);
+    if (runDao.datasetHasActiveRun(datasetId)) {
+      LOGGER.info("Skipping dataset {} as it already has an active run.", datasetId);
+      return;
+    }
+
+    // Check and get the dataset from the Metis database
+    final Dataset dataset = mongoCoreDao.getPublishedDatasetById(datasetId);
+    if (dataset == null) {
+      LOGGER.info("Skipping dataset {} as it is not currently published.", datasetId);
+      return;
     }
 
     // Obtain the sample records from the Solr database.
-    final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
-            properties.getSolrProperties());
-    final List<SampleRecord> sampleRecords;
-    try (final CompoundSolrClient solrClient = solrClientProvider.createSolrClient()) {
-      sampleRecords = new SolrDao(solrClient.getSolrClient()).getRandomSampleRecords(datasetId,
-              properties.getLinkCheckingSampleRecordsPerDataset());
-    } catch (IOException e) {
-      throw new PersistenceException("Problem occurred while obtaining a sample record.", e);
-    }
+    final List<SampleRecord> sampleRecords = solrDao
+            .getRandomSampleRecords(datasetId, properties.getLinkCheckingSampleRecordsPerDataset());
 
     // Save the information to the Clio database
-    final ClioPersistenceConnection databaseConnection = properties.createPersistenceConnection();
     new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
-    final long runId = new RunDao(databaseConnection).createRunStartingNow(dataset.getDatasetId());
+    final long runId = runDao.createRunStartingNow(dataset.getDatasetId());
     final LinkDao linkDao = new LinkDao(databaseConnection);
     for (SampleRecord record : sampleRecords) {
       for (Entry<LinkType, Set<String>> links : record.getLinks().entrySet()) {
@@ -87,6 +123,7 @@ public final class LinkCheckingEngine {
         }
       }
     }
+    LOGGER.info("Run created for dataset {}.", datasetId);
   }
 
   /**
@@ -95,38 +132,129 @@ public final class LinkCheckingEngine {
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
-    final LinkDao linkDao = new LinkDao(properties.createPersistenceConnection());
-    try (final LinkChecker linkChecker = createLinkChecker()) {
-      boolean linksChecked;
-      do {
-        linksChecked = checkNextLinkIfAvailable(linkChecker, linkDao);
-      } while (linksChecked);
+    final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
+    try (final ClioPersistenceConnection databaseConnection =
+            properties.getPersistenceConnectionProvider().createPersistenceConnection();
+            final LinkChecker linkChecker = createLinkChecker()) {
+      final LinkDao linkDao = new LinkDao(databaseConnection);
+      try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
+        ParallelTaskExecutor.executeAndWait(linksToCheck.get(),
+                link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao,
+                        semaphoreReleasePool, link),
+                properties.getLinkCheckingRunExecuteThreads());
+      }
     } catch (IOException e) {
       throw new ClioException("Could not close link checker.", e);
+    } finally {
+      semaphoreReleasePool.shutdown();
     }
   }
 
-  private static boolean checkNextLinkIfAvailable(final LinkChecker linkChecker, LinkDao linkDao)
-          throws PersistenceException {
+  private Semaphore acquireSemaphoreAndWait(String server) throws InterruptedException {
 
-    // Get the next link
-    final Link linkToCheck = linkDao.getAnyUncheckedLink();
-    if (linkToCheck == null) {
-      return false;
+    // If there is no server to lock, we are done.
+    if (server == null) {
+      return null;
     }
 
-    // Check the link
+    // Try to acquire a semaphore that is still current by the time we have acquired it. Note that
+    // for threading reasons this iteration is constructed so that only one call to the cache is
+    // made per iteration (to avoid status change in between calls).
+    Semaphore acquiredSemaphore = null;
+    while(true) {
+
+      // Get the current semaphore. We immediately acquire the semaphore so that there is no chance
+      // for another thread to come in between.
+      final boolean freshSemaphore;
+      final Semaphore currentSemaphore;
+      synchronized (LinkCheckingEngine.class) {
+        final Semaphore semaphore = semaphorePerServer.get(server);
+        if (semaphore == null) {
+          currentSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
+          currentSemaphore.acquire();
+          semaphorePerServer.put(server, currentSemaphore);
+        } else {
+          currentSemaphore = semaphore;
+        }
+        freshSemaphore = semaphore == null;
+      }
+
+      // If we have acquired a semaphore earlier which was deleted, release it.
+      if (acquiredSemaphore != null && !currentSemaphore.equals(acquiredSemaphore)) {
+        acquiredSemaphore.release();
+      }
+
+      // If we have acquired a semaphore earlier that is still current, or if we created a fresh
+      // (already acquired) semaphore, we are done. The current semaphore is the acquired one.
+      if (currentSemaphore.equals(acquiredSemaphore) || freshSemaphore) {
+        return currentSemaphore;
+      }
+
+      // Acquire the semaphore (can take some time).
+      acquiredSemaphore = currentSemaphore;
+      acquiredSemaphore.acquire();
+    }
+  }
+
+  private void scheduleSemaphoreRelease(String server, Semaphore semaphore,
+          ScheduledExecutorService semaphoreReleasePool) {
+
+    // If the semaphore is null, do nothing.
+    if (semaphore == null) {
+      return;
+    }
+
+    // Schedule release of the semaphore and ping the cache to signal the change.
+    semaphoreReleasePool.schedule(() -> {
+
+      // Release the semaphore.
+      semaphore.release();
+
+      // Give a bit of time for other threads to pick up this semaphore.
+      try {
+        Thread.sleep(0, UNUSED_SEMAPHORE_GRACE_TIME.getNano());
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+
+      // Try to determine whether the semaphore can be removed, and remove it if possible. This is
+      // a heuristic method without guarantees, hence the checks when acquiring the semaphore.
+      synchronized (LinkCheckingEngine.class){
+        final Semaphore storedSemaphore = semaphorePerServer.get(server);
+        if (storedSemaphore != null&&!storedSemaphore.hasQueuedThreads()
+                && storedSemaphore.availablePermits()== NUMBER_OF_CONCURRENT_THREADS_PER_SERVER) {
+          semaphorePerServer.remove(server);
+        }
+      }
+    }, properties.getLinkCheckingMinTimeBetweenSameServerChecks().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void performLinkCheckingOnUncheckedLink(final LinkChecker linkChecker, LinkDao linkDao,
+          ScheduledExecutorService semaphoreReleasePool, Link linkToCheck) throws ClioException {
+
+    // Acquire the semaphore, if necessary, and wait until we do.
+    final Semaphore semaphore;
+    try {
+      semaphore = acquireSemaphoreAndWait(linkToCheck.getServer());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+
+    // Check the link and trigger the waiting period before releasing the semaphore.
     LOGGER.info("Checking link {}.", linkToCheck.getLinkUrl());
     String error = null;
     try {
       linkChecker.performLinkChecking(linkToCheck.getLinkUrl());
     } catch (LinkCheckingException e) {
       error = convertToErrorString(e);
+    } finally {
+      scheduleSemaphoreRelease(linkToCheck.getServer(), semaphore, semaphoreReleasePool);
     }
 
     // Save the result
     linkDao.registerLinkChecking(linkToCheck.getLinkUrl(), error);
-    return true;
   }
 
   private static String convertToErrorString(Exception exception) {

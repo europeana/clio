@@ -24,6 +24,12 @@
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-core-service</artifactId>
             <version>${version.metis}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.zoho.crm</groupId>
+                    <artifactId>java-sdk</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>

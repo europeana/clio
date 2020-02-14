@@ -4,8 +4,8 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.linkchecking.config.PropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
+import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.core.net.ssl.TrustStoreConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
 public class LinkCheckingMain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingMain.class);
-
-  private static final String DATASET_ID = "7";
 
   /**
    * Main method.
@@ -51,7 +49,7 @@ public class LinkCheckingMain {
 
     // Compute and store the sample records.
     final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(properties);
-    linkCheckingEngine.createRunWithUncheckedLinksForDataset(DATASET_ID);
+    linkCheckingEngine.createRunsForAllAvailableDatasets();
 
     // Perform link checking on the links, updating as we go.
     linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();

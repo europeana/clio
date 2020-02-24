@@ -38,37 +38,44 @@ public class ClioPersistenceConnection implements Closeable {
    * @param password The password.
    * @throws ConfigurationException In case there was an issue setting up this connection.
    */
-  protected final synchronized void connect(String server, String username, String password)
+  protected final void connect(String server, String username, String password)
       throws ConfigurationException {
+    synchronized (this) {
 
-    if (this.sessionFactory != null) {
-      throw new IllegalStateException(
-              "A session factory has already been created for this provider.");
-    }
+      // If a session factory already exists, we cannot do this.
+      if (this.sessionFactory != null) {
+        throw new IllegalStateException(
+                "A session factory has already been created for this provider.");
+      }
 
-    final Configuration config = new Configuration();
-    annotatedClasses.forEach(config::addAnnotatedClass);
-    config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
-    config.setProperty("hibernate.connection.url", server);
-    config.setProperty("hibernate.connection.username", username);
-    config.setProperty("hibernate.connection.password", password);
-    config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-    config.setProperty("hibernate.c3p0.timeout", "1800");
+      // Set the configuration properties for the connection.
+      final Configuration config = new Configuration();
+      annotatedClasses.forEach(config::addAnnotatedClass);
+      config.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
+      config.setProperty("hibernate.connection.url", server);
+      config.setProperty("hibernate.connection.username", username);
+      config.setProperty("hibernate.connection.password", password);
+      config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+      config.setProperty("hibernate.c3p0.timeout", "1800");
 
-    try {
-      this.sessionFactory = config.buildSessionFactory();
-    } catch (HibernateException e) {
-      throw new ConfigurationException("Exception while setting up connection to persistence.", e);
+      // Build the connection.
+      try {
+        this.sessionFactory = config.buildSessionFactory();
+      } catch (HibernateException e) {
+        throw new ConfigurationException("Exception while setting up connection to persistence.",
+                e);
+      }
     }
   }
 
   private SessionFactory getSessionFactory() throws PersistenceException {
-    final SessionFactory sessionFactoryToUse = this.sessionFactory;
-    if (sessionFactoryToUse == null) {
-      throw new PersistenceException(
-              "No connection has been established, or the connection has been closed.");
+    synchronized (this) {
+      if (this.sessionFactory == null) {
+        throw new PersistenceException(
+                "No connection has been established, or the connection has been closed.");
+      }
+      return sessionFactory;
     }
-    return sessionFactory;
   }
 
   /**
@@ -135,11 +142,13 @@ public class ClioPersistenceConnection implements Closeable {
   }
 
   @Override
-  public final synchronized void close() {
-    final SessionFactory sessionFactoryToClose = this.sessionFactory;
-    this.sessionFactory = null;
-    if (sessionFactoryToClose != null) {
-      sessionFactoryToClose.close();
+  public final void close() {
+    synchronized(this) {
+      final SessionFactory sessionFactoryToClose = this.sessionFactory;
+      this.sessionFactory = null;
+      if (sessionFactoryToClose != null) {
+        sessionFactoryToClose.close();
+      }
     }
   }
 

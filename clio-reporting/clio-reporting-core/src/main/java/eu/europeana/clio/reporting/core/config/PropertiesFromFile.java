@@ -36,12 +36,12 @@ public class PropertiesFromFile extends AbstractPropertiesHolder {
 
     // truststore
     truststorePath = properties.getProperty(TRUSTSTORE_PATH_PROPERTY);
-    truststorePassword = properties.getProperty(TRUSTSTORE_PASSWORD_PROPERTY);
+    truststorePassword = properties.getProperty(TRUSTSTORE_PASS_PROPERTY);
 
     // PostGreSQL
     postgresServer = properties.getProperty(POSTGRES_SERVER_PROPERTY);
     postgresUsername = properties.getProperty(POSTGRES_USERNAME_PROPERTY);
-    postgresPassword = properties.getProperty(POSTGRES_PASSWORD_PROPERTY);
+    postgresPassword = properties.getProperty(POSTGRES_PASS_PROPERTY);
   }
 
   @Override

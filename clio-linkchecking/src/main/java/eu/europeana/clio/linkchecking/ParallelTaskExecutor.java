@@ -80,10 +80,7 @@ public class ParallelTaskExecutor {
       Thread.currentThread().interrupt();
       throw new ClioException("Thread was interrupted.", e);
     } catch (ExecutionException e) {
-      if (e.getCause() instanceof ClioException) {
-        throw (ClioException) e.getCause();
-      }
-      final Throwable cause = e.getCause() != null ? e.getCause() : e;
+      final Throwable cause = e.getCause() == null ? e : e.getCause();
       throw new ClioException("Something went wrong during thread pool execution.", cause);
     } finally {
       // In case of errors, there may still be tasks pending. Otherwise, this has no effect.

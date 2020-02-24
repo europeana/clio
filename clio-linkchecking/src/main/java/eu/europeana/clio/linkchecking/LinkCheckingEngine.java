@@ -24,11 +24,11 @@ import eu.europeana.metis.solr.CompoundSolrClient;
 import eu.europeana.metis.solr.SolrClientProvider;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -48,7 +48,7 @@ public final class LinkCheckingEngine {
 
   private static final Duration UNUSED_SEMAPHORE_GRACE_TIME = Duration.ofSeconds(1);
 
-  private static final Map<String, Semaphore> semaphorePerServer = new HashMap<>();
+  private static final Map<String, Semaphore> semaphorePerServer = new ConcurrentHashMap<>();
 
   private final PropertiesHolder properties;
 
@@ -165,18 +165,23 @@ public final class LinkCheckingEngine {
 
       // Get the current semaphore. We immediately acquire the semaphore so that there is no chance
       // for another thread to come in between.
-      final boolean freshSemaphore;
-      final Semaphore currentSemaphore;
-      synchronized (LinkCheckingEngine.class) {
-        final Semaphore semaphore = semaphorePerServer.get(server);
-        if (semaphore == null) {
-          currentSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
-          currentSemaphore.acquire();
-          semaphorePerServer.put(server, currentSemaphore);
-        } else {
-          currentSemaphore = semaphore;
+      final boolean[] freshSemaphoreAcquired = {false};
+      final Semaphore currentSemaphore = semaphorePerServer.computeIfAbsent(server, key -> {
+        final Semaphore newSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
+        try {
+          newSemaphore.acquire();
+          // Set this boolean here, so that if the thread is interrupted, it is still false.
+          freshSemaphoreAcquired[0] = true;
+        } catch (InterruptedException e) {
+          // Mark thread as interrupted, deal with it outside the lambda. Semaphore is not acquired.
+          Thread.currentThread().interrupt();
         }
-        freshSemaphore = semaphore == null;
+        return newSemaphore;
+      });
+
+      // If the thread is interrupted, we are done.
+      if (Thread.interrupted()) {
+        throw new InterruptedException();
       }
 
       // If we have acquired a semaphore earlier which was deleted, release it.
@@ -186,7 +191,7 @@ public final class LinkCheckingEngine {
 
       // If we have acquired a semaphore earlier that is still current, or if we created a fresh
       // (already acquired) semaphore, we are done. The current semaphore is the acquired one.
-      if (currentSemaphore.equals(acquiredSemaphore) || freshSemaphore) {
+      if (currentSemaphore.equals(acquiredSemaphore) || freshSemaphoreAcquired[0]) {
         return currentSemaphore;
       }
 
@@ -220,13 +225,9 @@ public final class LinkCheckingEngine {
 
       // Try to determine whether the semaphore can be removed, and remove it if possible. This is
       // a heuristic method without guarantees, hence the checks when acquiring the semaphore.
-      synchronized (LinkCheckingEngine.class){
-        final Semaphore storedSemaphore = semaphorePerServer.get(server);
-        if (storedSemaphore != null&&!storedSemaphore.hasQueuedThreads()
-                && storedSemaphore.availablePermits()== NUMBER_OF_CONCURRENT_THREADS_PER_SERVER) {
-          semaphorePerServer.remove(server);
-        }
-      }
+      semaphorePerServer.computeIfPresent(server, (key, value) -> (value.hasQueuedThreads() ||
+              value.availablePermits() < NUMBER_OF_CONCURRENT_THREADS_PER_SERVER) ? value : null);
+
     }, properties.getLinkCheckingMinTimeBetweenSameServerChecks().toMillis(), TimeUnit.MILLISECONDS);
   }
 

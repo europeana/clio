@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,17 +36,23 @@ public class ReportingMain {
    */
   public static void main(String[] args) {
     try {
-      mainInternal();
+      mainInternal(args);
     } catch (ClioException | RuntimeException e) {
-      LOGGER.warn(e.getMessage(), e);
+      LOGGER.warn("Something went wrong while compiling the report.", e);
     }
   }
 
-  private static void mainInternal() throws ClioException {
+  private static void mainInternal(String[] args) throws ClioException {
+
+    // Find the file
+    if (args.length != 1) {
+      LOGGER.warn("Could not parse arguments: {}", Arrays.asList(args));
+      throw new ClioException("Must specify the output file. Exactly one argument is required.");
+    }
 
     // Read the properties
     final AbstractPropertiesHolder properties =
-        new PropertiesFromFile(() -> AbstractPropertiesHolder.class.getClassLoader()
+        new PropertiesFromFile(() -> Thread.currentThread().getContextClassLoader()
             .getResourceAsStream(CONFIGURATION_FILE));
 
     // Set the truststore.

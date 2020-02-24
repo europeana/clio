@@ -8,12 +8,12 @@ import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 public abstract class AbstractPropertiesHolder {
 
   protected static final String TRUSTSTORE_PATH_PROPERTY = "truststore.path";
-  protected static final String TRUSTSTORE_PASSWORD_PROPERTY = "truststore.password";
+  protected static final String TRUSTSTORE_PASS_PROPERTY = "truststore.password";
 
   // PostGreSQL
   protected static final String POSTGRES_SERVER_PROPERTY = "postgresql.server";
   protected static final String POSTGRES_USERNAME_PROPERTY = "postgresql.username";
-  protected static final String POSTGRES_PASSWORD_PROPERTY = "postgresql.password";
+  protected static final String POSTGRES_PASS_PROPERTY = "postgresql.password";
 
   protected abstract String getPostgresServer();
 

@@ -33,7 +33,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import org.apache.solr.client.solrj.SolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +82,10 @@ public final class LinkCheckingEngine {
         final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
       final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
               properties.getMongoDatabase());
-      final SolrDao solrDao = new SolrDao(solrClient.getSolrClient());
+      // See https://github.com/spotbugs/spotbugs/issues/756
+      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
+      final SolrClient nativeSolrClient = solrClient.getSolrClient();
+      final SolrDao solrDao = new SolrDao(nativeSolrClient);
       final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
       ParallelTaskExecutor.executeAndWait(datasetIds,
               id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
@@ -138,7 +143,10 @@ public final class LinkCheckingEngine {
             final LinkChecker linkChecker = createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
       try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
-        ParallelTaskExecutor.executeAndWait(linksToCheck.get(),
+        // See https://github.com/spotbugs/spotbugs/issues/756
+        @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
+        final Stream<Link> linkStream = linksToCheck.get();
+        ParallelTaskExecutor.executeAndWait(linkStream,
                 link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao,
                         semaphoreReleasePool, link),
                 properties.getLinkCheckingRunExecuteThreads());
@@ -166,7 +174,7 @@ public final class LinkCheckingEngine {
       // Get the current semaphore. We immediately acquire the semaphore so that there is no chance
       // for another thread to come in between.
       final boolean[] freshSemaphoreAcquired = {false};
-      final Semaphore currentSemaphore = semaphorePerServer.computeIfAbsent(server, key -> {
+      final Function<String, Semaphore> semaphoreCreator = key -> {
         final Semaphore newSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
         try {
           newSemaphore.acquire();
@@ -177,7 +185,9 @@ public final class LinkCheckingEngine {
           Thread.currentThread().interrupt();
         }
         return newSemaphore;
-      });
+      };
+      final Semaphore currentSemaphore = semaphorePerServer
+              .computeIfAbsent(server, semaphoreCreator);
 
       // If the thread is interrupted, we are done.
       if (Thread.interrupted()) {

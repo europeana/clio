@@ -10,7 +10,7 @@ public class ClioReportingRestInitializer extends
 
   @Override
   protected Class<?>[] getRootConfigClasses() {
-    return null;
+    return new Class<?>[0];
   }
 
   @Override

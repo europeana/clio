@@ -8,13 +8,11 @@ import eu.europeana.clio.reporting.core.config.PropertiesFromFile;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,19 +34,13 @@ public class ReportingMain {
    */
   public static void main(String[] args) {
     try {
-      mainInternal(args);
+      mainInternal();
     } catch (ClioException | RuntimeException e) {
       LOGGER.warn("Something went wrong while compiling the report.", e);
     }
   }
 
-  private static void mainInternal(String[] args) throws ClioException {
-
-    // Find the file
-    if (args.length != 1) {
-      LOGGER.warn("Could not parse arguments: {}", Arrays.asList(args));
-      throw new ClioException("Must specify the output file. Exactly one argument is required.");
-    }
+  private static void mainInternal() throws ClioException {
 
     // Read the properties
     final AbstractPropertiesHolder properties =
@@ -68,10 +60,8 @@ public class ReportingMain {
     }
 
     // Generate the report
-    final String outputFile = System.getProperty("user.home") + File.separator +
-            ReportingEngine.getReportFileNameSuggestion();
-    LOGGER.info("Saving the report to output file: {}", outputFile);
-    final Path path = Paths.get(outputFile);
+    final Path path = Paths.get(ReportingEngine.getReportFileNameSuggestion()).toAbsolutePath();
+    LOGGER.info("Saving the report to output file: {}", path);
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
       new ReportingEngine(properties).generateReport(fileWriter);
     } catch (IOException e) {

@@ -174,7 +174,7 @@ public final class LinkCheckingEngine {
       // Get the current semaphore. We immediately acquire the semaphore so that there is no chance
       // for another thread to come in between.
       final boolean[] freshSemaphoreAcquired = {false};
-      final Function<String, Semaphore> semaphoreCreator = key -> {
+      final Semaphore currentSemaphore = semaphorePerServer.computeIfAbsent(server, key -> {
         final Semaphore newSemaphore = new Semaphore(NUMBER_OF_CONCURRENT_THREADS_PER_SERVER);
         try {
           newSemaphore.acquire();
@@ -185,11 +185,9 @@ public final class LinkCheckingEngine {
           Thread.currentThread().interrupt();
         }
         return newSemaphore;
-      };
-      final Semaphore currentSemaphore = semaphorePerServer
-              .computeIfAbsent(server, semaphoreCreator);
+      });
 
-      // If the thread is interrupted, we are done.
+      // If the thread is interrupted while creating the semaphore, we are done.
       if (Thread.interrupted()) {
         throw new InterruptedException();
       }

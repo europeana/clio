@@ -28,7 +28,6 @@ CREATE TABLE link (
     error VARCHAR(512),
     checking_time BIGINT,
     PRIMARY KEY (link_id),
-    UNIQUE (run_id, link_url, link_type),
     FOREIGN KEY (run_id) REFERENCES run
 );
 CREATE INDEX ON link (server);

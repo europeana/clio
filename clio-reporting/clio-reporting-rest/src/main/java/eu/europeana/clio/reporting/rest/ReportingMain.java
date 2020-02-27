@@ -59,8 +59,11 @@ public class ReportingMain {
       }
     }
 
-    // Generate the report
+    // The output file path. Prevent false positive, the user can't determine the output file.
+    @SuppressWarnings("findsecbugs:PATH_TRAVERSAL_IN")
     final Path path = Paths.get(ReportingEngine.getReportFileNameSuggestion()).toAbsolutePath();
+
+    // Generate the report
     LOGGER.info("Saving the report to output file: {}", path);
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
       new ReportingEngine(properties).generateReport(fileWriter);

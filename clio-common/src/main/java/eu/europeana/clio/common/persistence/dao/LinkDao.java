@@ -68,7 +68,7 @@ public class LinkDao {
       }
       final LinkRow newLink = new LinkRow(runRow, recordId, persistentLinkType, linkUrl,
               computeServer(linkUrl));
-      return (long) session.save(newLink);
+      return (Long) session.save(newLink);
     });
   }
 

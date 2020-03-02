@@ -1,7 +1,5 @@
 package eu.europeana.clio.common.persistence;
 
-import eu.europeana.clio.common.exception.ConfigurationException;
-
 /**
  * This is an object that is capable of providing a connection to the Clio persistence.
  */
@@ -29,11 +27,8 @@ public class ClioPersistenceConnectionProvider {
    * Create a persistence connection.
    * 
    * @return The connection.
-   * @throws ConfigurationException In case the connection could not be created.
    */
-  public ClioPersistenceConnection createPersistenceConnection() throws ConfigurationException {
-    final ClioPersistenceConnection connectionProvider = new ClioPersistenceConnection();
-    connectionProvider.connect(postgresServer, postgresUsername, postgresPassword);
-    return connectionProvider;
+  public ClioPersistenceConnection createPersistenceConnection() {
+    return new ClioPersistenceConnection(postgresServer, postgresUsername, postgresPassword);
   }
 }

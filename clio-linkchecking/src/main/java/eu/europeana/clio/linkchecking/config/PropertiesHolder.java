@@ -63,7 +63,7 @@ public class PropertiesHolder {
     // Load properties file.
     final Properties properties = new Properties();
     try (final InputStream stream =
-        PropertiesHolder.class.getClassLoader().getResourceAsStream(CONFIGURATION_FILE)) {
+        Thread.currentThread().getContextClassLoader().getResourceAsStream(CONFIGURATION_FILE)) {
       properties.load(stream);
     } catch (IOException e) {
       throw new ExceptionInInitializerError(e);

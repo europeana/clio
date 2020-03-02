@@ -26,7 +26,8 @@ public class LinkCheckingMain {
     try {
       mainInternal();
     } catch (ClioException | RuntimeException e) {
-      LOGGER.warn(e.getMessage(), e);
+      LOGGER.warn("Something happened while performing link checking.", e);
+      System.exit(1);
     }
   }
 

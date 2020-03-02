@@ -63,6 +63,9 @@ public class ParallelTaskExecutor {
           }
         }
         operation.perform(data);
+        if (Thread.interrupted()) {
+          throw new ClioException("A thread was interrupted.");
+        }
       }
       return null;
     };
@@ -78,12 +81,9 @@ public class ParallelTaskExecutor {
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new ClioException("Thread was interrupted.", e);
+      throw new ClioException("A thread was interrupted.", e);
     } catch (ExecutionException e) {
-      if (e.getCause() instanceof ClioException) {
-        throw (ClioException) e.getCause();
-      }
-      final Throwable cause = e.getCause() != null ? e.getCause() : e;
+      final Throwable cause = e.getCause() == null ? e : e.getCause();
       throw new ClioException("Something went wrong during thread pool execution.", cause);
     } finally {
       // In case of errors, there may still be tasks pending. Otherwise, this has no effect.

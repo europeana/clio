@@ -15,6 +15,7 @@ import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -63,8 +64,12 @@ public final class ReportingEngine {
               "Error"
       });
 
+      // Create link stream ... see https://github.com/spotbugs/spotbugs/issues/756
+      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
+      final Stream<Pair<Run, Link>> linkStream = brokenLinks.get();
+
       // Write records
-      brokenLinks.get().forEach(link -> writer.writeNext(new String[]{
+      linkStream.forEach(link -> writer.writeNext(new String[]{
               link.getLeft().getDataset().getDatasetId(),
               Optional.ofNullable(link.getLeft().getDataset().getSize())
                       .map(Object::toString).orElse(null),

@@ -7,8 +7,8 @@ import java.time.Instant;
  */
 public class Run {
 
-  private long runId;
-  private Instant startingTime;
+  private final long runId;
+  private final Instant startingTime;
   private final Dataset dataset;
 
   /**

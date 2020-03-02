@@ -34,12 +34,12 @@ public class DatasetDao {
   public void createOrUpdateDataset(Dataset dataset) throws PersistenceException {
     persistenceConnection.performInTransaction(session -> {
       final DatasetRow existingRow = session.get(DatasetRow.class, dataset.getDatasetId());
-      if (existingRow != null) {
-        setPropertiesToRow(dataset, existingRow);
-      } else {
+      if (existingRow == null) {
         final DatasetRow newRow = new DatasetRow(dataset.getDatasetId());
         setPropertiesToRow(dataset, newRow);
         session.persist(newRow);
+      } else {
+        setPropertiesToRow(dataset, existingRow);
       }
       return null;
     });

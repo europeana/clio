@@ -16,7 +16,7 @@ public class PropertiesFromSpring extends AbstractPropertiesHolder {
   // truststore
   @Value("${" + TRUSTSTORE_PATH_PROPERTY + "}")
   private String truststorePath;
-  @Value("${" + TRUSTSTORE_PASSWORD_PROPERTY + "}")
+  @Value("${" + TRUSTSTORE_PASS_PROPERTY + "}")
   private String truststorePassword;
 
   // PostGreSQL
@@ -24,7 +24,7 @@ public class PropertiesFromSpring extends AbstractPropertiesHolder {
   private String postgresServer;
   @Value("${" + POSTGRES_USERNAME_PROPERTY + "}")
   private String postgresUsername;
-  @Value("${" + POSTGRES_PASSWORD_PROPERTY + "}")
+  @Value("${" + POSTGRES_PASS_PROPERTY + "}")
   private String postgresPassword;
 
   @Override

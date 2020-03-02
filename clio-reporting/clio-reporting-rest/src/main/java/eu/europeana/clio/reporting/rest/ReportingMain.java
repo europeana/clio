@@ -8,7 +8,6 @@ import eu.europeana.clio.reporting.core.config.PropertiesFromFile;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -37,7 +36,8 @@ public class ReportingMain {
     try {
       mainInternal();
     } catch (ClioException | RuntimeException e) {
-      LOGGER.warn(e.getMessage(), e);
+      LOGGER.warn("Something went wrong while compiling the report.", e);
+      System.exit(1);
     }
   }
 
@@ -45,7 +45,7 @@ public class ReportingMain {
 
     // Read the properties
     final AbstractPropertiesHolder properties =
-        new PropertiesFromFile(() -> AbstractPropertiesHolder.class.getClassLoader()
+        new PropertiesFromFile(() -> Thread.currentThread().getContextClassLoader()
             .getResourceAsStream(CONFIGURATION_FILE));
 
     // Set the truststore.
@@ -60,11 +60,12 @@ public class ReportingMain {
       }
     }
 
+    // The output file path. Prevent false positive, the user can't determine the output file.
+    @SuppressWarnings("findsecbugs:PATH_TRAVERSAL_IN")
+    final Path path = Paths.get(ReportingEngine.getReportFileNameSuggestion()).toAbsolutePath();
+
     // Generate the report
-    final String outputFile = System.getProperty("user.home") + File.separator +
-            ReportingEngine.getReportFileNameSuggestion();
-    LOGGER.info("Saving the report to output file: {}", outputFile);
-    final Path path = Paths.get(outputFile);
+    LOGGER.info("Saving the report to output file: {}", path);
     try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
       new ReportingEngine(properties).generateReport(fileWriter);
     } catch (IOException e) {

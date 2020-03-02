@@ -12,7 +12,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -20,7 +19,6 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Entity
 @Table(name = "link",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"run_id", "link_url", "link_type"}),
         indexes = {@Index(columnList = "server"), @Index(columnList = "link_url")})
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query = "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL")
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =

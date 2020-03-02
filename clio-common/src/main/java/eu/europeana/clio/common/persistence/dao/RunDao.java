@@ -39,7 +39,7 @@ public class RunDao {
                 "Cannot create run: dataset with ID " + datasetId + " does not exist.");
       }
       final RunRow newRun = new RunRow(System.currentTimeMillis(), datasetRow);
-      return (long) session.save(newRun);
+      return (Long) session.save(newRun);
     });
   }
 

@@ -37,6 +37,7 @@ public class ReportingMain {
       mainInternal();
     } catch (ClioException | RuntimeException e) {
       LOGGER.warn("Something went wrong while compiling the report.", e);
+      System.exit(1);
     }
   }
 

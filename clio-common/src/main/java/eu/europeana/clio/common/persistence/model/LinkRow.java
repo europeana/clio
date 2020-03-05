@@ -124,6 +124,9 @@ public class LinkRow {
     } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
       setError("Link URL is too long: " + linkUrl);
       setCheckingTime(System.currentTimeMillis());
+    } else if (server == null) {
+      setError("Server could not be determined for link: " + linkUrl);
+      setCheckingTime(System.currentTimeMillis());
     } else if (server.length() > MAX_SERVER_LENGTH) {
       setError("Server is too long: " + server);
       setCheckingTime(System.currentTimeMillis());

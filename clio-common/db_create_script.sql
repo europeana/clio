@@ -23,7 +23,7 @@ CREATE TABLE link (
     run_id BIGINT NOT NULL,
     record_id VARCHAR(256) NOT NULL,
     link_type VARCHAR(11) NOT NULL,
-    link_url VARCHAR(256) NOT NULL,
+    link_url VARCHAR(768) NOT NULL,
     server VARCHAR(128),
     error VARCHAR(512),
     checking_time BIGINT,

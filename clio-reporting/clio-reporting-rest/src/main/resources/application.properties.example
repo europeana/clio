@@ -3,7 +3,7 @@ truststore.path=
 truststore.password=
 
 #PostGreSQL
-postgresql.server=
+postgresql.server=jdbc:postgresql://
 postgresql.username=
 postgresql.password=
 

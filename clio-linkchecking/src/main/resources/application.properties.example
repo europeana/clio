@@ -19,7 +19,7 @@ zookeeper.publish.chroot=
 zookeeper.publish.defaultCollection=
 
 #PostGreSQL
-postgresql.server=
+postgresql.server=jdbc:postgresql://
 postgresql.username=
 postgresql.password=
 

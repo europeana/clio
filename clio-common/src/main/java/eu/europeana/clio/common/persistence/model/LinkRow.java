@@ -44,7 +44,7 @@ public class LinkRow {
   public static final String LINK_URL_PARAMETER = "linkUrl";
 
   private static final int MAX_RECORD_ID_LENGTH = 256;
-  private static final int MAX_LINK_URL_LENGTH = 256;
+  private static final int MAX_LINK_URL_LENGTH = 768;
   private static final int MAX_SERVER_LENGTH = 128;
   private static final int MAX_ERROR_LENGTH = 512;
 
@@ -98,7 +98,9 @@ public class LinkRow {
   }
 
   /**
-   * Constructor.
+   * Constructor. Creates a link in an unchecked state. If the string of either the record ID, the
+   * link URL or the server is too long to fit in the field, this instance will be in a state of
+   * being checked with errors.
    *
    * @param run The run to which this link belongs.
    * @param recordId The Europeana record ID in which this link is present.
@@ -107,20 +109,25 @@ public class LinkRow {
    * @param server The server of the link. Can be null if the server could not be computed.
    */
   public LinkRow(RunRow run, String recordId, LinkType linkType, String linkUrl, String server) {
-    if (recordId.length() > MAX_RECORD_ID_LENGTH) {
-      throw new IllegalArgumentException("Record ID is too long: " + recordId);
-    }
-    if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
-      throw new IllegalArgumentException("Link URL is too long: " + linkUrl);
-    }
-    if (server.length() > MAX_SERVER_LENGTH) {
-      throw new IllegalArgumentException("Server is too long: " + server);
-    }
+
+    // Set basic properties
     this.run = run;
-    this.recordId = recordId;
+    this.recordId = StringUtils.truncate(recordId, MAX_RECORD_ID_LENGTH);
     this.linkType = linkType;
-    this.linkUrl = linkUrl;
-    this.server = server;
+    this.linkUrl = StringUtils.truncate(linkUrl, MAX_LINK_URL_LENGTH);
+    this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
+
+    // Test the length of certain properties
+    if (recordId.length() > MAX_RECORD_ID_LENGTH) {
+      setError("Record ID is too long: " + recordId);
+      setCheckingTime(System.currentTimeMillis());
+    } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
+      setError("Link URL is too long: " + linkUrl);
+      setCheckingTime(System.currentTimeMillis());
+    } else if (server.length() > MAX_SERVER_LENGTH) {
+      setError("Server is too long: " + server);
+      setCheckingTime(System.currentTimeMillis());
+    }
   }
 
   public void setError(String error) {

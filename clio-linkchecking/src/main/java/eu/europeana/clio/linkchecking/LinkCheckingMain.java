@@ -5,6 +5,8 @@ import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.linkchecking.config.PropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
+import java.util.Arrays;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,8 @@ public class LinkCheckingMain {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingMain.class);
 
+  private enum Mode{FULL_PROCESSING, LINK_CHECKING_ONLY}
+
   /**
    * Main method.
    *
@@ -24,14 +28,39 @@ public class LinkCheckingMain {
    */
   public static void main(String[] args) {
     try {
-      mainInternal();
+      final String modeString = Optional.of(args).filter(list -> list.length > 0)
+              .map(list -> list[0]).orElse(null);
+      mainInternal(parseMode(modeString));
     } catch (ClioException | RuntimeException e) {
       LOGGER.warn("Something happened while performing link checking.", e);
       System.exit(1);
     }
   }
 
-  private static void mainInternal() throws ClioException {
+  private static Mode parseMode(String modeString) {
+
+    // In case nothing is provided
+    if (modeString == null) {
+      LOGGER.info("No processing mode provided: defaulting to processing mode {}.",
+              Mode.FULL_PROCESSING);
+      return Mode.FULL_PROCESSING;
+    }
+
+    // In case the mode is not recognised.
+    final Mode mode = Arrays.stream(Mode.values())
+            .filter(value -> modeString.equals(value.name())).findAny().orElse(null);
+    if (mode == null) {
+      LOGGER.warn("Unrecognized processing mode provided: '{}'. Defaulting to processing mode {}.",
+              modeString, Mode.FULL_PROCESSING);
+      return Mode.FULL_PROCESSING;
+    }
+
+    // In case we have a valid mode.
+    LOGGER.info("Executing with processing mode.", mode);
+    return mode;
+  }
+
+  private static void mainInternal(Mode mode) throws ClioException {
 
     // Read the properties
     final PropertiesHolder properties = new PropertiesHolder();
@@ -50,7 +79,9 @@ public class LinkCheckingMain {
 
     // Compute and store the sample records.
     final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(properties);
-    linkCheckingEngine.createRunsForAllAvailableDatasets();
+    if (mode != Mode.LINK_CHECKING_ONLY) {
+      linkCheckingEngine.createRunsForAllAvailableDatasets();
+    }
 
     // Perform link checking on the links, updating as we go.
     linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();

@@ -56,7 +56,7 @@ public class LinkCheckingMain {
     }
 
     // In case we have a valid mode.
-    LOGGER.info("Executing with processing mode.", mode);
+    LOGGER.info("Executing with processing mode {}.", mode);
     return mode;
   }
 
@@ -80,10 +80,14 @@ public class LinkCheckingMain {
     // Compute and store the sample records.
     final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(properties);
     if (mode != Mode.LINK_CHECKING_ONLY) {
+      LOGGER.info("Creating runs for all available datasets.");
       linkCheckingEngine.createRunsForAllAvailableDatasets();
+      LOGGER.info("Runs created.");
     }
 
     // Perform link checking on the links, updating as we go.
+    LOGGER.info("Executing all pending runs.");
     linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();
+    LOGGER.info("All pending runs executed.");
   }
 }

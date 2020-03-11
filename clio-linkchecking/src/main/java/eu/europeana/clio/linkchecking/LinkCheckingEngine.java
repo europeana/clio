@@ -251,18 +251,20 @@ public final class LinkCheckingEngine {
     }
 
     // Check the link and trigger the waiting period before releasing the semaphore.
-    LOGGER.info("Checking link {}.", linkToCheck.getLinkUrl());
+    final String linkString = linkToCheck.getLinkUrl();
+    LOGGER.info("Checking link {}.", linkString);
     String error = null;
     try {
-      linkChecker.performLinkChecking(linkToCheck.getLinkUrl());
+      linkChecker.performLinkChecking(linkString);
     } catch (LinkCheckingException e) {
+      LOGGER.debug("Link checking failed for link '{}'.", linkString, e);
       error = convertToErrorString(e);
     } finally {
       scheduleSemaphoreRelease(linkToCheck.getServer(), semaphore, semaphoreReleasePool);
     }
 
     // Save the result
-    linkDao.registerLinkChecking(linkToCheck.getLinkUrl(), error);
+    linkDao.registerLinkChecking(linkString, error);
   }
 
   private static String convertToErrorString(Exception exception) {

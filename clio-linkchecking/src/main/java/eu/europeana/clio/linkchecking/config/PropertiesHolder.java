@@ -52,7 +52,7 @@ public class PropertiesHolder {
   private final int linkCheckingRunExecuteThreads;
   private final int linkCheckingMinTimeBetweenSameServerChecks;
   private final int linkCheckingConnectTimeout;
-  private final int linkCheckingSocketTimeout;
+  private final int linkCheckingResponseTimeout;
   private final int linkCheckingDownloadTimeout;
 
   /**
@@ -109,8 +109,8 @@ public class PropertiesHolder {
         .parseInt(properties.getProperty("linkchecking.min.time.between.same.server.checks"));
     linkCheckingConnectTimeout =
         Integer.parseInt(properties.getProperty("linkchecking.connect.timeout"));
-    linkCheckingSocketTimeout =
-        Integer.parseInt(properties.getProperty("linkchecking.socket.timeout"));
+    linkCheckingResponseTimeout =
+        Integer.parseInt(properties.getProperty("linkchecking.response.timeout"));
     linkCheckingDownloadTimeout =
         Integer.parseInt(properties.getProperty("linkchecking.download.timeout"));
   }
@@ -190,7 +190,7 @@ public class PropertiesHolder {
   public MediaProcessorFactory createMediaProcessorFactory() {
     final MediaProcessorFactory mediaProcessorFactory = new MediaProcessorFactory();
     mediaProcessorFactory.setResourceConnectTimeout(this.linkCheckingConnectTimeout);
-    mediaProcessorFactory.setResourceSocketTimeout(this.linkCheckingSocketTimeout);
+    mediaProcessorFactory.setResourceResponseTimeout(this.linkCheckingResponseTimeout);
     mediaProcessorFactory.setResourceDownloadTimeout(this.linkCheckingDownloadTimeout);
     return mediaProcessorFactory;
   }

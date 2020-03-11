@@ -33,6 +33,6 @@ linkchecking.run.create.threads=
 linkchecking.run.execute.threads=
 linkchecking.min.time.between.same.server.checks=
 linkchecking.connect.timeout=
-linkchecking.socket.timeout=
+linkchecking.response.timeout=
 linkchecking.download.timeout=
 

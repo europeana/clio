@@ -19,6 +19,9 @@ public class PropertiesFromFile extends AbstractPropertiesHolder {
   private final String postgresUsername;
   private final String postgresPassword;
 
+  // Reporting
+  private final String reportDatasetLinkTemplate;
+
   /**
    * Constructor. Reads the property file and loads the properties.
    *
@@ -42,6 +45,9 @@ public class PropertiesFromFile extends AbstractPropertiesHolder {
     postgresServer = properties.getProperty(POSTGRES_SERVER_PROPERTY);
     postgresUsername = properties.getProperty(POSTGRES_USERNAME_PROPERTY);
     postgresPassword = properties.getProperty(POSTGRES_PASS_PROPERTY);
+
+    // Reporting
+    reportDatasetLinkTemplate = properties.getProperty(REPORT_DATASET_LINK_TEMPLATE_PROPERTY);
   }
 
   @Override
@@ -67,5 +73,10 @@ public class PropertiesFromFile extends AbstractPropertiesHolder {
   @Override
   public String getTruststorePassword() {
     return truststorePassword;
+  }
+
+  @Override
+  public String getReportDatasetLinkTemplate() {
+    return reportDatasetLinkTemplate;
   }
 }

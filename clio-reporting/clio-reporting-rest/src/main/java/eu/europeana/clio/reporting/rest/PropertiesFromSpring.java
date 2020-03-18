@@ -27,6 +27,10 @@ public class PropertiesFromSpring extends AbstractPropertiesHolder {
   @Value("${" + POSTGRES_PASS_PROPERTY + "}")
   private String postgresPassword;
 
+  // Reporting
+  @Value("${" + REPORT_DATASET_LINK_TEMPLATE_PROPERTY + "}")
+  private String reportDatasetLinkTemplate;
+
   @Override
   protected String getPostgresServer() {
     return postgresServer;
@@ -50,5 +54,10 @@ public class PropertiesFromSpring extends AbstractPropertiesHolder {
   @Override
   public String getTruststorePassword() {
     return truststorePassword;
+  }
+
+  @Override
+  public String getReportDatasetLinkTemplate() {
+    return reportDatasetLinkTemplate;
   }
 }

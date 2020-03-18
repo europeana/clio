@@ -55,7 +55,11 @@ public final class ReportingEngine {
       // Write header
       writer.writeNext(new String[]{
               "Dataset ID",
+              "Dataset's Metis page",
               "Dataset size",
+              "Provider",
+              "Data provider",
+              "Record ID",
               "Last record index",
               "Link type",
               "Link",
@@ -71,8 +75,13 @@ public final class ReportingEngine {
       // Write records
       linkStream.forEach(link -> writer.writeNext(new String[]{
               link.getLeft().getDataset().getDatasetId(),
+              String.format(properties.getReportDatasetLinkTemplate(),
+                      link.getLeft().getDataset().getDatasetId()),
               Optional.ofNullable(link.getLeft().getDataset().getSize())
                       .map(Object::toString).orElse(null),
+              link.getLeft().getDataset().getProvider(),
+              link.getLeft().getDataset().getDataProvider(),
+              link.getRight().getRecordId(),
               convert(link.getRight().getRecordLastIndexTime()),
               link.getRight().getLinkType().getHumanReadableName(),
               link.getRight().getLinkUrl(),

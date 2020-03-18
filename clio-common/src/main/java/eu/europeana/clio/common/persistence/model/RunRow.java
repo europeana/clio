@@ -1,5 +1,6 @@
 package eu.europeana.clio.common.persistence.model;
 
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -52,8 +53,8 @@ public class RunRow {
    * @param startingTime The starting time of this run.
    * @param dataset The dataset to which this run belongs.
    */
-  public RunRow(long startingTime, DatasetRow dataset) {
-    this.startingTime = startingTime;
+  public RunRow(Instant startingTime, DatasetRow dataset) {
+    this.startingTime = startingTime.toEpochMilli();
     this.dataset = dataset;
   }
 
@@ -61,8 +62,8 @@ public class RunRow {
     return runId;
   }
 
-  public long getStartingTime() {
-    return startingTime;
+  public Instant getStartingTime() {
+    return Instant.ofEpochMilli(startingTime);
   }
 
   public DatasetRow getDataset() {

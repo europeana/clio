@@ -56,7 +56,7 @@ public final class ReportingEngine {
       writer.writeNext(new String[]{
               "Dataset ID",
               "Dataset size",
-              "Last index",
+              "Last record index",
               "Link type",
               "Link",
               "Link server",
@@ -73,7 +73,7 @@ public final class ReportingEngine {
               link.getLeft().getDataset().getDatasetId(),
               Optional.ofNullable(link.getLeft().getDataset().getSize())
                       .map(Object::toString).orElse(null),
-              convert(link.getLeft().getDataset().getLastIndexTime()),
+              convert(link.getRight().getRecordLastIndexTime()),
               link.getRight().getLinkType().getHumanReadableName(),
               link.getRight().getLinkUrl(),
               link.getRight().getServer(),

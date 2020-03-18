@@ -1,5 +1,7 @@
 package eu.europeana.clio.common.persistence.model;
 
+import java.time.Instant;
+import java.util.Optional;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -75,6 +77,9 @@ public class LinkRow {
   @Column(name = "record_id", nullable = false, updatable = false, length = MAX_RECORD_ID_LENGTH)
   private String recordId;
 
+  @Column(name = "record_last_index_time", nullable = false, updatable = false)
+  private long recordLastIndexTime;
+
   @Column(name = "link_type", nullable = false, updatable = false, length = 11)
   @Enumerated(EnumType.STRING)
   private LinkType linkType;
@@ -104,32 +109,38 @@ public class LinkRow {
    *
    * @param run The run to which this link belongs.
    * @param recordId The Europeana record ID in which this link is present.
+   * @param recordLastIndexTime The last time this record was indexed.
    * @param linkType The type of the link reference in the record.
    * @param linkUrl The actual link.
    * @param server The server of the link. Can be null if the server could not be computed.
    */
-  public LinkRow(RunRow run, String recordId, LinkType linkType, String linkUrl, String server) {
+  public LinkRow(RunRow run, String recordId, Instant recordLastIndexTime, LinkType linkType,
+          String linkUrl, String server) {
 
     // Set basic properties
     this.run = run;
     this.recordId = StringUtils.truncate(recordId, MAX_RECORD_ID_LENGTH);
+    this.recordLastIndexTime = recordLastIndexTime.toEpochMilli();
     this.linkType = linkType;
     this.linkUrl = StringUtils.truncate(linkUrl, MAX_LINK_URL_LENGTH);
     this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
 
     // Test the length of certain properties
+    final String error;
     if (recordId.length() > MAX_RECORD_ID_LENGTH) {
-      setError("Record ID is too long: " + recordId);
-      setCheckingTime(System.currentTimeMillis());
+      error = "Record ID is too long: " + recordId;
     } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
-      setError("Link URL is too long: " + linkUrl);
-      setCheckingTime(System.currentTimeMillis());
+      error = "Link URL is too long: " + linkUrl;
     } else if (server == null) {
-      setError("Server could not be determined for link: " + linkUrl);
-      setCheckingTime(System.currentTimeMillis());
+      error = "Server could not be determined for link: " + linkUrl;
     } else if (server.length() > MAX_SERVER_LENGTH) {
-      setError("Server is too long: " + server);
-      setCheckingTime(System.currentTimeMillis());
+      error = "Server is too long: " + server;
+    } else {
+      error = null;
+    }
+    if (error != null) {
+      setError(error);
+      setCheckingTime(Instant.now());
     }
   }
 
@@ -137,8 +148,8 @@ public class LinkRow {
     this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
   }
 
-  public void setCheckingTime(long checkingTime) {
-    this.checkingTime = checkingTime;
+  public void setCheckingTime(Instant checkingTime) {
+    this.checkingTime = checkingTime.toEpochMilli();
   }
 
   public long getLinkId() {
@@ -151,6 +162,10 @@ public class LinkRow {
 
   public String getRecordId() {
     return recordId;
+  }
+
+  public Instant getRecordLastIndexTime() {
+    return Instant.ofEpochMilli(recordLastIndexTime);
   }
 
   public LinkType getLinkType() {
@@ -169,7 +184,7 @@ public class LinkRow {
     return error;
   }
 
-  public Long getCheckingTime() {
-    return checkingTime;
+  public Instant getCheckingTime() {
+    return Optional.ofNullable(checkingTime).map(Instant::ofEpochMilli).orElse(null);
   }
 }

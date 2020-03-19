@@ -4,10 +4,13 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.linkchecking.model.SampleRecord;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
@@ -25,6 +28,7 @@ public class SolrDao {
   private static final String IS_SHOWN_AT_FIELD = "provider_aggregation_edm_isShownAt";
   private static final String IS_SHOWN_BY_FIELD = "provider_aggregation_edm_isShownBy";
   private static final String RECORD_ID_FIELD = "europeana_id";
+  private static final String TIMESTAMP_UPDATE_FIELD = "timestamp_update";
 
   private final SolrClient solrClient;
 
@@ -55,7 +59,8 @@ public class SolrDao {
     solrQuery.setSort(new SortClause("random_" + System.currentTimeMillis(), ORDER.asc));
     solrQuery.setStart(0);
     solrQuery.setRows(numberOfSampleRecords);
-    solrQuery.setFields(IS_SHOWN_AT_FIELD, IS_SHOWN_BY_FIELD, RECORD_ID_FIELD);
+    solrQuery.setFields(IS_SHOWN_AT_FIELD, IS_SHOWN_BY_FIELD, RECORD_ID_FIELD,
+            TIMESTAMP_UPDATE_FIELD);
 
     // Execute query
     final QueryResponse queryResult;
@@ -65,8 +70,10 @@ public class SolrDao {
       throw new PersistenceException("Problem occurred while obtaining a sample record.", e);
     }
 
-    // Get result.
+    // Get and return result.
     return queryResult.getResults().stream().map(result -> {
+
+      // Get the isShownAt links.
       final Map<LinkType, Set<String>> links = new EnumMap<>(LinkType.class);
       final List<?> isShownAtLinks = (List<?>) result.getFieldValue(IS_SHOWN_AT_FIELD);
       if (isShownAtLinks != null) {
@@ -74,13 +81,23 @@ public class SolrDao {
           links.computeIfAbsent(LinkType.IS_SHOWN_AT, key -> new HashSet<>()).add(link.toString());
         }
       }
+
+      // Get the isShownBy links.
       final List<?> isShownByLinks = (List<?>) result.getFieldValue(IS_SHOWN_BY_FIELD);
       if (isShownByLinks != null) {
         for (Object link : isShownByLinks) {
           links.computeIfAbsent(LinkType.IS_SHOWN_BY, key -> new HashSet<>()).add(link.toString());
         }
       }
-      return new SampleRecord((String) result.getFieldValue(RECORD_ID_FIELD), links);
+
+      // Get the last indexed time (update time). This should really exist.
+      final Instant lastIndexedTime = Optional
+              .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
+              .map(Date::toInstant).orElse(Instant.EPOCH);
+
+      // Done.
+      final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
+      return new SampleRecord(recordId, lastIndexedTime, links);
     }).collect(Collectors.toList());
   }
 }

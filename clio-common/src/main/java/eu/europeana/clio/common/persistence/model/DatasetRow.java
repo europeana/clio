@@ -1,5 +1,7 @@
 package eu.europeana.clio.common.persistence.model;
 
+import java.time.Instant;
+import java.util.Optional;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -67,8 +69,8 @@ public class DatasetRow {
     return size;
   }
 
-  public Long getLastIndexTime() {
-    return lastIndexTime;
+  public Instant getLastIndexTime() {
+    return Optional.ofNullable(lastIndexTime).map(Instant::ofEpochMilli).orElse(null);
   }
 
   public String getProvider() {
@@ -87,8 +89,8 @@ public class DatasetRow {
     this.size = size;
   }
 
-  public void setLastIndexTime(Long lastIndexTime) {
-    this.lastIndexTime = lastIndexTime;
+  public void setLastIndexTime(Instant lastIndexTime) {
+    this.lastIndexTime = Optional.ofNullable(lastIndexTime).map(Instant::toEpochMilli).orElse(null);
   }
 
   public void setProvider(String provider) {

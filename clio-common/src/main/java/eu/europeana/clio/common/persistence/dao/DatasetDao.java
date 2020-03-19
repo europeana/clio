@@ -4,8 +4,6 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
-import java.time.Instant;
-import java.util.Optional;
 
 /**
  * Data access object for (Clio) datasets.
@@ -48,15 +46,13 @@ public class DatasetDao {
   private void setPropertiesToRow(Dataset dataset, DatasetRow row) {
     row.setName(dataset.getName());
     row.setSize(dataset.getSize());
-    row.setLastIndexTime(Optional.ofNullable(dataset.getLastIndexTime()).map(Instant::toEpochMilli)
-            .orElse(null));
+    row.setLastIndexTime(dataset.getLastIndexTime());
     row.setProvider(dataset.getProvider());
     row.setDataProvider(dataset.getDataProvider());
   }
 
   static Dataset convert(DatasetRow row) {
-    return new Dataset(row.getDatasetId(), row.getName(), row.getSize(),
-            Optional.ofNullable(row.getLastIndexTime()).map(Instant::ofEpochMilli).orElse(null),
+    return new Dataset(row.getDatasetId(), row.getName(), row.getSize(), row.getLastIndexTime(),
             row.getProvider(), row.getDataProvider());
   }
 }

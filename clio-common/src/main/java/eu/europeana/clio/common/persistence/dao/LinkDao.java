@@ -12,7 +12,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -38,13 +37,15 @@ public class LinkDao {
    *
    * @param runId The ID of the run to which to add this link.
    * @param recordId The Europeana record ID in which this link is present.
+   * @param recordLastIndexTime The last time this record was indexed.
    * @param linkUrl The actual link.
    * @param linkType The type of the link reference in the record.
    * @return The ID of the link.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public long createUncheckedLink(long runId, String recordId, String linkUrl,
-          eu.europeana.clio.common.model.LinkType linkType) throws PersistenceException {
+  public long createUncheckedLink(long runId, String recordId, Instant recordLastIndexTime,
+          String linkUrl, eu.europeana.clio.common.model.LinkType linkType)
+          throws PersistenceException {
 
     // Compute the link type.
     final LinkType persistentLinkType;
@@ -66,8 +67,8 @@ public class LinkDao {
         throw new PersistenceException(
                 "Cannot create link: run with ID " + runId + " does not exist.");
       }
-      final LinkRow newLink = new LinkRow(runRow, recordId, persistentLinkType, linkUrl,
-              computeServer(linkUrl));
+      final LinkRow newLink = new LinkRow(runRow, recordId, recordLastIndexTime, persistentLinkType,
+              linkUrl, computeServer(linkUrl));
       return (Long) session.save(newLink);
     });
   }
@@ -103,7 +104,7 @@ public class LinkDao {
    * @throws PersistenceException In case there was a persistence problem.
    */
   public void registerLinkChecking(String linkUrl, String error) throws PersistenceException {
-    final long checkingTime = System.currentTimeMillis();
+    final Instant checkingTime = Instant.now();
     persistenceConnection.performInTransaction(session -> {
       final List<LinkRow> linksToUpdate = session
               .createNamedQuery(LinkRow.GET_UNCHECKED_LINKS_BY_URL, LinkRow.class)
@@ -150,9 +151,8 @@ public class LinkDao {
     }
 
     // Return link
-    final Instant checkingTime = Optional.ofNullable(row.getCheckingTime())
-            .map(Instant::ofEpochMilli).orElse(null);
-    return new Link(row.getLinkId(), row.getRecordId(), publicLinkType, row.getLinkUrl(),
-            row.getServer(), row.getError(), checkingTime);
+    return new Link(row.getLinkId(), row.getRecordId(), row.getRecordLastIndexTime(),
+            publicLinkType, row.getLinkUrl(), row.getServer(), row.getError(),
+            row.getCheckingTime());
   }
 }

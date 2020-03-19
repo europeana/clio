@@ -7,3 +7,7 @@ postgresql.server=jdbc:postgresql://
 postgresql.username=
 postgresql.password=
 
+#Reports
+# The String.format() - compatible template for the link to the dataset to be included in the
+# report. It expects one occurrence of '%s' that will contain the dataset ID.
+report.dataset.link.template=

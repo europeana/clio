@@ -38,7 +38,7 @@ public class RunDao {
         throw new PersistenceException(
                 "Cannot create run: dataset with ID " + datasetId + " does not exist.");
       }
-      final RunRow newRun = new RunRow(System.currentTimeMillis(), datasetRow);
+      final RunRow newRun = new RunRow(Instant.now(), datasetRow);
       return (Long) session.save(newRun);
     });
   }
@@ -59,7 +59,6 @@ public class RunDao {
   }
 
   static Run convert(RunRow row) {
-    return new Run(row.getRunId(), Instant.ofEpochMilli(row.getStartingTime()),
-            DatasetDao.convert(row.getDataset()));
+    return new Run(row.getRunId(), row.getStartingTime(), DatasetDao.convert(row.getDataset()));
   }
 }

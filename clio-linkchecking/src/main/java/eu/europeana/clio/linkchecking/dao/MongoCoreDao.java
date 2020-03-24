@@ -10,14 +10,13 @@ import dev.morphia.query.Query;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.metis.core.dao.DatasetDao;
-import eu.europeana.metis.core.dao.WorkflowExecutionDao;
 import eu.europeana.metis.core.dao.PluginWithExecutionId;
+import eu.europeana.metis.core.dao.WorkflowExecutionDao;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProvider;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProviderImpl;
 import eu.europeana.metis.core.workflow.plugins.DataStatus;
 import eu.europeana.metis.core.workflow.plugins.ExecutablePlugin;
 import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
-import eu.europeana.metis.core.workflow.plugins.ExecutionProgress;
 import eu.europeana.metis.core.workflow.plugins.MetisPlugin;
 import eu.europeana.metis.core.workflow.plugins.PluginType;
 import eu.europeana.metis.utils.ExternalRequestUtil;
@@ -79,10 +78,10 @@ public class MongoCoreDao {
     // Find out how many records the dataset has.
     final PluginWithExecutionId<ExecutablePlugin> latestSuccessfulExecutableIndex = workflowExecutionDao
             .getLatestSuccessfulExecutablePlugin(datasetId, Set.of(ExecutablePluginType.PUBLISH),
-                    true);
+                    false);
     final int datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
-            .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getExecutionProgress).map(
-                    ExecutionProgress::getProcessedRecords).orElse(-1);
+            .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getExecutionProgress)
+            .map(progress -> progress.getProcessedRecords() - progress.getErrors()).orElse(-1);
 
     // Convert to the dataset object we're interested in.
     final Instant lastIndexTime = Optional.ofNullable(latestSuccessfulExecutableIndex)

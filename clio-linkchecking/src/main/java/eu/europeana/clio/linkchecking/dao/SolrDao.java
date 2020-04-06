@@ -19,6 +19,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 
 /**
  * Data access object for the Solr.
@@ -62,16 +63,8 @@ public class SolrDao {
     solrQuery.setFields(IS_SHOWN_AT_FIELD, IS_SHOWN_BY_FIELD, RECORD_ID_FIELD,
             TIMESTAMP_UPDATE_FIELD);
 
-    // Execute query
-    final QueryResponse queryResult;
-    try {
-      queryResult = this.solrClient.query(solrQuery);
-    } catch (SolrServerException | IOException e) {
-      throw new PersistenceException("Problem occurred while obtaining a sample record.", e);
-    }
-
     // Get and return result.
-    return queryResult.getResults().stream().map(result -> {
+    return executeQuery(solrQuery).stream().map(result -> {
 
       // Get the isShownAt links.
       final Map<LinkType, Set<String>> links = new EnumMap<>(LinkType.class);
@@ -99,5 +92,34 @@ public class SolrDao {
       final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
       return new SampleRecord(recordId, lastIndexedTime, links);
     }).collect(Collectors.toList());
+  }
+
+  /**
+   * Determines the last time that there was an update (i.e. a record was indexed). We do this by
+   * returning the maximum of all update timestamps.
+   *
+   * @return The last update instant.
+   */
+  public Instant getLastUpdateTime() throws PersistenceException {
+
+    // Create query
+    final SolrQuery solrQuery = new SolrQuery("*.*");
+    solrQuery.setSort(new SortClause(TIMESTAMP_UPDATE_FIELD, ORDER.desc));
+    solrQuery.setStart(0);
+    solrQuery.setRows(1);
+    solrQuery.setFields(TIMESTAMP_UPDATE_FIELD);
+
+    // Get and return result
+    return executeQuery(solrQuery).stream().findFirst()
+            .map(document -> document.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
+            .map(Date::toInstant).orElse(Instant.EPOCH);
+  }
+
+  private SolrDocumentList executeQuery(SolrQuery solrQuery) throws PersistenceException {
+    try {
+      return this.solrClient.query(solrQuery).getResults();
+    } catch (SolrServerException | IOException e) {
+      throw new PersistenceException("Problem occurred while obtaining the last update time.", e);
+    }
   }
 }

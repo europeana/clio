@@ -14,10 +14,12 @@ import javax.persistence.UniqueConstraint;
 
 /**
  * This represents the persistent form of a run (a checking iteration for a given dataset).
+ *
+ * TODO JV after some time has passed, we can add a unique constraint on columns dataset_id and
+ * batch_id. We should first remove all runs and links connected to the bogus first batch (id = 1).
  */
 @Entity
-@Table(name = "run",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"dataset_id", "starting_time"}))
+@Table(name = "run")
 @NamedQuery(name = RunRow.GET_ACTIVE_RUN_FOR_DATASET, query = "SELECT r"
         + " FROM RunRow AS r"
         + " WHERE r.dataset.datasetId = :" + RunRow.DATASET_ID_PARAMETER
@@ -41,6 +43,10 @@ public class RunRow {
   @JoinColumn(name = "dataset_id", referencedColumnName = "dataset_id", nullable = false, updatable = false)
   private DatasetRow dataset;
 
+  @ManyToOne
+  @JoinColumn(name = "batch_id", referencedColumnName = "batch_id", nullable = false, updatable = false)
+  private BatchRow batch;
+
   /**
    * Constructor for the use of JPA. Don't use from code.
    */
@@ -53,9 +59,10 @@ public class RunRow {
    * @param startingTime The starting time of this run.
    * @param dataset The dataset to which this run belongs.
    */
-  public RunRow(Instant startingTime, DatasetRow dataset) {
+  public RunRow(Instant startingTime, DatasetRow dataset, BatchRow batch) {
     this.startingTime = startingTime.toEpochMilli();
     this.dataset = dataset;
+    this.batch = batch;
   }
 
   public long getRunId() {
@@ -68,5 +75,9 @@ public class RunRow {
 
   public DatasetRow getDataset() {
     return dataset;
+  }
+
+  public BatchRow getBatch() {
+    return batch;
   }
 }

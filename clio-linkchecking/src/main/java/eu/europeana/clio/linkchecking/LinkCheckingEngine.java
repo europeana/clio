@@ -9,6 +9,7 @@ import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.StreamResult;
+import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
@@ -33,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.slf4j.Logger;
@@ -70,38 +72,61 @@ public final class LinkCheckingEngine {
    * @throws ClioException In case of a problem with accessing or storing the required data.
    */
   public void createRunsForAllAvailableDatasets() throws ClioException {
+
+    // Create access for the mongo (metis core) and the solr.
     final MongoClientProvider<ConfigurationException> mongoClientProvider = new MongoClientProvider<>(
             properties.getMongoProperties());
     final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
             properties.getSolrProperties());
+
+    // Create closable connections to the mongo, the solr and the own database.
     try (
         final ClioPersistenceConnection databaseConnection =
             properties.getPersistenceConnectionProvider().createPersistenceConnection();
         final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
         final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
+
+      // Finish setting up the connections.
       final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
               properties.getMongoDatabase());
       // See https://github.com/spotbugs/spotbugs/issues/756
       @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
       final SolrClient nativeSolrClient = solrClient.getSolrClient();
       final SolrDao solrDao = new SolrDao(nativeSolrClient);
+
+      // Set up a batch.
+      final BatchDao batchDao = new BatchDao(databaseConnection);
+      final long batchId = batchDao.createBatchStartingNow(solrDao.getLastUpdateTime(),
+              mongoCoreDao.getLastUpdateTime());
+
+      // Trigger checking all datasets and wait for the result.
+      final AtomicInteger datasetsAlreadyRunningCounter = new AtomicInteger();
+      final AtomicInteger datasetsNotYetIndexedCounter = new AtomicInteger();
       final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
       ParallelTaskExecutor.executeAndWait(datasetIds,
               id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
-                      id),
+                      id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter),
               properties.getLinkCheckingRunCreateThreads());
+
+      // Set the counters.
+      batchDao.setCountersForBatch(batchId, datasetsAlreadyRunningCounter.get(),
+              datasetsNotYetIndexedCounter.get());
+
     } catch (IOException e) {
       throw new PersistenceException("Problem occurred while connecting to data sources.", e);
     }
   }
 
   private void createRunWithUncheckedLinksForDataset(MongoCoreDao mongoCoreDao, SolrDao solrDao,
-          ClioPersistenceConnection databaseConnection, String datasetId) throws ClioException {
+          ClioPersistenceConnection databaseConnection, String datasetId, long batchId,
+          AtomicInteger datasetsAlreadyRunningCounter,
+          AtomicInteger datasetsNotYetIndexedCounter) throws ClioException {
 
     // If the dataset already has a run in progress, we don't proceed.
     final RunDao runDao = new RunDao(databaseConnection);
     if (runDao.datasetHasActiveRun(datasetId)) {
       LOGGER.info("Skipping dataset {} as it already has an active run.", datasetId);
+      datasetsAlreadyRunningCounter.incrementAndGet();
       return;
     }
 
@@ -109,6 +134,7 @@ public final class LinkCheckingEngine {
     final Dataset dataset = mongoCoreDao.getPublishedDatasetById(datasetId);
     if (dataset == null) {
       LOGGER.info("Skipping dataset {} as it is not currently published.", datasetId);
+      datasetsNotYetIndexedCounter.incrementAndGet();
       return;
     }
 
@@ -118,7 +144,7 @@ public final class LinkCheckingEngine {
 
     // Save the information to the Clio database
     new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
-    final long runId = runDao.createRunStartingNow(dataset.getDatasetId());
+    final long runId = runDao.createRunStartingNow(dataset.getDatasetId(), batchId);
     final LinkDao linkDao = new LinkDao(databaseConnection);
     for (SampleRecord record : sampleRecords) {
       for (Entry<LinkType, Set<String>> links : record.getLinks().entrySet()) {

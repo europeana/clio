@@ -1,6 +1,7 @@
 package eu.europeana.clio.common.persistence;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
@@ -26,7 +27,7 @@ public class ClioPersistenceConnection implements Closeable {
 
   // TODO JV Have the classes register here, or with annotation, is more transparent.
   private static Set<Class<?>> annotatedClasses = Set
-          .of(DatasetRow.class, RunRow.class, LinkRow.class);
+          .of(DatasetRow.class, BatchRow.class, RunRow.class, LinkRow.class);
 
   private final String server;
   private final String username;

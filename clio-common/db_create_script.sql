@@ -9,13 +9,25 @@ CREATE TABLE dataset (
     PRIMARY KEY (dataset_id)
 );
 
+CREATE TABLE batch (
+    batch_id  BIGSERIAL NOT NULL,
+    creation_time BIGINT NOT NULL,
+    last_update_time_solr BIGINT NOT NULL,
+    last_update_time_metis_core BIGINT NOT NULL,
+    datasets_excluded_already_running INTEGER,
+    datasets_excluded_not_indexed INTEGER,
+    PRIMARY KEY (batch_id)
+);
+
 CREATE TABLE run (
     run_id  BIGSERIAL NOT NULL,
     starting_time BIGINT NOT NULL,
     dataset_id VARCHAR(16) NOT NULL,
+    batch_id BIGINT NOT NULL,
     PRIMARY KEY (run_id),
-    UNIQUE (dataset_id, starting_time),
-    FOREIGN KEY (dataset_id) REFERENCES dataset
+--    UNIQUE (dataset_id, batch_id),
+    FOREIGN KEY (dataset_id) REFERENCES dataset,
+    FOREIGN KEY (batch_id) REFERENCES batch
 );
 
 CREATE TABLE link (

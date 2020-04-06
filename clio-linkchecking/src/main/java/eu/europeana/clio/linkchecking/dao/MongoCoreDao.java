@@ -9,11 +9,15 @@ import dev.morphia.aggregation.Projection;
 import dev.morphia.query.Query;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Dataset;
+import eu.europeana.metis.core.common.DaoFieldNames;
 import eu.europeana.metis.core.dao.DatasetDao;
 import eu.europeana.metis.core.dao.PluginWithExecutionId;
 import eu.europeana.metis.core.dao.WorkflowExecutionDao;
+import eu.europeana.metis.core.dao.WorkflowExecutionDao.ResultList;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProvider;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProviderImpl;
+import eu.europeana.metis.core.workflow.WorkflowExecution;
+import eu.europeana.metis.core.workflow.WorkflowStatus;
 import eu.europeana.metis.core.workflow.plugins.DataStatus;
 import eu.europeana.metis.core.workflow.plugins.ExecutablePlugin;
 import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
@@ -22,6 +26,7 @@ import eu.europeana.metis.core.workflow.plugins.PluginType;
 import eu.europeana.metis.utils.ExternalRequestUtil;
 import java.time.Instant;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
@@ -119,6 +124,20 @@ public class MongoCoreDao {
       return StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, 0), false)
               .map(DatasetIdWrapper::getDatasetId);
     });
+  }
+
+  /**
+   * Determines the last time that there was an update (i.e. a record was indexed). We do this by
+   * returning the maximum of all update timestamps.
+   *
+   * @return The last update instant.
+   */
+  public Instant getLastUpdateTime() {
+    final ResultList<WorkflowExecution> executions = new WorkflowExecutionDao(datastoreProvider)
+            .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
+                    DaoFieldNames.FINISHED_DATE, false, 0, false);
+    return executions.getResults().stream().findFirst().map(WorkflowExecution::getFinishedDate)
+            .map(Date::toInstant).orElse(Instant.EPOCH);
   }
 
   /**

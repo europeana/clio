@@ -1,21 +1,16 @@
 package eu.europeana.clio.common.model;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 /**
- * This class represents a batch with some extra counters. This class is meant for serializing.
+ * This class represents a batch with some extra counters.
  */
 public class BatchWithCounters {
 
-  private static final DateTimeFormatter INSTANT_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-          .withZone(ZoneId.systemDefault());
-
   private final long batchId;
-  private final String creationTime;
-  private final String lastUpdateTimeInSolr;
-  private final String lastUpdateTimeInMetsiCore;
+  private final Instant creationTime;
+  private final Instant lastUpdateTimeInSolr;
+  private final Instant lastUpdateTimeInMetsiCore;
   private final Integer datasetsExcludedAlreadyRunning;
   private final Integer datasetsExcludedNotIndexed;
   private final int datasetsProcessed;
@@ -25,9 +20,9 @@ public class BatchWithCounters {
           Instant lastUpdateTimeInMetsiCore, Integer datasetsExcludedAlreadyRunning,
           Integer datasetsExcludedNotIndexed, int datasetsProcessed, int datasetsPending) {
     this.batchId = batchId;
-    this.creationTime = INSTANT_FORMATTER.format(creationTime);
-    this.lastUpdateTimeInSolr = INSTANT_FORMATTER.format(lastUpdateTimeInSolr);
-    this.lastUpdateTimeInMetsiCore = INSTANT_FORMATTER.format(lastUpdateTimeInMetsiCore);
+    this.creationTime = creationTime;
+    this.lastUpdateTimeInSolr = lastUpdateTimeInSolr;
+    this.lastUpdateTimeInMetsiCore = lastUpdateTimeInMetsiCore;
     this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;
     this.datasetsExcludedNotIndexed = datasetsExcludedNotIndexed;
     this.datasetsProcessed = datasetsProcessed;
@@ -38,15 +33,15 @@ public class BatchWithCounters {
     return batchId;
   }
 
-  public String getCreationTime() {
+  public Instant getCreationTime() {
     return creationTime;
   }
 
-  public String getLastUpdateTimeInSolr() {
+  public Instant getLastUpdateTimeInSolr() {
     return lastUpdateTimeInSolr;
   }
 
-  public String getLastUpdateTimeInMetsiCore() {
+  public Instant getLastUpdateTimeInMetsiCore() {
     return lastUpdateTimeInMetsiCore;
   }
 

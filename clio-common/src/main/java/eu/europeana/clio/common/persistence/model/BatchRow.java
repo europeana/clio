@@ -6,6 +6,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 /**
@@ -13,7 +14,11 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "batch")
+@NamedQuery(name = BatchRow.GET_LATEST_BATCHES_QUERY,
+        query = "SELECT b FROM BatchRow b ORDER BY b.creationTime DESC ")
 public class BatchRow {
+
+  public static final String GET_LATEST_BATCHES_QUERY = "getLatestBatches";
 
   @Id
   @Column(name = "batch_id")
@@ -69,11 +74,11 @@ public class BatchRow {
     return Instant.ofEpochMilli(lastUpdateTimeInMetsiCore);
   }
 
-  public int getDatasetsExcludedAlreadyRunning() {
+  public Integer getDatasetsExcludedAlreadyRunning() {
     return datasetsExcludedAlreadyRunning;
   }
 
-  public int getDatasetsExcludedNotIndexed() {
+  public Integer getDatasetsExcludedNotIndexed() {
     return datasetsExcludedNotIndexed;
   }
 }

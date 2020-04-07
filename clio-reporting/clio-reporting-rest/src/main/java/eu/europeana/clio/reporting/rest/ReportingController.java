@@ -1,20 +1,25 @@
 package eu.europeana.clio.reporting.rest;
 
 import eu.europeana.clio.common.exception.ClioException;
+import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.reporting.core.ReportingEngine;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
@@ -54,9 +59,8 @@ public class ReportingController {
     // Create the report.
     byte[] report;
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            final BufferedWriter outputWriter =
-                    new BufferedWriter(
-                            new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+            final BufferedWriter outputWriter = new BufferedWriter(
+                    new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
       this.reportingEngine.generateReport(outputWriter);
       report = outputStream.toByteArray();
     } catch (IOException e) {
@@ -73,5 +77,13 @@ public class ReportingController {
             .filename(ReportingEngine.getReportFileNameSuggestion()).build());
     headers.setContentLength(report.length);
     return new HttpEntity<>(report, headers);
+  }
+
+  @GetMapping(value = "batches", produces = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseBody
+  public List<BatchWithCounters> getBatches(
+          @RequestParam(value = "maxResults", required = false, defaultValue = "5") int maxResults)
+          throws ClioException {
+    return this.reportingEngine.getLatestBatches(maxResults);
   }
 }

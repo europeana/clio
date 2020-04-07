@@ -26,10 +26,19 @@ import javax.persistence.UniqueConstraint;
         + " AND EXISTS("
         + "   SELECT l FROM LinkRow l WHERE l.run = r AND l.checkingTime IS NULL"
         + " )")
+@NamedQuery(name = RunRow.COUNT_RUNS_FOR_BATCH, query = "SELECT COUNT(r) FROM RunRow AS r"
+        + " WHERE r.batch.batchId = :" + RunRow.BATCH_ID_PARAMETER)
+@NamedQuery(name = RunRow.COUNT_PENDING_RUNS_FOR_BATCH, query = "SELECT COUNT(r) FROM RunRow AS r"
+        + " WHERE r.batch.batchId = :" + RunRow.BATCH_ID_PARAMETER + " AND EXISTS("
+        + "   SELECT l FROM LinkRow l WHERE l.run = r AND l.checkingTime IS NULL"
+        + " )")
 public class RunRow {
 
+  public static final String COUNT_RUNS_FOR_BATCH = "countRunsForBatch";
+  public static final String COUNT_PENDING_RUNS_FOR_BATCH = "countPendingRunsForBatch";
   public static final String GET_ACTIVE_RUN_FOR_DATASET = "getActiveRunForDataset";
   public static final String DATASET_ID_PARAMETER = "datasetId";
+  public static final String BATCH_ID_PARAMETER = "batchId";
 
   @Id
   @Column(name = "run_id")

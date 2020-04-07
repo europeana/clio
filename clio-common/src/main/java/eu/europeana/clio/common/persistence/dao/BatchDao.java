@@ -1,9 +1,14 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.model.BatchRow;
+import eu.europeana.clio.common.persistence.model.RunRow;
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.hibernate.Session;
 
 /**
  * Data access object for runs (a checking iteration for a given dataset).
@@ -61,5 +66,42 @@ public class BatchDao {
       batchRow.setCounters(datasetsExcludedAlreadyRunning, datasetsExcludedNotIndexed);
       return null;
     });
+  }
+
+  /**
+   * Compiles information on the latest executed batches.
+   *
+   * @param maxResults The maximum number of batches to return.
+   * @return The batches, in reverse chronological order.
+   * @throws PersistenceException In case there was a problem with accessing the data.
+   */
+  public List<BatchWithCounters> getLatestBatches(int maxResults) throws PersistenceException {
+    return persistenceConnection.performInSession(session ->
+            session.createNamedQuery(BatchRow.GET_LATEST_BATCHES_QUERY, BatchRow.class)
+                    .setMaxResults(maxResults).getResultList().stream()
+                    .map(batch -> convert(batch, session)).collect(Collectors.toList()));
+  }
+
+  private static BatchWithCounters convert(BatchRow row, Session session) {
+
+    // First get the total number of runs.
+    final long totalRuns = session.createNamedQuery(RunRow.COUNT_RUNS_FOR_BATCH, Long.class)
+            .setParameter(RunRow.BATCH_ID_PARAMETER, row.getBatchId()).getSingleResult();
+
+    // Then get the number of pending runs.
+    final long pendingRuns = session
+            .createNamedQuery(RunRow.COUNT_PENDING_RUNS_FOR_BATCH, Long.class)
+            .setParameter(RunRow.BATCH_ID_PARAMETER, row.getBatchId()).getSingleResult();
+
+    // Compute the number of finalized runs. Take care to allow for race conditions: if runs were
+    // added in between these queries, assume that no runs are completed. If more runs have become
+    // completed in between these queries, don't count them.
+    final long completedRuns = Math.max(0, totalRuns - pendingRuns);
+
+    // Convert.
+    return new BatchWithCounters(row.getBatchId(), row.getCreationTime(),
+            row.getLastUpdateTimeInSolr(), row.getLastUpdateTimeInMetsiCore(),
+            row.getDatasetsExcludedAlreadyRunning(), row.getDatasetsExcludedNotIndexed(),
+            (int) completedRuns, (int) pendingRuns);
   }
 }

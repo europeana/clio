@@ -18,7 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -89,15 +91,16 @@ public class ReportingController {
   @ResponseBody
   @ApiOperation(value = "Get a historic overview of the most recent link checking batches.",
           notes = "The batches are returned in reverse chronological order.")
-  public List<BatchesRequestResult> getBatches(
+  public ResponseEntity<List<BatchesRequestResult>> getBatches(
           @RequestParam(value = "maxResults", required = false, defaultValue = "5")
           @ApiParam(value = "The maximum number of batches returned, must be a positive number.", example = "1")
                   int maxResults)
           throws ClioException {
     if (maxResults < 1) {
-      throw new IllegalArgumentException();
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
-    return this.reportingEngine.getLatestBatches(maxResults).stream().map(BatchesRequestResult::new)
-            .collect(Collectors.toList());
+    final List<BatchesRequestResult> result = this.reportingEngine.getLatestBatches(maxResults)
+            .stream().map(BatchesRequestResult::new).collect(Collectors.toList());
+    return new ResponseEntity<>(result, HttpStatus.OK);
   }
 }

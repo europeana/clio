@@ -1,12 +1,16 @@
 package eu.europeana.clio.reporting.core;
 
+import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.persistence.StreamResult;
+import eu.europeana.clio.common.persistence.dao.BatchDao;
 import java.io.IOException;
 import java.io.Writer;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
@@ -69,8 +73,8 @@ public final class ReportingEngine {
       });
 
       // Create link stream ... see https://github.com/spotbugs/spotbugs/issues/756
-      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
-      final Stream<Pair<Run, Link>> linkStream = brokenLinks.get();
+      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final Stream<Pair<Run, Link>> linkStream = brokenLinks
+              .get();
 
       // Write records
       linkStream.forEach(link -> writer.writeNext(new String[]{
@@ -102,5 +106,19 @@ public final class ReportingEngine {
 
   public static String getReportFileNameSuggestion() {
     return fileNameFormatter.format(Instant.now());
+  }
+
+  /**
+   * Compiles information on the latest executed batches.
+   *
+   * @param maxResults The maximum number of batches to return.
+   * @return The batches, in reverse chronological order.
+   * @throws PersistenceException In case there was a problem with accessing the data.
+   */
+  public List<BatchWithCounters> getLatestBatches(int maxResults) throws PersistenceException {
+    try (final ClioPersistenceConnection databaseConnection = properties
+            .getPersistenceConnectionProvider().createPersistenceConnection()) {
+      return new BatchDao(databaseConnection).getLatestBatches(maxResults);
+    }
   }
 }

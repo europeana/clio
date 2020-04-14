@@ -3,6 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import java.time.Instant;
@@ -28,17 +29,23 @@ public class RunDao {
    * Create a run with a starting time equal to the current time.
    *
    * @param datasetId The (Metis) dataset ID of the dataset to which this run belongs.
+   * @param batchId The ID of the batch to which this run belongs.
    * @return The ID of the run.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public long createRunStartingNow(String datasetId) throws PersistenceException {
+  public long createRunStartingNow(String datasetId, long batchId) throws PersistenceException {
     return persistenceConnection.performInTransaction(session -> {
       final DatasetRow datasetRow = session.get(DatasetRow.class, datasetId);
       if (datasetRow == null) {
         throw new PersistenceException(
                 "Cannot create run: dataset with ID " + datasetId + " does not exist.");
       }
-      final RunRow newRun = new RunRow(Instant.now(), datasetRow);
+      final BatchRow batchRow = session.get(BatchRow.class, batchId);
+      if (batchRow == null) {
+        throw new PersistenceException(
+                "Cannot create run: batch with ID " + batchId + " does not exist.");
+      }
+      final RunRow newRun = new RunRow(Instant.now(), datasetRow, batchRow);
       return (Long) session.save(newRun);
     });
   }

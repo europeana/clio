@@ -31,16 +31,16 @@ public class BatchDao {
    * Create a new batch with a creation time equal to the current time.
    *
    * @param lastUpdateTimeInSolr The time that the last update was recorded in the Solr.
-   * @param lastUpdateTimeInMetsiCore The time that the last update was recorded in the Metis Core
+   * @param lastUpdateTimeInMetisCore The time that the last update was recorded in the Metis Core
    * Mongo.
    * @return The ID of the newly created batch.
    * @throws PersistenceException In case there was a persistence problem.
    */
   public long createBatchStartingNow(Instant lastUpdateTimeInSolr,
-          Instant lastUpdateTimeInMetsiCore) throws PersistenceException {
+          Instant lastUpdateTimeInMetisCore) throws PersistenceException {
     return persistenceConnection.performInTransaction(session -> {
       final BatchRow newBatch = new BatchRow(Instant.now(), lastUpdateTimeInSolr,
-              lastUpdateTimeInMetsiCore);
+              lastUpdateTimeInMetisCore);
       return (Long) session.save(newBatch);
     });
   }
@@ -100,7 +100,7 @@ public class BatchDao {
 
     // Convert.
     return new BatchWithCounters(row.getBatchId(), row.getCreationTime(),
-            row.getLastUpdateTimeInSolr(), row.getLastUpdateTimeInMetsiCore(),
+            row.getLastUpdateTimeInSolr(), row.getLastUpdateTimeInMetisCore(),
             row.getDatasetsExcludedAlreadyRunning(), row.getDatasetsExcludedNotIndexed(),
             (int) completedRuns, (int) pendingRuns);
   }

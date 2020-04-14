@@ -10,19 +10,19 @@ public class BatchWithCounters {
   private final long batchId;
   private final Instant creationTime;
   private final Instant lastUpdateTimeInSolr;
-  private final Instant lastUpdateTimeInMetsiCore;
+  private final Instant lastUpdateTimeInMetisCore;
   private final Integer datasetsExcludedAlreadyRunning;
   private final Integer datasetsExcludedNotIndexed;
   private final int datasetsProcessed;
   private final int datasetsPending;
 
   public BatchWithCounters(long batchId, Instant creationTime, Instant lastUpdateTimeInSolr,
-          Instant lastUpdateTimeInMetsiCore, Integer datasetsExcludedAlreadyRunning,
+          Instant lastUpdateTimeInMetisCore, Integer datasetsExcludedAlreadyRunning,
           Integer datasetsExcludedNotIndexed, int datasetsProcessed, int datasetsPending) {
     this.batchId = batchId;
     this.creationTime = creationTime;
     this.lastUpdateTimeInSolr = lastUpdateTimeInSolr;
-    this.lastUpdateTimeInMetsiCore = lastUpdateTimeInMetsiCore;
+    this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore;
     this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;
     this.datasetsExcludedNotIndexed = datasetsExcludedNotIndexed;
     this.datasetsProcessed = datasetsProcessed;
@@ -41,8 +41,8 @@ public class BatchWithCounters {
     return lastUpdateTimeInSolr;
   }
 
-  public Instant getLastUpdateTimeInMetsiCore() {
-    return lastUpdateTimeInMetsiCore;
+  public Instant getLastUpdateTimeInMetisCore() {
+    return lastUpdateTimeInMetisCore;
   }
 
   public Integer getDatasetsExcludedAlreadyRunning() {

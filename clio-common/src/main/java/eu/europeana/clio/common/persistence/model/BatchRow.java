@@ -32,7 +32,7 @@ public class BatchRow {
   private long lastUpdateTimeInSolr;
 
   @Column(name = "last_update_time_metis_core", nullable = false, updatable = false)
-  private long lastUpdateTimeInMetsiCore;
+  private long lastUpdateTimeInMetisCore;
 
   @Column(name = "datasets_excluded_already_running")
   private Integer datasetsExcludedAlreadyRunning;
@@ -47,10 +47,10 @@ public class BatchRow {
   }
 
   public BatchRow(Instant creationTime, Instant lastUpdateTimeInSolr,
-          Instant lastUpdateTimeInMetsiCore) {
+          Instant lastUpdateTimeInMetisCore) {
     this.creationTime = creationTime.toEpochMilli();
     this.lastUpdateTimeInSolr = lastUpdateTimeInSolr.toEpochMilli();
-    this.lastUpdateTimeInMetsiCore = lastUpdateTimeInMetsiCore.toEpochMilli();
+    this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore.toEpochMilli();
   }
 
   public void setCounters(int datasetsExcludedAlreadyRunning, int datasetsExcludedNotIndexed) {
@@ -70,8 +70,8 @@ public class BatchRow {
     return Instant.ofEpochMilli(lastUpdateTimeInSolr);
   }
 
-  public Instant getLastUpdateTimeInMetsiCore() {
-    return Instant.ofEpochMilli(lastUpdateTimeInMetsiCore);
+  public Instant getLastUpdateTimeInMetisCore() {
+    return Instant.ofEpochMilli(lastUpdateTimeInMetisCore);
   }
 
   public Integer getDatasetsExcludedAlreadyRunning() {

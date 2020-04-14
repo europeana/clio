@@ -20,7 +20,7 @@ public class BatchesRequestResult {
   private final String lastUpdateTimeInSolr;
 
   @ApiModelProperty("The last indexing task in the Metis history at the moment this batch was created.")
-  private final String lastUpdateTimeInMetsiCore;
+  private final String lastUpdateTimeInMetisCore;
 
   @ApiModelProperty(value = "How many datasets were excluded because they were still pending from a previous batch. If absent, this number is not known.")
   private final Integer datasetsExcludedAlreadyRunning;
@@ -38,8 +38,8 @@ public class BatchesRequestResult {
     this.creationTime = INSTANT_FORMATTER.format(batchWithCounters.getCreationTime());
     this.lastUpdateTimeInSolr = INSTANT_FORMATTER
             .format(batchWithCounters.getLastUpdateTimeInSolr());
-    this.lastUpdateTimeInMetsiCore = INSTANT_FORMATTER
-            .format(batchWithCounters.getLastUpdateTimeInMetsiCore());
+    this.lastUpdateTimeInMetisCore = INSTANT_FORMATTER
+            .format(batchWithCounters.getLastUpdateTimeInMetisCore());
     this.datasetsExcludedAlreadyRunning = batchWithCounters.getDatasetsExcludedAlreadyRunning();
     this.datasetsExcludedNotIndexed = batchWithCounters.getDatasetsExcludedNotIndexed();
     this.datasetsProcessed = batchWithCounters.getDatasetsProcessed();
@@ -54,8 +54,8 @@ public class BatchesRequestResult {
     return lastUpdateTimeInSolr;
   }
 
-  public String getLastUpdateTimeInMetsiCore() {
-    return lastUpdateTimeInMetsiCore;
+  public String getLastUpdateTimeInMetisCore() {
+    return lastUpdateTimeInMetisCore;
   }
 
   public Integer getDatasetsExcludedAlreadyRunning() {

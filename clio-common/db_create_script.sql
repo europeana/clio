@@ -16,6 +16,7 @@ CREATE TABLE batch (
     last_update_time_metis_core BIGINT NOT NULL,
     datasets_excluded_already_running INTEGER,
     datasets_excluded_not_indexed INTEGER,
+    datasets_excluded_without_links INTEGER,
     PRIMARY KEY (batch_id)
 );
 

@@ -13,18 +13,21 @@ public class BatchWithCounters {
   private final Instant lastUpdateTimeInMetisCore;
   private final Integer datasetsExcludedAlreadyRunning;
   private final Integer datasetsExcludedNotIndexed;
+  private final Integer datasetsExcludedWithoutLinks;
   private final int datasetsProcessed;
   private final int datasetsPending;
 
   public BatchWithCounters(long batchId, Instant creationTime, Instant lastUpdateTimeInSolr,
           Instant lastUpdateTimeInMetisCore, Integer datasetsExcludedAlreadyRunning,
-          Integer datasetsExcludedNotIndexed, int datasetsProcessed, int datasetsPending) {
+          Integer datasetsExcludedNotIndexed, Integer datasetsExcludedWithoutLinks,
+          int datasetsProcessed, int datasetsPending) {
     this.batchId = batchId;
     this.creationTime = creationTime;
     this.lastUpdateTimeInSolr = lastUpdateTimeInSolr;
     this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore;
     this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;
     this.datasetsExcludedNotIndexed = datasetsExcludedNotIndexed;
+    this.datasetsExcludedWithoutLinks = datasetsExcludedWithoutLinks;
     this.datasetsProcessed = datasetsProcessed;
     this.datasetsPending = datasetsPending;
   }
@@ -51,6 +54,10 @@ public class BatchWithCounters {
 
   public Integer getDatasetsExcludedNotIndexed() {
     return datasetsExcludedNotIndexed;
+  }
+
+  public Integer getDatasetsExcludedWithoutLinks() {
+    return datasetsExcludedWithoutLinks;
   }
 
   public int getDatasetsProcessed() {

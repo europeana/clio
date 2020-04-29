@@ -53,17 +53,21 @@ public class BatchDao {
    * a run in progress.
    * @param datasetsExcludedNotIndexed The number of datasets excluded because they have not yet
    * been indexed.
+   * @param datasetsExcludedWithoutLinks The number of datasets excluded because they have no
+   * records with links to check.
    * @throws PersistenceException In case there was a persistence problem.
    */
   public void setCountersForBatch(long batchId, int datasetsExcludedAlreadyRunning,
-          int datasetsExcludedNotIndexed) throws PersistenceException {
+          int datasetsExcludedNotIndexed, int datasetsExcludedWithoutLinks)
+          throws PersistenceException {
     persistenceConnection.performInTransaction(session -> {
       final BatchRow batchRow = session.get(BatchRow.class, batchId);
       if (batchRow == null) {
         throw new PersistenceException(
                 "Cannot set counters: batch with ID " + batchId + " does not exist.");
       }
-      batchRow.setCounters(datasetsExcludedAlreadyRunning, datasetsExcludedNotIndexed);
+      batchRow.setCounters(datasetsExcludedAlreadyRunning, datasetsExcludedNotIndexed,
+              datasetsExcludedWithoutLinks);
       return null;
     });
   }
@@ -102,6 +106,6 @@ public class BatchDao {
     return new BatchWithCounters(row.getBatchId(), row.getCreationTime(),
             row.getLastUpdateTimeInSolr(), row.getLastUpdateTimeInMetisCore(),
             row.getDatasetsExcludedAlreadyRunning(), row.getDatasetsExcludedNotIndexed(),
-            (int) completedRuns, (int) pendingRuns);
+            row.getDatasetsExcludedWithoutLinks(), (int) completedRuns, (int) pendingRuns);
   }
 }

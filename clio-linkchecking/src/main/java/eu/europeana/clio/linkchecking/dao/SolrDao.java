@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrDocumentList;
  */
 public class SolrDao {
 
+  private static final String EDM_DATASET_NAME = "edm_datasetName";
   private static final String IS_SHOWN_AT_FIELD = "provider_aggregation_edm_isShownAt";
   private static final String IS_SHOWN_BY_FIELD = "provider_aggregation_edm_isShownBy";
   private static final String RECORD_ID_FIELD = "europeana_id";
@@ -42,7 +43,7 @@ public class SolrDao {
   }
 
   /**
-   * Get random sample records for a given dataset.
+   * Get random sample records for a given dataset that have at least one link.
    *
    * @param datasetId The (Metis) dataset ID of the dataset for which to get random records.
    * @param numberOfSampleRecords The number of random records needed.
@@ -55,7 +56,8 @@ public class SolrDao {
 
     // Create query
     final SolrQuery solrQuery = new SolrQuery("*.*");
-    solrQuery.setFilterQueries("edm_datasetName:" + datasetId + "_*");
+    solrQuery.setFilterQueries(EDM_DATASET_NAME + ":" + datasetId + "_*",
+            IS_SHOWN_AT_FIELD + ":[* TO *] OR " + IS_SHOWN_BY_FIELD + ":[* TO *]");
     solrQuery.setSort(new SortClause("random_" + System.currentTimeMillis(), ORDER.asc));
     solrQuery.setStart(0);
     solrQuery.setRows(numberOfSampleRecords);

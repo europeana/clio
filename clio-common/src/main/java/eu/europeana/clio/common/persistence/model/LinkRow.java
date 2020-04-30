@@ -46,6 +46,9 @@ public class LinkRow {
   public static final String LINK_URL_PARAMETER = "linkUrl";
 
   private static final int MAX_RECORD_ID_LENGTH = 256;
+  private static final int MAX_RECORD_EDM_TYPE_LENGTH = 5;
+  private static final int MAX_RECORD_CONTENT_TIER_LENGTH = 1;
+  private static final int MAX_RECORD_METADATA_TIER_LENGTH = 1;
   private static final int MAX_LINK_URL_LENGTH = 768;
   private static final int MAX_SERVER_LENGTH = 128;
   private static final int MAX_ERROR_LENGTH = 512;
@@ -80,6 +83,15 @@ public class LinkRow {
   @Column(name = "record_last_index_time", nullable = false, updatable = false)
   private long recordLastIndexTime;
 
+  @Column(name = "record_edm_type", updatable = false, length = MAX_RECORD_EDM_TYPE_LENGTH)
+  private String recordEdmType;
+
+  @Column(name = "record_content_tier", updatable = false, length = MAX_RECORD_CONTENT_TIER_LENGTH)
+  private String recordContentTier;
+
+  @Column(name = "record_metadata_tier", updatable = false, length = MAX_RECORD_METADATA_TIER_LENGTH)
+  private String recordMetadataTier;
+
   @Column(name = "link_type", nullable = false, updatable = false, length = 11)
   @Enumerated(EnumType.STRING)
   private LinkType linkType;
@@ -110,17 +122,24 @@ public class LinkRow {
    * @param run The run to which this link belongs.
    * @param recordId The Europeana record ID in which this link is present.
    * @param recordLastIndexTime The last time this record was indexed.
+   * @param recordEdmType The edm:type of the record.
+   * @param recordContentTier The content tier of the record.
+   * @param recordMetadataTier The metadata tier of the record.
    * @param linkType The type of the link reference in the record.
    * @param linkUrl The actual link.
    * @param server The server of the link. Can be null if the server could not be computed.
    */
-  public LinkRow(RunRow run, String recordId, Instant recordLastIndexTime, LinkType linkType,
-          String linkUrl, String server) {
+  public LinkRow(RunRow run, String recordId, Instant recordLastIndexTime, String recordEdmType,
+          String recordContentTier, String recordMetadataTier, LinkType linkType, String linkUrl,
+          String server) {
 
     // Set basic properties
     this.run = run;
     this.recordId = StringUtils.truncate(recordId, MAX_RECORD_ID_LENGTH);
     this.recordLastIndexTime = recordLastIndexTime.toEpochMilli();
+    this.recordEdmType = recordEdmType;
+    this.recordContentTier = recordContentTier;
+    this.recordMetadataTier = recordMetadataTier;
     this.linkType = linkType;
     this.linkUrl = StringUtils.truncate(linkUrl, MAX_LINK_URL_LENGTH);
     this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
@@ -129,6 +148,14 @@ public class LinkRow {
     final String error;
     if (recordId.length() > MAX_RECORD_ID_LENGTH) {
       error = "Record ID is too long: " + recordId;
+    } else if (recordEdmType != null && recordEdmType.length() > MAX_RECORD_EDM_TYPE_LENGTH) {
+      error = "Record edm:type is too long: " + recordEdmType;
+    } else if (recordContentTier != null
+            && recordContentTier.length() > MAX_RECORD_CONTENT_TIER_LENGTH) {
+      error = "Record content tier is too long: " + recordContentTier;
+    } else if (recordMetadataTier != null
+            && recordMetadataTier.length() > MAX_RECORD_METADATA_TIER_LENGTH) {
+      error = "Record metadata tier is too long: " + recordMetadataTier;
     } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
       error = "Link URL is too long: " + linkUrl;
     } else if (server == null) {
@@ -166,6 +193,18 @@ public class LinkRow {
 
   public Instant getRecordLastIndexTime() {
     return Instant.ofEpochMilli(recordLastIndexTime);
+  }
+
+  public String getRecordEdmType() {
+    return recordEdmType;
+  }
+
+  public String getRecordContentTier() {
+    return recordContentTier;
+  }
+
+  public String getRecordMetadataTier() {
+    return recordMetadataTier;
   }
 
   public LinkType getLinkType() {

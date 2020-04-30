@@ -38,14 +38,17 @@ public class LinkDao {
    * @param runId The ID of the run to which to add this link.
    * @param recordId The Europeana record ID in which this link is present.
    * @param recordLastIndexTime The last time this record was indexed.
+   * @param recordEdmType The edm:type of the record.
+   * @param recordContentTier The content tier of the record.
+   * @param recordMetadataTier The metadata tier of the record.
    * @param linkUrl The actual link.
    * @param linkType The type of the link reference in the record.
    * @return The ID of the link.
    * @throws PersistenceException In case there was a persistence problem.
    */
   public long createUncheckedLink(long runId, String recordId, Instant recordLastIndexTime,
-          String linkUrl, eu.europeana.clio.common.model.LinkType linkType)
-          throws PersistenceException {
+          String recordEdmType, String recordContentTier, String recordMetadataTier, String linkUrl,
+          eu.europeana.clio.common.model.LinkType linkType) throws PersistenceException {
 
     // Compute the link type.
     final LinkType persistentLinkType;
@@ -67,8 +70,9 @@ public class LinkDao {
         throw new PersistenceException(
                 "Cannot create link: run with ID " + runId + " does not exist.");
       }
-      final LinkRow newLink = new LinkRow(runRow, recordId, recordLastIndexTime, persistentLinkType,
-              linkUrl, computeServer(linkUrl));
+      final LinkRow newLink = new LinkRow(runRow, recordId, recordLastIndexTime, recordEdmType,
+              recordContentTier, recordMetadataTier, persistentLinkType, linkUrl,
+              computeServer(linkUrl));
       return (Long) session.save(newLink);
     });
   }
@@ -152,6 +156,7 @@ public class LinkDao {
 
     // Return link
     return new Link(row.getLinkId(), row.getRecordId(), row.getRecordLastIndexTime(),
+            row.getRecordEdmType(), row.getRecordContentTier(), row.getRecordMetadataTier(),
             publicLinkType, row.getLinkUrl(), row.getServer(), row.getError(),
             row.getCheckingTime());
   }

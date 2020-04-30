@@ -155,8 +155,9 @@ public final class LinkCheckingEngine {
     for (SampleRecord record : sampleRecords) {
       for (Entry<LinkType, Set<String>> links : record.getLinks().entrySet()) {
         for (String url : links.getValue()) {
-          linkDao.createUncheckedLink(runId, record.getRecordId(), record.getRecordLastIndexTime(),
-                  url, links.getKey());
+          linkDao.createUncheckedLink(runId, record.getRecordId(), record.getLastIndexTime(),
+                  record.getEdmType(), record.getContentTier(), record.getMetadataTier(), url,
+                  links.getKey());
         }
       }
     }

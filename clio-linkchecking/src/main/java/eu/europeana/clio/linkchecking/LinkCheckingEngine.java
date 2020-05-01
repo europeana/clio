@@ -102,15 +102,16 @@ public final class LinkCheckingEngine {
       // Trigger checking all datasets and wait for the result.
       final AtomicInteger datasetsAlreadyRunningCounter = new AtomicInteger();
       final AtomicInteger datasetsNotYetIndexedCounter = new AtomicInteger();
+      final AtomicInteger datasetsWithoutLinksCounter = new AtomicInteger();
       final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
       ParallelTaskExecutor.executeAndWait(datasetIds,
               id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
-                      id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter),
-              properties.getLinkCheckingRunCreateThreads());
+                      id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter,
+                      datasetsWithoutLinksCounter), properties.getLinkCheckingRunCreateThreads());
 
       // Set the counters.
       batchDao.setCountersForBatch(batchId, datasetsAlreadyRunningCounter.get(),
-              datasetsNotYetIndexedCounter.get());
+              datasetsNotYetIndexedCounter.get(), datasetsWithoutLinksCounter.get());
 
     } catch (IOException e) {
       throw new PersistenceException("Problem occurred while connecting to data sources.", e);
@@ -119,8 +120,8 @@ public final class LinkCheckingEngine {
 
   private void createRunWithUncheckedLinksForDataset(MongoCoreDao mongoCoreDao, SolrDao solrDao,
           ClioPersistenceConnection databaseConnection, String datasetId, long batchId,
-          AtomicInteger datasetsAlreadyRunningCounter,
-          AtomicInteger datasetsNotYetIndexedCounter) throws ClioException {
+          AtomicInteger datasetsAlreadyRunningCounter, AtomicInteger datasetsNotYetIndexedCounter,
+          AtomicInteger datasetsWithoutLinksCounter) throws ClioException {
 
     // If the dataset already has a run in progress, we don't proceed.
     final RunDao runDao = new RunDao(databaseConnection);
@@ -141,6 +142,11 @@ public final class LinkCheckingEngine {
     // Obtain the sample records from the Solr database.
     final List<SampleRecord> sampleRecords = solrDao
             .getRandomSampleRecords(datasetId, properties.getLinkCheckingSampleRecordsPerDataset());
+    if (sampleRecords.isEmpty()) {
+      LOGGER.info("Skipping dataset {} as it has no records with links to check.", datasetId);
+      datasetsWithoutLinksCounter.incrementAndGet();
+      return;
+    }
 
     // Save the information to the Clio database
     new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
@@ -149,8 +155,9 @@ public final class LinkCheckingEngine {
     for (SampleRecord record : sampleRecords) {
       for (Entry<LinkType, Set<String>> links : record.getLinks().entrySet()) {
         for (String url : links.getValue()) {
-          linkDao.createUncheckedLink(runId, record.getRecordId(), record.getRecordLastIndexTime(),
-                  url, links.getKey());
+          linkDao.createUncheckedLink(runId, record.getRecordId(), record.getLastIndexTime(),
+                  record.getEdmType(), record.getContentTier(), record.getMetadataTier(), url,
+                  links.getKey());
         }
       }
     }

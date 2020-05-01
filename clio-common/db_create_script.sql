@@ -16,6 +16,7 @@ CREATE TABLE batch (
     last_update_time_metis_core BIGINT NOT NULL,
     datasets_excluded_already_running INTEGER,
     datasets_excluded_not_indexed INTEGER,
+    datasets_excluded_without_links INTEGER,
     PRIMARY KEY (batch_id)
 );
 
@@ -34,6 +35,9 @@ CREATE TABLE link (
     link_id  BIGSERIAL NOT NULL,
     run_id BIGINT NOT NULL,
     record_id VARCHAR(256) NOT NULL,
+    record_edm_type VARCHAR(5),
+    record_content_tier VARCHAR(1),
+    record_metadata_tier VARCHAR(1),
     record_last_index_time BIGINT NOT NULL,
     link_type VARCHAR(11) NOT NULL,
     link_url VARCHAR(768) NOT NULL,

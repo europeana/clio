@@ -40,6 +40,9 @@ public class BatchRow {
   @Column(name = "datasets_excluded_not_indexed")
   private Integer datasetsExcludedNotIndexed;
 
+  @Column(name = "datasets_excluded_without_links")
+  private Integer datasetsExcludedWithoutLinks;
+
   /**
    * Constructor for the use of JPA. Don't use from code.
    */
@@ -53,9 +56,11 @@ public class BatchRow {
     this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore.toEpochMilli();
   }
 
-  public void setCounters(int datasetsExcludedAlreadyRunning, int datasetsExcludedNotIndexed) {
+  public void setCounters(int datasetsExcludedAlreadyRunning, int datasetsExcludedNotIndexed,
+          int datasetsExcludedWithoutLinks) {
     this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;
     this.datasetsExcludedNotIndexed = datasetsExcludedNotIndexed;
+    this.datasetsExcludedWithoutLinks = datasetsExcludedWithoutLinks;
   }
 
   public long getBatchId() {
@@ -80,5 +85,9 @@ public class BatchRow {
 
   public Integer getDatasetsExcludedNotIndexed() {
     return datasetsExcludedNotIndexed;
+  }
+
+  public Integer getDatasetsExcludedWithoutLinks() {
+    return datasetsExcludedWithoutLinks;
   }
 }

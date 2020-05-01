@@ -5,11 +5,13 @@ import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.linkchecking.model.SampleRecord;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,14 +21,22 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocumentList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Data access object for the Solr.
  */
 public class SolrDao {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(SolrDao.class);
+
+  private static final String CONTENT_TIER_FIELD = "contentTier";
+  private static final String EDM_DATASET_NAME_FIELD = "edm_datasetName";
+  private static final String EDM_TYPE_FIELD = "proxy_edm_type";
   private static final String IS_SHOWN_AT_FIELD = "provider_aggregation_edm_isShownAt";
   private static final String IS_SHOWN_BY_FIELD = "provider_aggregation_edm_isShownBy";
+  private static final String METADATA_TIER_FIELD = "metadataTier";
   private static final String RECORD_ID_FIELD = "europeana_id";
   private static final String TIMESTAMP_UPDATE_FIELD = "timestamp_update";
 
@@ -42,7 +52,7 @@ public class SolrDao {
   }
 
   /**
-   * Get random sample records for a given dataset.
+   * Get random sample records for a given dataset that have at least one link.
    *
    * @param datasetId The (Metis) dataset ID of the dataset for which to get random records.
    * @param numberOfSampleRecords The number of random records needed.
@@ -55,12 +65,13 @@ public class SolrDao {
 
     // Create query
     final SolrQuery solrQuery = new SolrQuery("*.*");
-    solrQuery.setFilterQueries("edm_datasetName:" + datasetId + "_*");
+    solrQuery.setFilterQueries(EDM_DATASET_NAME_FIELD + ":" + datasetId + "_*",
+            IS_SHOWN_AT_FIELD + ":[* TO *] OR " + IS_SHOWN_BY_FIELD + ":[* TO *]");
     solrQuery.setSort(new SortClause("random_" + System.currentTimeMillis(), ORDER.asc));
     solrQuery.setStart(0);
     solrQuery.setRows(numberOfSampleRecords);
-    solrQuery.setFields(IS_SHOWN_AT_FIELD, IS_SHOWN_BY_FIELD, RECORD_ID_FIELD,
-            TIMESTAMP_UPDATE_FIELD);
+    solrQuery.setFields(CONTENT_TIER_FIELD, EDM_TYPE_FIELD, IS_SHOWN_AT_FIELD, IS_SHOWN_BY_FIELD,
+            METADATA_TIER_FIELD, RECORD_ID_FIELD, TIMESTAMP_UPDATE_FIELD);
 
     // Get and return result.
     return executeQuery(solrQuery).stream().map(result -> {
@@ -87,9 +98,22 @@ public class SolrDao {
               .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
               .map(Date::toInstant).orElse(Instant.EPOCH);
 
-      // Done.
+      // Get the edm:type.
+      final List<String> edmTypes = Optional
+              .ofNullable((List<?>) result.getFieldValue(EDM_TYPE_FIELD)).stream()
+              .flatMap(Collection::stream).filter(Objects::nonNull).map(String.class::cast)
+              .filter(type -> !type.isBlank()).collect(Collectors.toList());
       final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
-      return new SampleRecord(recordId, lastIndexedTime, links);
+      if (edmTypes.size() > 1) {
+        LOGGER.info("Found multiple types for record '" + recordId + "': " + String
+                .join(", ", edmTypes));
+      }
+      final String edmType = edmTypes.isEmpty() ? null : edmTypes.get(0);
+
+      // Done.
+      return new SampleRecord(recordId, lastIndexedTime, edmType,
+              (String) result.getFieldValue(CONTENT_TIER_FIELD),
+              (String) result.getFieldValue(METADATA_TIER_FIELD), links);
     }).collect(Collectors.toList());
   }
 

@@ -28,6 +28,9 @@ public class BatchesRequestResult {
   @ApiModelProperty(value = "How many datasets were excluded because its data had not (yet) been indexed. If absent, this number is not known.")
   private final Integer datasetsExcludedNotIndexed;
 
+  @ApiModelProperty(value = "How many datasets were excluded because they did not have records with links to check. If absent, this number is not known.")
+  private final Integer datasetsExcludedWithoutLinks;
+
   @ApiModelProperty("The number of datasets/runs in this batch that have finished processing.")
   private final int datasetsProcessed;
 
@@ -42,6 +45,7 @@ public class BatchesRequestResult {
             .format(batchWithCounters.getLastUpdateTimeInMetisCore());
     this.datasetsExcludedAlreadyRunning = batchWithCounters.getDatasetsExcludedAlreadyRunning();
     this.datasetsExcludedNotIndexed = batchWithCounters.getDatasetsExcludedNotIndexed();
+    this.datasetsExcludedWithoutLinks = batchWithCounters.getDatasetsExcludedWithoutLinks();
     this.datasetsProcessed = batchWithCounters.getDatasetsProcessed();
     this.datasetsPending = batchWithCounters.getDatasetsPending();
   }
@@ -64,6 +68,10 @@ public class BatchesRequestResult {
 
   public Integer getDatasetsExcludedNotIndexed() {
     return datasetsExcludedNotIndexed;
+  }
+
+  public Integer getDatasetsExcludedWithoutLinks() {
+    return datasetsExcludedWithoutLinks;
   }
 
   public int getDatasetsProcessed() {

@@ -13,20 +13,29 @@ import java.util.Set;
 public class SampleRecord {
 
   private final String recordId;
-  private final Instant recordLastIndexTime;
+  private final Instant lastIndexTime;
+  private final String edmType;
+  private final String contentTier;
+  private final String metadataTier;
   private final Map<LinkType, Set<String>> links;
 
   /**
    * Constructor.
    *
    * @param recordId The Europeana record ID.
-   * @param recordLastIndexTime The last time this record was indexed.
+   * @param lastIndexTime The last time this record was indexed.
+   * @param edmType The edm:type of the record.
+   * @param contentTier The content tier of the record.
+   * @param metadataTier The metadata tier of the record.
    * @param links The links in the record, sorted by link type.
    */
-  public SampleRecord(String recordId, Instant recordLastIndexTime,
-          Map<LinkType, Set<String>> links) {
+  public SampleRecord(String recordId, Instant lastIndexTime, String edmType, String contentTier,
+          String metadataTier, Map<LinkType, Set<String>> links) {
     this.recordId = recordId;
-    this.recordLastIndexTime = recordLastIndexTime;
+    this.lastIndexTime = lastIndexTime;
+    this.edmType = edmType;
+    this.contentTier = contentTier;
+    this.metadataTier = metadataTier;
     this.links = new EnumMap<>(links);
   }
 
@@ -34,8 +43,20 @@ public class SampleRecord {
     return recordId;
   }
 
-  public Instant getRecordLastIndexTime() {
-    return recordLastIndexTime;
+  public Instant getLastIndexTime() {
+    return lastIndexTime;
+  }
+
+  public String getEdmType() {
+    return edmType;
+  }
+
+  public String getContentTier() {
+    return contentTier;
+  }
+
+  public String getMetadataTier() {
+    return metadataTier;
   }
 
   public Map<LinkType, Set<String>> getLinks() {

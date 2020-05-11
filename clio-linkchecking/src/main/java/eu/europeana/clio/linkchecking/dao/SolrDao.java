@@ -102,7 +102,7 @@ public class SolrDao {
       final List<String> edmTypes = Optional
               .ofNullable((List<?>) result.getFieldValue(EDM_TYPE_FIELD)).stream()
               .flatMap(Collection::stream).filter(Objects::nonNull).map(String.class::cast)
-              .filter(type -> !type.isBlank()).collect(Collectors.toList());
+              .filter(type -> !type.isBlank()).distinct().collect(Collectors.toList());
       final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
       if (edmTypes.size() > 1) {
         LOGGER.info("Found multiple types for record '" + recordId + "': " + String

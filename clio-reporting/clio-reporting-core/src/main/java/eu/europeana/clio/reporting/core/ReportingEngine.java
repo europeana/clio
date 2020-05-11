@@ -76,8 +76,8 @@ public final class ReportingEngine {
       });
 
       // Create link stream ... see https://github.com/spotbugs/spotbugs/issues/756
-      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final Stream<Pair<Run, Link>> linkStream = brokenLinks
-              .get();
+      @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
+      final Stream<Pair<Run, Link>> linkStream = brokenLinks.get();
 
       // Write records
       linkStream.forEach(link -> writer.writeNext(new String[]{

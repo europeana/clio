@@ -31,22 +31,12 @@
                     <groupId>com.zoho.crm</groupId>
                     <artifactId>java-sdk</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-media-service</artifactId>
             <version>${version.metis}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

@@ -129,7 +129,7 @@ public class PropertiesHolder {
     final MongoProperties<ConfigurationException> properties =
         new MongoProperties<>(ConfigurationException::new);
     properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, ReadPreferenceValue.SECONDARY_PREFERRED);
+        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, ReadPreferenceValue.getDefault());
     return properties;
   }
 

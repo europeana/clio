@@ -1,5 +1,6 @@
 package eu.europeana.clio.linkchecking.config;
 
+import eu.europeana.metis.mongo.MongoProperties.ReadPreferenceValue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -128,7 +129,7 @@ public class PropertiesHolder {
     final MongoProperties<ConfigurationException> properties =
         new MongoProperties<>(ConfigurationException::new);
     properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl);
+        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, ReadPreferenceValue.SECONDARY_PREFERRED);
     return properties;
   }
 

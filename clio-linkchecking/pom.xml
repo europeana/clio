@@ -52,6 +52,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <finalName>clio-linkchecking</finalName>
                     <archive>
                         <manifest>
                             <mainClass>eu.europeana.clio.linkchecking.LinkCheckingMain</mainClass>

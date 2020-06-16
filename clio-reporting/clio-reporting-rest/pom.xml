@@ -58,6 +58,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <warName>clio-reporting-rest</warName>
+                </configuration>
             </plugin>
         </plugins>
     </build>

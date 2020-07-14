@@ -1,5 +1,7 @@
 package eu.europeana.clio.linkchecking.config;
 
+import eu.europeana.metis.mediaprocessing.LinkChecker;
+import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
 import eu.europeana.metis.mongo.MongoProperties.ReadPreferenceValue;
 import java.io.IOException;
 import java.io.InputStream;
@@ -184,15 +186,19 @@ public class PropertiesHolder {
   }
 
   /**
-   * Create a media processor factory (from which a link checker can be obtained).
+   * Create a link checker object.
    *
-   * @return A media processor factory.
+   * @return A link checker object.
    */
-  public MediaProcessorFactory createMediaProcessorFactory() {
+  public LinkChecker createLinkChecker() throws ConfigurationException {
     final MediaProcessorFactory mediaProcessorFactory = new MediaProcessorFactory();
     mediaProcessorFactory.setResourceConnectTimeout(this.linkCheckingConnectTimeout);
     mediaProcessorFactory.setResourceResponseTimeout(this.linkCheckingResponseTimeout);
     mediaProcessorFactory.setResourceDownloadTimeout(this.linkCheckingDownloadTimeout);
-    return mediaProcessorFactory;
+    try {
+      return mediaProcessorFactory.createLinkChecker();
+    } catch (MediaProcessorException e) {
+      throw new ConfigurationException("Could not create link checker.", e);
+    }
   }
 }

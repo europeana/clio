@@ -1,8 +1,12 @@
 package eu.europeana.clio.linkchecking.config;
 
+import eu.europeana.clio.common.exception.ConfigurationException;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
+import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
 import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
-import eu.europeana.metis.mongo.MongoProperties.ReadPreferenceValue;
+import eu.europeana.metis.mongo.MongoProperties;
+import eu.europeana.metis.solr.SolrProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -11,11 +15,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
-import eu.europeana.clio.common.exception.ConfigurationException;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
-import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
-import eu.europeana.metis.mongo.MongoProperties;
-import eu.europeana.metis.solr.SolrProperties;
 
 /**
  * Contains the properties required for the execution of the link checking functionality.
@@ -131,7 +130,7 @@ public class PropertiesHolder {
     final MongoProperties<ConfigurationException> properties =
         new MongoProperties<>(ConfigurationException::new);
     properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, ReadPreferenceValue.getDefault());
+        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null);
     return properties;
   }
 
@@ -189,6 +188,7 @@ public class PropertiesHolder {
    * Create a link checker object.
    *
    * @return A link checker object.
+   * @throws ConfigurationException In case the link checker could not be created.
    */
   public LinkChecker createLinkChecker() throws ConfigurationException {
     final MediaProcessorFactory mediaProcessorFactory = new MediaProcessorFactory();

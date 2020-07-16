@@ -46,15 +46,21 @@ public class CheckSingleLinkMain {
     // Perform link checking
     LOGGER.info("Checking link: {}", linkToCheck);
     try (final LinkChecker linkChecker = properties.createLinkChecker()) {
-      // Make copy just to avoid this: See https://github.com/spotbugs/spotbugs/issues/756
+      // Return something so that we can add annotation.
+      // See https://github.com/spotbugs/spotbugs/issues/756
       @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
-      final LinkChecker linkCheckerCopy = linkChecker;
-      linkCheckerCopy.performLinkChecking(linkToCheck);
-      LOGGER.info("Link checking successful.");
+      final String message = performLinkChecking(linkChecker, linkToCheck);
+      LOGGER.info(message);
     } catch (LinkCheckingException e) {
       LOGGER.warn("Link checking failed on the link.", e);
     } catch (IOException e) {
       throw new ClioException("Could not close link checker.", e);
     }
+  }
+
+  private static String performLinkChecking(LinkChecker linkChecker, String linkToCheck)
+          throws LinkCheckingException {
+    linkChecker.performLinkChecking(linkToCheck);
+    return "Link checking successful.";
   }
 }

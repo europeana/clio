@@ -10,7 +10,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 /**
  * This represents the persistent form of a run (a checking iteration for a given dataset).

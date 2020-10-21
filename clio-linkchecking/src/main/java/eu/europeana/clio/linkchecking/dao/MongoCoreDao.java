@@ -7,6 +7,7 @@ import com.mongodb.client.MongoClient;
 import dev.morphia.aggregation.experimental.Aggregation;
 import dev.morphia.aggregation.experimental.expressions.Expressions;
 import dev.morphia.aggregation.experimental.stages.Projection;
+import dev.morphia.annotations.Embedded;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.metis.core.common.DaoFieldNames;
@@ -52,7 +53,7 @@ public class MongoCoreDao {
   }
 
   /**
-   * Get a published dataset the Metis core persistence and translate it to a Clio dataset.
+   * Get a published dataset from the Metis core persistence and translate it to a Clio dataset.
    *
    * @param datasetId The (Metis) dataset ID of the dataset.
    * @return The dataset. Is null if the dataset exists but is not processed.
@@ -118,7 +119,7 @@ public class MongoCoreDao {
 
       // Project the dataset ID to the right field name.
       pipeline.project(Projection.of().exclude(ID.getFieldName())
-              .include(datasetIdField, Expressions.value(DATASET_ID.getFieldName())));
+              .include(datasetIdField, Expressions.field(DATASET_ID.getFieldName())));
 
       // Perform the aggregation and add the IDs in the result set.
       final Iterator<DatasetIdWrapper> resultIterator = pipeline.execute(DatasetIdWrapper.class);
@@ -142,8 +143,10 @@ public class MongoCoreDao {
   }
 
   /**
-   * A wrapper class for a dataset ID that is used in an aggregation query.
+   * A wrapper class for a dataset ID that is used in an aggregation query. The {@link Embedded}
+   * annotation is needed so that Morphia can handle the aggregation.
    */
+  @Embedded
   private static class DatasetIdWrapper {
 
     // Name depends on the mongo aggregations in which it is used.

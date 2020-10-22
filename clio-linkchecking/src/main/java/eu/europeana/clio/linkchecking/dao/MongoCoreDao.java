@@ -3,10 +3,11 @@ package eu.europeana.clio.linkchecking.dao;
 import static eu.europeana.metis.core.common.DaoFieldNames.DATASET_ID;
 import static eu.europeana.metis.core.common.DaoFieldNames.ID;
 
-import com.mongodb.MongoClient;
-import dev.morphia.aggregation.AggregationPipeline;
-import dev.morphia.aggregation.Projection;
-import dev.morphia.query.Query;
+import com.mongodb.client.MongoClient;
+import dev.morphia.aggregation.experimental.Aggregation;
+import dev.morphia.aggregation.experimental.expressions.Expressions;
+import dev.morphia.aggregation.experimental.stages.Projection;
+import dev.morphia.annotations.Embedded;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.metis.core.common.DaoFieldNames;
@@ -52,7 +53,7 @@ public class MongoCoreDao {
   }
 
   /**
-   * Get a published dataset the Metis core persistence and translate it to a Clio dataset.
+   * Get a published dataset from the Metis core persistence and translate it to a Clio dataset.
    *
    * @param datasetId The (Metis) dataset ID of the dataset.
    * @return The dataset. Is null if the dataset exists but is not processed.
@@ -70,12 +71,16 @@ public class MongoCoreDao {
 
     // Error checking
     final WorkflowExecutionDao workflowExecutionDao = new WorkflowExecutionDao(datastoreProvider);
-    final MetisPlugin latestSuccessfulIndex = workflowExecutionDao
-            .getLatestSuccessfulPlugin(metisDataset.getDatasetId(),
-                    Set.of(PluginType.PUBLISH, PluginType.REINDEX_TO_PUBLISH));
+    final MetisPlugin<?> latestSuccessfulIndex = Optional
+            .ofNullable(workflowExecutionDao.getLatestSuccessfulPlugin(metisDataset.getDatasetId(),
+                    Set.of(PluginType.PUBLISH, PluginType.REINDEX_TO_PUBLISH)))
+            .map(PluginWithExecutionId::getPlugin)
+            .orElse(null);
     final boolean noLatestIndexing = latestSuccessfulIndex == null;
-    final boolean invalidLatestIndexing = (latestSuccessfulIndex instanceof ExecutablePlugin)
-            && ((ExecutablePlugin) latestSuccessfulIndex).getDataStatus() != DataStatus.VALID;
+    // TODO JV in the next Metis libraries version we can use MetisPlugin.getDataStatus().
+    final boolean invalidLatestIndexing = latestSuccessfulIndex != null &&
+            Optional.ofNullable(latestSuccessfulIndex.getDataStatus()).orElse(DataStatus.VALID)
+                    != DataStatus.VALID;
     if (noLatestIndexing || invalidLatestIndexing) {
       return null;
     }
@@ -103,24 +108,21 @@ public class MongoCoreDao {
    */
   public Stream<String> getAllDatasetIds() {
 
-    return ExternalRequestUtil.retryableExternalRequestConnectionReset(() -> {
+    return ExternalRequestUtil.retryableExternalRequestForNetworkExceptions(() -> {
 
       // Create aggregation pipeline finding all datasets.
-      final AggregationPipeline pipeline = datastoreProvider.getDatastore()
-              .createAggregation(eu.europeana.metis.core.dataset.Dataset.class);
-      final Query<eu.europeana.metis.core.dataset.Dataset> query = datastoreProvider.getDatastore()
-              .createQuery(eu.europeana.metis.core.dataset.Dataset.class);
-      pipeline.match(query);
+      final Aggregation<eu.europeana.metis.core.dataset.Dataset> pipeline = datastoreProvider
+              .getDatastore().aggregate(eu.europeana.metis.core.dataset.Dataset.class);
 
       // The field name should be the field name in DatasetIdWrapper.
       final String datasetIdField = "datasetId";
 
       // Project the dataset ID to the right field name.
-      pipeline.project(Projection.projection(ID.getFieldName()).suppress(),
-              Projection.projection(datasetIdField, DATASET_ID.getFieldName()));
+      pipeline.project(Projection.of().exclude(ID.getFieldName())
+              .include(datasetIdField, Expressions.field(DATASET_ID.getFieldName())));
 
       // Perform the aggregation and add the IDs in the result set.
-      final Iterator<DatasetIdWrapper> resultIterator = pipeline.aggregate(DatasetIdWrapper.class);
+      final Iterator<DatasetIdWrapper> resultIterator = pipeline.execute(DatasetIdWrapper.class);
       return StreamSupport.stream(Spliterators.spliteratorUnknownSize(resultIterator, 0), false)
               .map(DatasetIdWrapper::getDatasetId);
     });
@@ -141,8 +143,10 @@ public class MongoCoreDao {
   }
 
   /**
-   * A wrapper class for a dataset ID that is used in an aggregation query.
+   * A wrapper class for a dataset ID that is used in an aggregation query. The {@link Embedded}
+   * annotation is needed so that Morphia can handle the aggregation.
    */
+  @Embedded
   private static class DatasetIdWrapper {
 
     // Name depends on the mongo aggregations in which it is used.

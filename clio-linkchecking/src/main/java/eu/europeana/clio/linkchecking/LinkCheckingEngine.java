@@ -1,6 +1,6 @@
 package eu.europeana.clio.linkchecking;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.common.exception.PersistenceException;

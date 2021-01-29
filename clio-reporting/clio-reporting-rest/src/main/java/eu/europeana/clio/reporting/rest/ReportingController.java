@@ -30,8 +30,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * The controller (web endpoint) that provides functionality related to the link checking report.
  */
 @Controller
-@Api(description = "Controller providing access to the latest link"
-        + " checking results as well as the link checking history.")
+@Api(value = "Controller providing access to link checking results and history.")
 public class ReportingController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportingController.class);

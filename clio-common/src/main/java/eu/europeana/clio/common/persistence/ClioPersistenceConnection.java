@@ -26,7 +26,7 @@ public class ClioPersistenceConnection implements Closeable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClioPersistenceConnection.class);
 
   // TODO JV Have the classes register here, or with annotation, is more transparent.
-  private static Set<Class<?>> annotatedClasses = Set
+  private static final Set<Class<?>> annotatedClasses = Set
           .of(DatasetRow.class, BatchRow.class, RunRow.class, LinkRow.class);
 
   private final String server;

@@ -1,18 +1,15 @@
 package eu.europeana.clio.linkchecking;
 
 import eu.europeana.clio.common.exception.ClioException;
-import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.linkchecking.config.PropertiesHolder;
-import eu.europeana.metis.utils.CustomTruststoreAppender;
-import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
+import eu.europeana.clio.linkchecking.config.TruststoreInitializer;
 import java.util.Arrays;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is currently the entry point of the link checking module of Clio. It contains a main
+ * This class is the main entry point of the link checking module of Clio. It contains a main
  * method ({@link #main(String[])}) that can be used to trigger the functionality.
  */
 public class LinkCheckingMain {
@@ -62,20 +59,9 @@ public class LinkCheckingMain {
 
   private static void mainInternal(Mode mode) throws ClioException {
 
-    // Read the properties
+    // Read the properties and initialize
     final PropertiesHolder properties = new PropertiesHolder();
-
-    // Set the truststore.
-    LOGGER.info("Append default truststore with custom truststore");
-    if (StringUtils.isNotEmpty(properties.getTruststorePath()) && StringUtils
-            .isNotEmpty(properties.getTruststorePassword())) {
-      try {
-        CustomTruststoreAppender.appendCustomTrustoreToDefault(properties.getTruststorePath(),
-                properties.getTruststorePassword());
-      } catch (TrustStoreConfigurationException e) {
-        throw new ConfigurationException(e.getMessage(), e);
-      }
-    }
+    TruststoreInitializer.initializeTruststore(properties);
 
     // Compute and store the sample records.
     final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(properties);

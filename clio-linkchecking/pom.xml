@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>1.0.0</version>
+        <version>1.1.0</version>
     </parent>
 
     <artifactId>clio-linkchecking</artifactId>
@@ -18,7 +18,7 @@
         <dependency>
             <artifactId>clio-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>

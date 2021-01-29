@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,47 +75,49 @@ public class SolrDao {
             METADATA_TIER_FIELD, RECORD_ID_FIELD, TIMESTAMP_UPDATE_FIELD);
 
     // Get and return result.
-    return executeQuery(solrQuery).stream().map(result -> {
+    return executeQuery(solrQuery).stream().map(SolrDao::convert).collect(Collectors.toList());
+  }
 
-      // Get the isShownAt links.
-      final Map<LinkType, Set<String>> links = new EnumMap<>(LinkType.class);
-      final List<?> isShownAtLinks = (List<?>) result.getFieldValue(IS_SHOWN_AT_FIELD);
-      if (isShownAtLinks != null) {
-        for (Object link : isShownAtLinks) {
-          links.computeIfAbsent(LinkType.IS_SHOWN_AT, key -> new HashSet<>()).add(link.toString());
-        }
+  private static SampleRecord convert(SolrDocument result) {
+
+    // Get the isShownAt links.
+    final Map<LinkType, Set<String>> links = new EnumMap<>(LinkType.class);
+    final List<?> isShownAtLinks = (List<?>) result.getFieldValue(IS_SHOWN_AT_FIELD);
+    if (isShownAtLinks != null) {
+      for (Object link : isShownAtLinks) {
+        links.computeIfAbsent(LinkType.IS_SHOWN_AT, key -> new HashSet<>()).add(link.toString());
       }
+    }
 
-      // Get the isShownBy links.
-      final List<?> isShownByLinks = (List<?>) result.getFieldValue(IS_SHOWN_BY_FIELD);
-      if (isShownByLinks != null) {
-        for (Object link : isShownByLinks) {
-          links.computeIfAbsent(LinkType.IS_SHOWN_BY, key -> new HashSet<>()).add(link.toString());
-        }
+    // Get the isShownBy links.
+    final List<?> isShownByLinks = (List<?>) result.getFieldValue(IS_SHOWN_BY_FIELD);
+    if (isShownByLinks != null) {
+      for (Object link : isShownByLinks) {
+        links.computeIfAbsent(LinkType.IS_SHOWN_BY, key -> new HashSet<>()).add(link.toString());
       }
+    }
 
-      // Get the last indexed time (update time). This should really exist.
-      final Instant lastIndexedTime = Optional
-              .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
-              .map(Date::toInstant).orElse(Instant.EPOCH);
+    // Get the last indexed time (update time). This should really exist.
+    final Instant lastIndexedTime = Optional
+            .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
+            .map(Date::toInstant).orElse(Instant.EPOCH);
 
-      // Get the edm:type.
-      final List<String> edmTypes = Optional
-              .ofNullable((List<?>) result.getFieldValue(EDM_TYPE_FIELD)).stream()
-              .flatMap(Collection::stream).filter(Objects::nonNull).map(String.class::cast)
-              .filter(type -> !type.isBlank()).distinct().collect(Collectors.toList());
-      final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
-      if (edmTypes.size() > 1) {
-        LOGGER.info("Found multiple types for record '" + recordId + "': " + String
-                .join(", ", edmTypes));
-      }
-      final String edmType = edmTypes.isEmpty() ? null : edmTypes.get(0);
+    // Get the edm:type.
+    final List<String> edmTypes = Optional
+            .ofNullable((List<?>) result.getFieldValue(EDM_TYPE_FIELD)).stream()
+            .flatMap(Collection::stream).filter(Objects::nonNull).map(String.class::cast)
+            .filter(type -> !type.isBlank()).distinct().collect(Collectors.toList());
+    final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
+    if (edmTypes.size() > 1 && LOGGER.isInfoEnabled()) {
+      LOGGER.info("Found multiple types for record '{}': {}", recordId,
+              String.join(", ", edmTypes));
+    }
+    final String edmType = edmTypes.isEmpty() ? null : edmTypes.get(0);
 
-      // Done.
-      return new SampleRecord(recordId, lastIndexedTime, edmType,
-              (String) result.getFieldValue(CONTENT_TIER_FIELD),
-              (String) result.getFieldValue(METADATA_TIER_FIELD), links);
-    }).collect(Collectors.toList());
+    // Done.
+    return new SampleRecord(recordId, lastIndexedTime, edmType,
+            (String) result.getFieldValue(CONTENT_TIER_FIELD),
+            (String) result.getFieldValue(METADATA_TIER_FIELD), links);
   }
 
   /**

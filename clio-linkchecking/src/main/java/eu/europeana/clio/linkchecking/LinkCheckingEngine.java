@@ -1,6 +1,6 @@
 package eu.europeana.clio.linkchecking;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.common.exception.PersistenceException;
@@ -19,7 +19,6 @@ import eu.europeana.clio.linkchecking.dao.SolrDao;
 import eu.europeana.clio.linkchecking.model.SampleRecord;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.exception.LinkCheckingException;
-import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
 import eu.europeana.metis.mongo.MongoClientProvider;
 import eu.europeana.metis.solr.CompoundSolrClient;
 import eu.europeana.metis.solr.SolrClientProvider;
@@ -173,7 +172,7 @@ public final class LinkCheckingEngine {
     final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
     try (final ClioPersistenceConnection databaseConnection =
             properties.getPersistenceConnectionProvider().createPersistenceConnection();
-            final LinkChecker linkChecker = createLinkChecker()) {
+            final LinkChecker linkChecker = properties.createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
       try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
         // See https://github.com/spotbugs/spotbugs/issues/756
@@ -312,13 +311,5 @@ public final class LinkCheckingEngine {
       nestedException = nestedException.getCause();
     }
     return stringBuilder.toString();
-  }
-
-  private LinkChecker createLinkChecker() throws ConfigurationException {
-    try {
-      return properties.createMediaProcessorFactory().createLinkChecker();
-    } catch (MediaProcessorException e) {
-      throw new ConfigurationException("Could not create link checker.", e);
-    }
   }
 }

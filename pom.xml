@@ -4,7 +4,7 @@
 
 	<groupId>eu.europeana.clio</groupId>
 	<artifactId>clio</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 
 	<packaging>pom</packaging>
 
@@ -21,7 +21,7 @@
 	<scm>
 		<connection>scm:git:https://github.com/europeana/clio</connection>
 		<url>https://github.com/europeana/clio</url>
-		<tag>v1.0.0</tag>
+		<tag>v1.1.0</tag>
 		<developerConnection>scm:git:https://github.com/europeana/clio</developerConnection>
 	</scm>
 
@@ -29,7 +29,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<version.maven.compiler.plugin>3.8.0</version.maven.compiler.plugin>
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
-		<version.metis>1.9.0</version.metis>
+		<version.metis>2</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
 		<version.spring>5.2.3.RELEASE</version.spring>
 		<version.slf4j>1.7.30</version.slf4j>

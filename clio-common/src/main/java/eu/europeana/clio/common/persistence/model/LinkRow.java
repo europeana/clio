@@ -145,37 +145,37 @@ public class LinkRow {
     this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
 
     // Test the length of certain properties
-    final String error;
+    final String errorString;
     if (recordId.length() > MAX_RECORD_ID_LENGTH) {
-      error = "Record ID is too long: " + recordId;
+      errorString = "Record ID is too long: " + recordId;
     } else if (recordEdmType != null && recordEdmType.length() > MAX_RECORD_EDM_TYPE_LENGTH) {
-      error = "Record edm:type is too long: " + recordEdmType;
+      errorString = "Record edm:type is too long: " + recordEdmType;
     } else if (recordContentTier != null
             && recordContentTier.length() > MAX_RECORD_CONTENT_TIER_LENGTH) {
-      error = "Record content tier is too long: " + recordContentTier;
+      errorString = "Record content tier is too long: " + recordContentTier;
     } else if (recordMetadataTier != null
             && recordMetadataTier.length() > MAX_RECORD_METADATA_TIER_LENGTH) {
-      error = "Record metadata tier is too long: " + recordMetadataTier;
+      errorString = "Record metadata tier is too long: " + recordMetadataTier;
     } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
-      error = "Link URL is too long: " + linkUrl;
+      errorString = "Link URL is too long: " + linkUrl;
     } else if (server == null) {
-      error = "Server could not be determined for link: " + linkUrl;
+      errorString = "Server could not be determined for link: " + linkUrl;
     } else if (server.length() > MAX_SERVER_LENGTH) {
-      error = "Server is too long: " + server;
+      errorString = "Server is too long: " + server;
     } else {
-      error = null;
+      errorString = null;
     }
-    if (error != null) {
-      setError(error);
+    if (errorString != null) {
+      setError(errorString);
       setCheckingTime(Instant.now());
     }
   }
 
-  public void setError(String error) {
+  public final void setError(String error) {
     this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
   }
 
-  public void setCheckingTime(Instant checkingTime) {
+  public final void setCheckingTime(Instant checkingTime) {
     this.checkingTime = checkingTime.toEpochMilli();
   }
 

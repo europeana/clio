@@ -4,7 +4,7 @@
 
 	<groupId>eu.europeana.clio</groupId>
 	<artifactId>clio</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 
 	<packaging>pom</packaging>
 
@@ -21,7 +21,7 @@
 	<scm>
 		<connection>scm:git:https://github.com/europeana/clio</connection>
 		<url>https://github.com/europeana/clio</url>
-		<tag>v1.1.0</tag>
+		<tag>v1.1.1</tag>
 		<developerConnection>scm:git:https://github.com/europeana/clio</developerConnection>
 	</scm>
 

@@ -65,7 +65,7 @@ public class SolrDao {
           throws PersistenceException {
 
     // Create query
-    final SolrQuery solrQuery = new SolrQuery("*.*");
+    final SolrQuery solrQuery = new SolrQuery("*:*");
     solrQuery.setFilterQueries(EDM_DATASET_NAME_FIELD + ":" + datasetId + "_*",
             IS_SHOWN_AT_FIELD + ":[* TO *] OR " + IS_SHOWN_BY_FIELD + ":[* TO *]");
     solrQuery.setSort(new SortClause("random_" + System.currentTimeMillis(), ORDER.asc));
@@ -129,7 +129,7 @@ public class SolrDao {
   public Instant getLastUpdateTime() throws PersistenceException {
 
     // Create query
-    final SolrQuery solrQuery = new SolrQuery("*.*");
+    final SolrQuery solrQuery = new SolrQuery("*:*");
     solrQuery.setSort(new SortClause(TIMESTAMP_UPDATE_FIELD, ORDER.desc));
     solrQuery.setStart(0);
     solrQuery.setRows(1);

@@ -31,6 +31,7 @@ public class PropertiesHolder {
   private final String mongoCorePassword;
   private final boolean mongoCoreEnableSsl;
   private final String mongoCoreDatabase;
+  private final String mongoCoreApplicationName;
 
   // truststore
   private final String truststorePath;
@@ -80,6 +81,7 @@ public class PropertiesHolder {
     mongoCorePassword = properties.getProperty("mongo.core.password");
     mongoCoreEnableSsl = Boolean.parseBoolean(properties.getProperty("mongo.core.enableSSL"));
     mongoCoreDatabase = properties.getProperty("mongo.core.db");
+    mongoCoreApplicationName = properties.getProperty("mongo.core.application.name");
 
     // truststore
     truststorePath = properties.getProperty("truststore.path");
@@ -130,7 +132,7 @@ public class PropertiesHolder {
     final MongoProperties<ConfigurationException> properties =
         new MongoProperties<>(ConfigurationException::new);
     properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null);
+        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null, mongoCoreApplicationName);
     return properties;
   }
 

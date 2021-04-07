@@ -5,8 +5,8 @@ import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
 import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
-import eu.europeana.metis.mongo.MongoProperties;
-import eu.europeana.metis.solr.SolrProperties;
+import eu.europeana.metis.mongo.connection.MongoProperties;
+import eu.europeana.metis.solr.connection.SolrProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -31,6 +31,7 @@ public class PropertiesHolder {
   private final String mongoCorePassword;
   private final boolean mongoCoreEnableSsl;
   private final String mongoCoreDatabase;
+  private final String mongoCoreApplicationName;
 
   // truststore
   private final String truststorePath;
@@ -80,6 +81,7 @@ public class PropertiesHolder {
     mongoCorePassword = properties.getProperty("mongo.core.password");
     mongoCoreEnableSsl = Boolean.parseBoolean(properties.getProperty("mongo.core.enableSSL"));
     mongoCoreDatabase = properties.getProperty("mongo.core.db");
+    mongoCoreApplicationName = properties.getProperty("mongo.core.application.name");
 
     // truststore
     truststorePath = properties.getProperty("truststore.path");
@@ -130,7 +132,7 @@ public class PropertiesHolder {
     final MongoProperties<ConfigurationException> properties =
         new MongoProperties<>(ConfigurationException::new);
     properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null);
+        mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null, mongoCoreApplicationName);
     return properties;
   }
 

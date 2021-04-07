@@ -24,7 +24,7 @@ import eu.europeana.metis.core.workflow.plugins.ExecutablePlugin;
 import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
 import eu.europeana.metis.core.workflow.plugins.MetisPlugin;
 import eu.europeana.metis.core.workflow.plugins.PluginType;
-import eu.europeana.metis.utils.ExternalRequestUtil;
+import eu.europeana.metis.network.ExternalRequestUtil;
 import java.time.Instant;
 import java.util.Date;
 import java.util.EnumSet;
@@ -86,7 +86,7 @@ public class MongoCoreDao {
     }
 
     // Find out how many records the dataset has.
-    final PluginWithExecutionId<ExecutablePlugin> latestSuccessfulExecutableIndex = workflowExecutionDao
+    final PluginWithExecutionId<ExecutablePlugin<?>> latestSuccessfulExecutableIndex = workflowExecutionDao
             .getLatestSuccessfulExecutablePlugin(datasetId, Set.of(ExecutablePluginType.PUBLISH),
                     false);
     final int datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
@@ -137,7 +137,7 @@ public class MongoCoreDao {
   public Instant getLastUpdateTime() {
     final ResultList<WorkflowExecution> executions = new WorkflowExecutionDao(datastoreProvider)
             .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
-                    DaoFieldNames.FINISHED_DATE, false, 0, false);
+                    DaoFieldNames.FINISHED_DATE, false, 0,1, false);
     return executions.getResults().stream().findFirst().map(WorkflowExecution::getFinishedDate)
             .map(Date::toInstant).orElse(Instant.EPOCH);
   }

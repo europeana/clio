@@ -6,6 +6,7 @@ mongo.core.username=
 mongo.core.password=
 mongo.core.enableSSL=
 mongo.core.db=
+mongo.core.application.name=
 
 #Truststore
 truststore.path=

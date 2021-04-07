@@ -137,7 +137,7 @@ public class MongoCoreDao {
   public Instant getLastUpdateTime() {
     final ResultList<WorkflowExecution> executions = new WorkflowExecutionDao(datastoreProvider)
             .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
-                    DaoFieldNames.FINISHED_DATE, false, 0,null, false);
+                    DaoFieldNames.FINISHED_DATE, false, 0,1, false);
     return executions.getResults().stream().findFirst().map(WorkflowExecution::getFinishedDate)
             .map(Date::toInstant).orElse(Instant.EPOCH);
   }

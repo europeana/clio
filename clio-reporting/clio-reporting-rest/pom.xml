@@ -25,6 +25,12 @@
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-common-utils</artifactId>
             <version>${version.metis}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>

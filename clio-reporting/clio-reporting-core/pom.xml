@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>2.0.0-SNAPSHOT</version>
+        <version>4</version>
 		<relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -17,7 +17,7 @@
         <dependency>
             <artifactId>clio-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>2.0.0-SNAPSHOT</version>
+            <version>4</version>
         </dependency>
         <dependency>
             <groupId>com.opencsv</groupId>

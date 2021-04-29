@@ -5,7 +5,7 @@
     <parent>
         <groupId>eu.europeana.clio</groupId>
         <artifactId>clio</artifactId>
-        <version>1.1.1</version>
+        <version>4</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -19,7 +19,18 @@
         <dependency>
             <artifactId>clio-reporting-core</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>1.1.1</version>
+            <version>4</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-utils</artifactId>
+            <version>${version.metis}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -31,6 +42,11 @@
             <artifactId>javax.servlet-api</artifactId>
             <version>3.1.0</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${version.jackson}</version>
         </dependency>
         <dependency>
             <groupId>io.springfox</groupId>

@@ -71,15 +71,14 @@ public class ClioReportingRestApplication implements WebMvcConfigurer, Initializ
 
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("swagger-ui.html")
-            .addResourceLocations("classpath:/META-INF/resources/");
-    registry.addResourceHandler("/webjars/**")
-            .addResourceLocations("classpath:/META-INF/resources/webjars/");
+    registry.addResourceHandler("/swagger-ui/**")
+            .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/")
+            .resourceChain(false);
   }
 
   @Override
   public void addViewControllers(ViewControllerRegistry registry) {
-    registry.addRedirectViewController("/", "swagger-ui.html");
+    registry.addRedirectViewController("/", "/swagger-ui/index.html");
   }
 
   @Bean

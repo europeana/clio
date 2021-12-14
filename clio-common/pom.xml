@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>4</version>
+        <version>4.1</version>
     </parent>
 
     <artifactId>clio-common</artifactId>

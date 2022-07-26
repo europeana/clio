@@ -4,7 +4,7 @@
 
 	<groupId>eu.europeana.clio</groupId>
 	<artifactId>clio</artifactId>
-	<version>4.1</version>
+	<version>7</version>
 
 	<packaging>pom</packaging>
 
@@ -21,7 +21,7 @@
 	<scm>
 		<connection>scm:git:https://github.com/europeana/clio</connection>
 		<url>https://github.com/europeana/clio</url>
-		<tag>v4</tag>
+		<tag>v7</tag>
 		<developerConnection>scm:git:https://github.com/europeana/clio</developerConnection>
 	</scm>
 
@@ -29,12 +29,12 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<version.maven.compiler.plugin>3.8.0</version.maven.compiler.plugin>
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
-		<version.metis>4</version.metis>
+		<version.metis>7</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
 		<version.spring>5.2.3.RELEASE</version.spring>
 		<version.slf4j>1.7.30</version.slf4j>
-		<version.log4j>2.15.0</version.log4j>
-		<version.swagger>2.9.2</version.swagger>
+		<version.log4j>2.17.1</version.log4j>
+		<version.swagger>3.0.0</version.swagger>
 		<version.jackson>2.12.2</version.jackson>
 	</properties>
 
@@ -42,7 +42,7 @@
 		<repository>
 			<id>libs-release</id>
 			<name>libs-release</name>
-			<url>http://artifactory.eanadev.org/artifactory/libs-release</url>
+			<url>https://artifactory.eanadev.org/artifactory/libs-release</url>
 			<releases>
 				<enabled>true</enabled>
 			</releases>
@@ -53,7 +53,7 @@
 		<repository>
 			<id>libs-snapshot</id>
 			<name>libs-snapshot</name>
-			<url>http://artifactory.eanadev.org/artifactory/libs-snapshot</url>
+			<url>https://artifactory.eanadev.org/artifactory/libs-snapshot</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>

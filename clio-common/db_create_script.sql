@@ -47,5 +47,12 @@ CREATE TABLE link (
     PRIMARY KEY (link_id),
     FOREIGN KEY (run_id) REFERENCES run
 );
+
+CREATE INDEX ON batch (creation_time);
+CREATE INDEX ON run (starting_time);
 CREATE INDEX ON link (server);
+CREATE INDEX ON link (link_url);
+CREATE INDEX ON link (checking_time);
+CREATE INDEX ON link (record_id);
+CREATE INDEX ON link (link_type);
 CREATE INDEX ON link (link_url);

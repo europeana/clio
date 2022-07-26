@@ -5,6 +5,8 @@ import eu.europeana.clio.reporting.core.ReportingEngine;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,10 +32,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * The controller (web endpoint) that provides functionality related to the link checking report.
  */
 @Controller
-@Api(value = "Controller providing access to link checking results and history.")
+@Tags(@Tag(name = ReportingController.CONTROLLER_TAG_NAME,
+        description = "Controller providing access to link checking results and history."))
+@Api(tags = ReportingController.CONTROLLER_TAG_NAME)
 public class ReportingController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportingController.class);
+
+  public static final String CONTROLLER_TAG_NAME = "ReportingController";
 
   private final ReportingEngine reportingEngine;
 

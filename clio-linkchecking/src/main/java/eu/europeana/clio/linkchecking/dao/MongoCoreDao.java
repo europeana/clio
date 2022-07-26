@@ -71,7 +71,7 @@ public class MongoCoreDao {
 
     // Error checking
     final WorkflowExecutionDao workflowExecutionDao = new WorkflowExecutionDao(datastoreProvider);
-    final MetisPlugin<?> latestSuccessfulIndex = Optional
+    final MetisPlugin latestSuccessfulIndex = Optional
             .ofNullable(workflowExecutionDao.getLatestSuccessfulPlugin(metisDataset.getDatasetId(),
                     Set.of(PluginType.PUBLISH, PluginType.REINDEX_TO_PUBLISH)))
             .map(PluginWithExecutionId::getPlugin)
@@ -86,7 +86,7 @@ public class MongoCoreDao {
     }
 
     // Find out how many records the dataset has.
-    final PluginWithExecutionId<ExecutablePlugin<?>> latestSuccessfulExecutableIndex = workflowExecutionDao
+    final PluginWithExecutionId<ExecutablePlugin> latestSuccessfulExecutableIndex = workflowExecutionDao
             .getLatestSuccessfulExecutablePlugin(datasetId, Set.of(ExecutablePluginType.PUBLISH),
                     false);
     final int datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)

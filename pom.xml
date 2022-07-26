@@ -29,7 +29,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<version.maven.compiler.plugin>3.8.0</version.maven.compiler.plugin>
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
-		<version.metis>6-SNAPSHOT</version.metis>
+		<version.metis>7</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
 		<version.spring>5.2.3.RELEASE</version.spring>
 		<version.slf4j>1.7.30</version.slf4j>

@@ -2,16 +2,19 @@ package eu.europeana.clio.reporting.rest.config;
 
 import eu.europeana.clio.reporting.core.ReportingEngine;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
+import eu.europeana.metis.utils.apm.ElasticAPMConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@Import({ElasticAPMConfiguration.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
 public class ApplicationConfiguration implements WebMvcConfigurer {
 

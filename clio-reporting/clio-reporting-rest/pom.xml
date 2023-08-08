@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-utils</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <exclusions>
@@ -30,6 +35,21 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>${version.springdoc.openapi}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-agent-attach</artifactId>
+            <version>${version.elastic.apm}</version>
         </dependency>
         <dependency>
             <artifactId>clio-reporting-core</artifactId>

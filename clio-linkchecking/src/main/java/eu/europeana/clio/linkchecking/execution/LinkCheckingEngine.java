@@ -1,4 +1,4 @@
-package eu.europeana.clio.linkchecking;
+package eu.europeana.clio.linkchecking.execution;
 
 import com.mongodb.client.MongoClient;
 import eu.europeana.clio.common.exception.ClioException;
@@ -13,7 +13,7 @@ import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
-import eu.europeana.clio.linkchecking.config.PropertiesHolder;
+import eu.europeana.clio.linkchecking.config.ConfigurationPropertiesHolder;
 import eu.europeana.clio.linkchecking.dao.MongoCoreDao;
 import eu.europeana.clio.linkchecking.dao.SolrDao;
 import eu.europeana.clio.linkchecking.model.SampleRecord;
@@ -52,15 +52,15 @@ public final class LinkCheckingEngine {
 
   private static final Map<String, Semaphore> semaphorePerServer = new ConcurrentHashMap<>();
 
-  private final PropertiesHolder properties;
+  private final ConfigurationPropertiesHolder propertiesHolder;
 
   /**
    * Constrcutor.
    *
-   * @param properties The properties of this module.
+   * @param propertiesHolder The properties of this module.
    */
-  public LinkCheckingEngine(PropertiesHolder properties) {
-    this.properties = properties;
+  public LinkCheckingEngine(ConfigurationPropertiesHolder propertiesHolder) {
+    this.propertiesHolder = propertiesHolder;
   }
 
   /**
@@ -74,20 +74,20 @@ public final class LinkCheckingEngine {
 
     // Create access for the mongo (metis core) and the solr.
     final MongoClientProvider<ConfigurationException> mongoClientProvider = new MongoClientProvider<>(
-            properties.getMongoProperties());
+            propertiesHolder.getMongoProperties());
     final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
-            properties.getSolrProperties());
+            propertiesHolder.getSolrProperties());
 
     // Create closable connections to the mongo, the solr and the own database.
     try (
         final ClioPersistenceConnection databaseConnection =
-            properties.getPersistenceConnectionProvider().createPersistenceConnection();
+            propertiesHolder.getPersistenceConnectionProvider().createPersistenceConnection();
         final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
         final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
 
       // Finish setting up the connections.
       final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
-              properties.getMongoDatabase());
+              propertiesHolder.getMongoCoreDatabase());
       // See https://github.com/spotbugs/spotbugs/issues/756
       @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
       final SolrClient nativeSolrClient = solrClient.getSolrClient();
@@ -106,7 +106,7 @@ public final class LinkCheckingEngine {
       ParallelTaskExecutor.executeAndWait(datasetIds,
               id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
                       id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter,
-                      datasetsWithoutLinksCounter), properties.getLinkCheckingRunCreateThreads());
+                      datasetsWithoutLinksCounter), propertiesHolder.getLinkCheckingRunCreateThreads());
 
       // Set the counters.
       batchDao.setCountersForBatch(batchId, datasetsAlreadyRunningCounter.get(),
@@ -140,7 +140,7 @@ public final class LinkCheckingEngine {
 
     // Obtain the sample records from the Solr database.
     final List<SampleRecord> sampleRecords = solrDao
-            .getRandomSampleRecords(datasetId, properties.getLinkCheckingSampleRecordsPerDataset());
+            .getRandomSampleRecords(datasetId, propertiesHolder.getLinkCheckingSampleRecordsPerDataset());
     if (sampleRecords.isEmpty()) {
       LOGGER.info("Skipping dataset {} as it has no records with links to check.", datasetId);
       datasetsWithoutLinksCounter.incrementAndGet();
@@ -171,8 +171,8 @@ public final class LinkCheckingEngine {
   public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
     final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
     try (final ClioPersistenceConnection databaseConnection =
-            properties.getPersistenceConnectionProvider().createPersistenceConnection();
-            final LinkChecker linkChecker = properties.createLinkChecker()) {
+            propertiesHolder.getPersistenceConnectionProvider().createPersistenceConnection();
+            final LinkChecker linkChecker = propertiesHolder.createLinkChecker()) {
       final LinkDao linkDao = new LinkDao(databaseConnection);
       try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
         // See https://github.com/spotbugs/spotbugs/issues/756
@@ -181,7 +181,7 @@ public final class LinkCheckingEngine {
         ParallelTaskExecutor.executeAndWait(linkStream,
                 link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao,
                         semaphoreReleasePool, link),
-                properties.getLinkCheckingRunExecuteThreads());
+                propertiesHolder.getLinkCheckingRunExecuteThreads());
       }
     } catch (IOException e) {
       throw new ClioException("Could not close link checker.", e);
@@ -268,7 +268,7 @@ public final class LinkCheckingEngine {
       semaphorePerServer.computeIfPresent(server, (key, value) -> (value.hasQueuedThreads() ||
               value.availablePermits() < NUMBER_OF_CONCURRENT_THREADS_PER_SERVER) ? value : null);
 
-    }, properties.getLinkCheckingMinTimeBetweenSameServerChecks().toMillis(), TimeUnit.MILLISECONDS);
+    }, propertiesHolder.getLinkCheckingMinTimeBetweenSameServerChecks().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private void performLinkCheckingOnUncheckedLink(final LinkChecker linkChecker, LinkDao linkDao,

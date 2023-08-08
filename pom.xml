@@ -27,11 +27,13 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<version.maven.compiler.plugin>3.8.0</version.maven.compiler.plugin>
+		<version.maven.compiler.plugin>3.8.1</version.maven.compiler.plugin>
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 		<version.metis>7</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
+		<version.spring.boot>2.7.8</version.spring.boot>
 		<version.spring>5.2.3.RELEASE</version.spring>
+		<version.springdoc.openapi>1.7.0</version.springdoc.openapi>
 		<version.slf4j>1.7.30</version.slf4j>
 		<version.log4j>2.17.1</version.log4j>
 		<version.swagger>3.0.0</version.swagger>
@@ -82,18 +84,7 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>${version.maven.compiler.plugin}</version>
 					<configuration>
-						<forceJavacCompilerUse>true</forceJavacCompilerUse>
 						<release>11</release>
-						<source>11</source>
-						<target>11</target>
-					</configuration>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-war-plugin</artifactId>
-					<version>3.2.3</version>
-					<configuration>
-						<failOnMissingWebXml>false</failOnMissingWebXml>
 					</configuration>
 				</plugin>
 			</plugins>

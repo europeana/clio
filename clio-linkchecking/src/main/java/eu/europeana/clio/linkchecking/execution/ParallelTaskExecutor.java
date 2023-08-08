@@ -1,4 +1,4 @@
-package eu.europeana.clio.linkchecking;
+package eu.europeana.clio.linkchecking.execution;
 
 import eu.europeana.clio.common.exception.ClioException;
 import java.util.Iterator;

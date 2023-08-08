@@ -1,7 +1,8 @@
-package eu.europeana.clio.reporting.rest;
+package eu.europeana.clio.reporting.rest.controller;
 
 import eu.europeana.clio.common.model.BatchWithCounters;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+//import io.swagger.annotations.ApiModelProperty;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
@@ -13,28 +14,28 @@ public class BatchesRequestResult {
   private static final DateTimeFormatter INSTANT_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME
           .withZone(ZoneId.systemDefault());
 
-  @ApiModelProperty("The moment this batch was created.")
+  @Schema(title = "The moment this batch was created.", type = "string")
   private final String creationTime;
 
-  @ApiModelProperty("The last update in the Solr database at the moment this batch was created.")
+  @Schema(title = "The last update in the Solr database at the moment this batch was created.", type = "string")
   private final String lastUpdateTimeInSolr;
 
-  @ApiModelProperty("The last indexing task in the Metis history at the moment this batch was created.")
+  @Schema(title = "The last indexing task in the Metis history at the moment this batch was created.", type = "string")
   private final String lastUpdateTimeInMetisCore;
 
-  @ApiModelProperty(value = "How many datasets were excluded because they were still pending from a previous batch. If absent, this number is not known.")
+  @Schema(title = "How many datasets were excluded because they were still pending from a previous batch. If absent, this number is not known.", type = "integer")
   private final Integer datasetsExcludedAlreadyRunning;
 
-  @ApiModelProperty(value = "How many datasets were excluded because its data had not (yet) been indexed. If absent, this number is not known.")
+  @Schema(title = "How many datasets were excluded because its data had not (yet) been indexed. If absent, this number is not known.", type = "integer")
   private final Integer datasetsExcludedNotIndexed;
 
-  @ApiModelProperty(value = "How many datasets were excluded because they did not have records with links to check. If absent, this number is not known.")
+  @Schema(title = "How many datasets were excluded because they did not have records with links to check. If absent, this number is not known.", type = "integer")
   private final Integer datasetsExcludedWithoutLinks;
 
-  @ApiModelProperty("The number of datasets/runs in this batch that have finished processing.")
+  @Schema(title = "The number of datasets/runs in this batch that have finished processing.", type = "integer")
   private final int datasetsProcessed;
 
-  @ApiModelProperty("The number of datasets/runs in this batch that have not yet finished processing.")
+  @Schema(title = "The number of datasets/runs in this batch that have not yet finished processing.", type = "integer")
   private final int datasetsPending;
 
   BatchesRequestResult(BatchWithCounters batchWithCounters) {

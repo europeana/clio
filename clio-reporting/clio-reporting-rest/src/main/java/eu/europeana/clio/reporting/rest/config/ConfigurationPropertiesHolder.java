@@ -1,4 +1,4 @@
-package eu.europeana.clio.reporting.rest;
+package eu.europeana.clio.reporting.rest.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
@@ -10,8 +10,7 @@ import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
  * injection/property loading.
  */
 @Component
-@PropertySource({"classpath:application.properties"})
-public class PropertiesFromSpring extends AbstractPropertiesHolder {
+public class ConfigurationPropertiesHolder extends AbstractPropertiesHolder {
 
   // truststore
   @Value("${" + TRUSTSTORE_PATH_PROPERTY + "}")

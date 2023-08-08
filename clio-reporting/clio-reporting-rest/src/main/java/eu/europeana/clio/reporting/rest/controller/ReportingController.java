@@ -1,12 +1,7 @@
-package eu.europeana.clio.reporting.rest;
+package eu.europeana.clio.reporting.rest.controller;
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.core.ReportingEngine;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.tags.Tags;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,6 +9,11 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @Tags(@Tag(name = ReportingController.CONTROLLER_TAG_NAME,
         description = "Controller providing access to link checking results and history."))
-@Api(tags = ReportingController.CONTROLLER_TAG_NAME)
 public class ReportingController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportingController.class);
@@ -65,8 +64,7 @@ public class ReportingController {
    */
   @GetMapping(value = "report", produces = "text/csv")
   @ResponseBody
-  @ApiOperation(value = "Get full report with the the latest link checking results.",
-          notes = "The links in the report may be part of multiple batches.")
+  @Operation(summary = "Get full report with the the latest link checking results.", description = "The links in the report may be part of multiple batches.")
   public HttpEntity<byte[]> getReport() throws ClioException {
 
     // Create the report.
@@ -94,11 +92,10 @@ public class ReportingController {
 
   @GetMapping(value = "batches", produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
-  @ApiOperation(value = "Get a historic overview of the most recent link checking batches.",
-          notes = "The batches are returned in reverse chronological order.")
+  @Operation(summary = "Get a historic overview of the most recent link checking batches.", description = "The batches are returned in reverse chronological order.")
   public ResponseEntity<List<BatchesRequestResult>> getBatches(
           @RequestParam(value = "maxResults", required = false, defaultValue = "5")
-          @ApiParam(value = "The maximum number of batches returned, must be a positive number.", example = "1")
+          @Parameter(description = "The maximum number of batches returned, must be a positive number.", example = "1")
                   int maxResults)
           throws ClioException {
     if (maxResults < 1) {

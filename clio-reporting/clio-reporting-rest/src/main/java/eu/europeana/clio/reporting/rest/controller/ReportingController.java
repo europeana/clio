@@ -2,6 +2,17 @@ package eu.europeana.clio.reporting.rest.controller;
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.core.ReportingEngine;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,24 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.tags.Tags;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-
 /**
  * The controller (web endpoint) that provides functionality related to the link checking report.
  */
@@ -35,8 +28,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Tags(@Tag(name = ReportingController.CONTROLLER_TAG_NAME,
         description = "Controller providing access to link checking results and history."))
 public class ReportingController {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReportingController.class);
 
   public static final String CONTROLLER_TAG_NAME = "ReportingController";
 
@@ -75,10 +66,8 @@ public class ReportingController {
       this.reportingEngine.generateReport(outputWriter);
       report = outputStream.toByteArray();
     } catch (IOException e) {
-      LOGGER.warn("IO Problem while retrieving report.", e);
       throw new ClioException("Problem while retrieving report.", e);
     } catch (ClioException | RuntimeException e) {
-      LOGGER.warn("Unexpected Problem while retrieving report.", e);
       throw e;
     }
 
@@ -90,9 +79,17 @@ public class ReportingController {
     return new HttpEntity<>(report, headers);
   }
 
+  /**
+   * Get a historic overview of the most recent link checking batches.
+   *
+   * @param maxResults the maximum number of results to return
+   * @return the most recent batches
+   * @throws ClioException if an error occurred while retrieving the most recent batches
+   */
   @GetMapping(value = "batches", produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
-  @Operation(summary = "Get a historic overview of the most recent link checking batches.", description = "The batches are returned in reverse chronological order.")
+  @Operation(summary =
+          "Get a historic overview of the most recent link checking batches.", description = "The batches are returned in reverse chronological order.")
   public ResponseEntity<List<BatchesRequestResult>> getBatches(
           @RequestParam(value = "maxResults", required = false, defaultValue = "5")
           @Parameter(description = "The maximum number of batches returned, must be a positive number.", example = "1")

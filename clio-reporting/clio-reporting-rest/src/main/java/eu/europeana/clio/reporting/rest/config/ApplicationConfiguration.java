@@ -13,6 +13,9 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Entry class with configuration fields and beans initialization for the application.
+ */
 @Configuration
 @Import({ElasticAPMConfiguration.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})

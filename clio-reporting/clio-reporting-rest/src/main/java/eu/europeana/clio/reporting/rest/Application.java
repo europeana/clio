@@ -9,14 +9,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class Application {
 
-  /**
-   * The main spring boot method.
-   *
-   * @param args application arguments
-   */
-  public static void main(String[] args) {
-    SpringApplication.run(Application.class, args);
-  }
+    /**
+     * The main spring boot method.
+     *
+     * @param args application arguments
+     */
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
 }
 
 

@@ -9,6 +9,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Entry class with configuration fields and beans initialization for the application.
+ */
 @Configuration
 public class ApplicationConfiguration {
 

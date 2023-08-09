@@ -12,20 +12,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-  /**
-   * The open api documentation docket.
-   *
-   * @return the docket configuration
-   */
-  @Bean
-  public OpenAPI openAPI() {
-    return new OpenAPI()
-        .info(new Info()
-            .title("Clio REST API")
-            .description("Checking Links In Operation - automatic link checking for Metis")
-            .version("v1")
-            .license(new License()
-                .name("EUPL Licence v1.2")
-                .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12")));
-  }
+    /**
+     * The open api documentation docket.
+     *
+     * @return the docket configuration
+     */
+    @Bean
+    public OpenAPI openAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Clio REST API")
+                        .description("Checking Links In Operation - automatic link checking for Metis")
+                        .version("v1")
+                        .license(new License()
+                                .name("EUPL Licence v1.2")
+                                .url("https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12")));
+    }
 }

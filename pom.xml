@@ -31,6 +31,7 @@
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 		<version.metis>9</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>
+		<version.postgresql>42.4.1</version.postgresql>
 		<version.spring.boot>2.7.8</version.spring.boot>
 		<version.spring>5.2.3.RELEASE</version.spring>
 		<version.springdoc.openapi>1.7.0</version.springdoc.openapi>

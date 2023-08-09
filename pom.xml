@@ -13,8 +13,7 @@
 	<modules>
 		<module>clio-common</module>
 		<module>clio-linkchecking</module>
-		<module>clio-reporting/clio-reporting-core</module>
-		<module>clio-reporting/clio-reporting-rest</module>
+		<module>clio-reporting</module>
 	</modules>
 
 	<!-- Github connection -->
@@ -27,7 +26,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<version.maven.compiler.plugin>3.8.1</version.maven.compiler.plugin>
+		<version.maven.compiler.plugin>3.11.0</version.maven.compiler.plugin>
 		<version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 		<version.metis>9</version.metis>
 		<version.hibernate>5.4.10.Final</version.hibernate>

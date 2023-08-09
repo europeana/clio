@@ -3,15 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>clio</artifactId>
+        <artifactId>clio-reporting</artifactId>
         <groupId>eu.europeana.clio</groupId>
         <version>8-SNAPSHOT</version>
-		<relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>clio-reporting-core</artifactId>
+    <artifactId>clio-reporting-common</artifactId>
 
-    <name>clio-reporting-core</name>
+    <name>clio-reporting-common</name>
 
     <dependencies>
         <dependency>
@@ -24,7 +23,23 @@
             <artifactId>opencsv</artifactId>
             <version>5.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${version.spring.boot}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

@@ -1,5 +1,6 @@
 package eu.europeana.clio.reporting.rest.config;
 
+import eu.europeana.clio.reporting.core.config.ConfigurationPropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.CustomTruststoreAppender.TrustStoreConfigurationException;
 import org.apache.commons.lang3.StringUtils;

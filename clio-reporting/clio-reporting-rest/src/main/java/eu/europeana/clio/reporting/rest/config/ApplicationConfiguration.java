@@ -1,6 +1,7 @@
 package eu.europeana.clio.reporting.rest.config;
 
 import eu.europeana.clio.reporting.core.ReportingEngine;
+import eu.europeana.clio.reporting.core.config.ConfigurationPropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.apm.ElasticAPMConfiguration;
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Entry class with configuration fields and beans initialization for the application.
  */
 @Configuration
-@Import({ElasticAPMConfiguration.class})
+@Import({ElasticAPMConfiguration.class, ConfigurationPropertiesHolder.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
 public class ApplicationConfiguration implements WebMvcConfigurer {
 

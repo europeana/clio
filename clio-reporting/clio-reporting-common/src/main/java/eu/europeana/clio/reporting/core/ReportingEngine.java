@@ -1,9 +1,18 @@
 package eu.europeana.clio.reporting.core;
 
+import com.opencsv.CSVWriter;
+import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
+import eu.europeana.clio.common.model.Link;
+import eu.europeana.clio.common.model.Run;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
+import eu.europeana.clio.common.persistence.dao.LinkDao;
+import eu.europeana.clio.reporting.core.config.ConfigurationPropertiesHolder;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.time.Instant;
@@ -12,22 +21,14 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import com.opencsv.CSVWriter;
-import eu.europeana.clio.common.exception.ClioException;
-import eu.europeana.clio.common.model.Link;
-import eu.europeana.clio.common.model.Run;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
-import eu.europeana.clio.common.persistence.dao.LinkDao;
-import eu.europeana.clio.reporting.core.config.AbstractPropertiesHolder;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class provides core functionality for the reporting module of Clio.
  */
 public final class ReportingEngine {
 
-  private final AbstractPropertiesHolder properties;
+  private final ConfigurationPropertiesHolder properties;
 
   private static final DateTimeFormatter fileNameFormatter = DateTimeFormatter
           .ofPattern("'clio_report_'yyyy-MM-dd_kk-mm-ss'.csv'").withZone(ZoneId.systemDefault());
@@ -37,7 +38,7 @@ public final class ReportingEngine {
    *
    * @param properties The properties of this module.
    */
-  public ReportingEngine(AbstractPropertiesHolder properties) {
+  public ReportingEngine(ConfigurationPropertiesHolder properties) {
     this.properties = properties;
   }
 

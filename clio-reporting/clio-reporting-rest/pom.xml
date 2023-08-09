@@ -52,7 +52,7 @@
             <version>${version.elastic.apm}</version>
         </dependency>
         <dependency>
-            <artifactId>clio-reporting-core</artifactId>
+            <artifactId>clio-reporting-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
             <version>8-SNAPSHOT</version>
         </dependency>

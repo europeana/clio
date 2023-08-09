@@ -70,6 +70,8 @@ public class ConfigurationPropertiesHolder {
     private String postgresPassword;
 
     // Link checking
+    @Value("#{T(eu.europeana.clio.linkchecking.config.Mode).getMode('${linkchecking.mode}')}")
+    private Mode linkCheckingMode;
     @Value("${linkchecking.sample.records.per.dataset}")
     private int linkCheckingSampleRecordsPerDataset;
     @Value("${linkchecking.run.create.threads}")
@@ -152,6 +154,10 @@ public class ConfigurationPropertiesHolder {
 
     public String getPostgresPassword() {
         return postgresPassword;
+    }
+
+    public Mode getLinkCheckingMode() {
+        return linkCheckingMode;
     }
 
     public int getLinkCheckingSampleRecordsPerDataset() {

@@ -2,12 +2,10 @@ package eu.europeana.clio.linkchecking.execution;
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.linkchecking.config.ConfigurationPropertiesHolder;
+import eu.europeana.clio.linkchecking.config.Mode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
-
-import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * This class is the main entry point of the link checking module of Clio. It contains a main
@@ -23,8 +21,6 @@ public class LinkCheckingRunner implements CommandLineRunner {
         this.propertiesHolder = propertiesHolder;
     }
 
-    private enum Mode {FULL_PROCESSING, LINK_CHECKING_ONLY}
-
     /**
      * Main method.
      *
@@ -33,36 +29,10 @@ public class LinkCheckingRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            final String modeString = Optional.of(args).filter(list -> list.length > 0)
-                    .map(list -> list[0]).orElse(null);
-            mainInternal(parseMode(modeString));
+            mainInternal(propertiesHolder.getLinkCheckingMode());
         } catch (ClioException | RuntimeException e) {
             LOGGER.warn("Something happened while performing link checking.", e);
-            System.exit(1);
         }
-    }
-
-    private static Mode parseMode(String modeString) {
-
-        // In case nothing is provided
-        if (modeString == null) {
-            LOGGER.info("No processing mode provided: defaulting to processing mode {}.",
-                    Mode.FULL_PROCESSING);
-            return Mode.FULL_PROCESSING;
-        }
-
-        // In case the mode is not recognised.
-        final Mode mode = Arrays.stream(Mode.values())
-                .filter(value -> modeString.equals(value.name())).findAny().orElse(null);
-        if (mode == null) {
-            LOGGER.warn("Unrecognized processing mode provided: '{}'. Defaulting to processing mode {}.",
-                    modeString, Mode.FULL_PROCESSING);
-            return Mode.FULL_PROCESSING;
-        }
-
-        // In case we have a valid mode.
-        LOGGER.info("Executing with processing mode {}.", mode);
-        return mode;
     }
 
     private void mainInternal(Mode mode) throws ClioException {

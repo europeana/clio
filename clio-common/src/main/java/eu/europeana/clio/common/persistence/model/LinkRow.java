@@ -171,11 +171,11 @@ public class LinkRow {
     }
   }
 
-  public final void setError(String error) {
+  public void setError(String error) {
     this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
   }
 
-  public final void setCheckingTime(Instant checkingTime) {
+  public void setCheckingTime(Instant checkingTime) {
     this.checkingTime = checkingTime.toEpochMilli();
   }
 

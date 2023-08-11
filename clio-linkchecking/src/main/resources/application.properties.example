@@ -1,3 +1,12 @@
+#Spring
+#logging.config=/data/logging/log4j2.xml
+logging.config=log4j2.xml
+spring.autoconfigure.exclude=\
+  org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration, \
+  org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration, \
+  org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration, \
+  org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration
+
 #Mongo metis-core
 mongo.core.hosts=
 mongo.core.port=
@@ -29,6 +38,7 @@ postgresql.password=
 # all links for a dataset (likely with the same server) may come through to the link checker in quick
 # succession, this would decreases the likelihood and impact of the bottleneck that is created this
 # way (threads needing to spend a lot of time waiting for other threads to free up a server).
+linkchecking.mode=
 linkchecking.sample.records.per.dataset=
 linkchecking.run.create.threads=
 linkchecking.run.execute.threads=

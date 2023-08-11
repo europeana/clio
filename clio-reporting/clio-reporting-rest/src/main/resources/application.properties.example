@@ -1,9 +1,12 @@
+#Spring
+springdoc.packages-to-scan=eu.europeana.clio.reporting.rest
+springdoc.paths-to-match=/**
+
 #Truststore
 truststore.path=
 truststore.password=
 
-#PostGreSQL
-postgresql.server=jdbc:postgresql://
+postgresql.server=
 postgresql.username=
 postgresql.password=
 
@@ -11,3 +14,16 @@ postgresql.password=
 # The String.format() - compatible template for the link to the dataset to be included in the
 # report. It expects one occurrence of '%s' that will contain the dataset ID.
 report.dataset.link.template=
+
+# Elastic APM
+elastic.apm.enabled=false
+elastic.apm.recording=true
+elastic.apm.instrument=true
+elastic.apm.service_name=clio-reporting-local
+elastic.apm.server_url=
+elastic.apm.environment=local
+elastic.apm.application_packages=eu.europeana
+elastic.apm.log_level=ERROR
+elastic.apm.capture_body=all
+elastic.apm.capture_headers=true
+elastic.apm.metrics_interval=5s

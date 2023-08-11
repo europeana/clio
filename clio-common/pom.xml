@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>7</version>
+        <version>8</version>
     </parent>
 
     <artifactId>clio-common</artifactId>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.9</version>
+            <version>${version.postgresql}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

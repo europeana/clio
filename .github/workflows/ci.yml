@@ -1,0 +1,34 @@
+name: CI
+
+on: push
+
+jobs:
+  ci:
+    uses: europeana/metis-actions/.github/workflows/ci.yml@main
+    with:
+      sonar_organization: europeana
+      sonar_project_key: europeana_clio
+    secrets:
+      SONAR_TOKEN: ${{ secrets.METIS_SONAR_TOKEN }}
+
+  docker-build_clio-reporting:
+    needs: ci
+    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@main
+    with:
+      docker-organization: europeana
+      docker-image-name: clio-reporting
+      project-path: clio-reporting/clio-reporting-rest
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+  docker-build_clio-linkchecking:
+    needs: ci
+    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@main
+    with:
+      docker-organization: europeana
+      docker-image-name: clio-linkchecking
+      project-path: clio-linkchecking/
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

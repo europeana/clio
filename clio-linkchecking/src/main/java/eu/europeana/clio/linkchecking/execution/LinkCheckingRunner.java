@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
 /**
  * This class is the main entry point of the link checking module of Clio. It contains a main
  * method ({@link #run(String[])}) that can be used to trigger the functionality.
@@ -17,6 +20,11 @@ public class LinkCheckingRunner implements CommandLineRunner {
 
     private final ConfigurationPropertiesHolder propertiesHolder;
 
+    /**
+     * Constructor with parameters.
+     *
+     * @param propertiesHolder the configuration properties
+     */
     public LinkCheckingRunner(ConfigurationPropertiesHolder propertiesHolder) {
         this.propertiesHolder = propertiesHolder;
     }
@@ -37,8 +45,13 @@ public class LinkCheckingRunner implements CommandLineRunner {
 
     private void mainInternal(Mode mode) throws ClioException {
 
-        // Compute and store the sample records.
+
+        final long startTime = System.nanoTime();
+        //Firstly clean old data.
         final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(propertiesHolder);
+        linkCheckingEngine.removeOldData();
+
+        // Compute and store the sample records.
         if (mode != Mode.LINK_CHECKING_ONLY) {
             LOGGER.info("Creating runs for all available datasets.");
             linkCheckingEngine.createRunsForAllAvailableDatasets();
@@ -49,5 +62,8 @@ public class LinkCheckingRunner implements CommandLineRunner {
         LOGGER.info("Executing all pending runs.");
         linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();
         LOGGER.info("All pending runs executed.");
+
+        final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();
+        LOGGER.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
     }
 }

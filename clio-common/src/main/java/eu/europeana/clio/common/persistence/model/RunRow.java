@@ -1,15 +1,10 @@
 package eu.europeana.clio.common.persistence.model;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import javax.persistence.*;
 import java.time.Instant;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
 
 /**
  * This represents the persistent form of a run (a checking iteration for a given dataset).
@@ -53,6 +48,7 @@ public class RunRow {
 
   @ManyToOne
   @JoinColumn(name = "batch_id", referencedColumnName = "batch_id", nullable = false, updatable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private BatchRow batch;
 
   /**

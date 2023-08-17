@@ -61,6 +61,21 @@ public final class LinkCheckingEngine {
     }
 
     /**
+     * Remove old and unnecessary data.
+     *
+     * @throws PersistenceException the persistence connection
+     */
+    public void removeOldData() throws PersistenceException {
+        try (final ClioPersistenceConnection databaseConnection =
+                     propertiesHolder.getPersistenceConnectionProvider().createPersistenceConnection()) {
+            BatchDao batchDao = new BatchDao(databaseConnection);
+            batchDao.deleteOlderBatches(propertiesHolder.getLinkCheckingRemoveOldDataBeforeMonths());
+        } catch (PersistenceException e) {
+            throw new PersistenceException("Problem occurred while connecting to data sources.", e);
+        }
+    }
+
+    /**
      * This method starts a new run for all datasets that have published data. It determines which
      * links are to be part of the run, but it doesn't perform any link checking. This method is not
      * thread safe: it assumes that no other process is adding runs at the moment.

@@ -1,20 +1,12 @@
 package eu.europeana.clio.common.persistence.model;
 
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.Optional;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This represents the persistent form of a link (to be checked once as part of a run).
@@ -75,6 +67,7 @@ public class LinkRow {
 
   @ManyToOne
   @JoinColumn(name = "run_id", referencedColumnName = "run_id", nullable = false, updatable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private RunRow run;
 
   @Column(name = "record_id", nullable = false, updatable = false, length = MAX_RECORD_ID_LENGTH)

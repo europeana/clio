@@ -39,6 +39,7 @@ postgresql.password=
 # succession, this would decreases the likelihood and impact of the bottleneck that is created this
 # way (threads needing to spend a lot of time waiting for other threads to free up a server).
 linkchecking.mode=
+linkchecking.remove.old.data.before.months=
 linkchecking.sample.records.per.dataset=
 linkchecking.run.create.threads=
 linkchecking.run.execute.threads=

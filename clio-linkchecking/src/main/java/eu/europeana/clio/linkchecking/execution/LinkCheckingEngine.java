@@ -69,7 +69,7 @@ public final class LinkCheckingEngine {
         try (final ClioPersistenceConnection databaseConnection =
                      propertiesHolder.getPersistenceConnectionProvider().createPersistenceConnection()) {
             BatchDao batchDao = new BatchDao(databaseConnection);
-            batchDao.deleteOlderBatches(propertiesHolder.getLinkCheckingRemoveOldDataBeforeMonths());
+            batchDao.deleteOlderBatches(propertiesHolder.getLinkCheckingRetentionMonths());
         } catch (PersistenceException e) {
             throw new PersistenceException("Problem occurred while connecting to data sources.", e);
         }

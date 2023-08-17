@@ -93,16 +93,16 @@ public class BatchDao {
     /**
      * Get batches older than the specified numerical months.
      *
-     * @param linkCheckingRemoveOldDataBeforeMonths the months value to check with
+     * @param retentionMonths the months value to check with
      * @return the batches older than the specified numerical months
      * @throws PersistenceException In case there was a problem with accessing the data.
      */
-    public List<BatchRow> getOlderBatches(int linkCheckingRemoveOldDataBeforeMonths) throws PersistenceException {
-        long creationTimeThreshold = Instant.now().minus(linkCheckingRemoveOldDataBeforeMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
+    public List<BatchRow> getOlderBatches(int retentionMonths) throws PersistenceException {
+        long creationTimeCutOff = Instant.now().minus(retentionMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
         return persistenceConnection.performInSession(session ->
                 new ArrayList<>(
                         session.createNamedQuery(BatchRow.GET_OLD_BATCHES_QUERY, BatchRow.class)
-                                .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeThreshold)
+                                .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeCutOff)
                                 .getResultList()));
     }
 
@@ -110,15 +110,15 @@ public class BatchDao {
      * Delete batches older than the specified numerical months.
      * <p>Based on the schema cascading might be applicable</p>
      *
-     * @param linkCheckingRemoveOldDataBeforeMonths the months value to check with
+     * @param retentionMonths the months value to check with
      * @return the batches older than the specified numerical months
      * @throws PersistenceException In case there was a problem with accessing the data.
      */
-    public int deleteOlderBatches(int linkCheckingRemoveOldDataBeforeMonths) throws PersistenceException {
-        long creationTimeThreshold = Instant.now().minus(linkCheckingRemoveOldDataBeforeMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
+    public int deleteOlderBatches(int retentionMonths) throws PersistenceException {
+        long creationTimeCutOff = Instant.now().minus(retentionMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
         return persistenceConnection.performInTransaction(session ->
                 session.createNamedQuery(BatchRow.DELETE_OLD_BATCHES_QUERY)
-                        .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeThreshold)
+                        .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeCutOff)
                         .executeUpdate());
     }
 

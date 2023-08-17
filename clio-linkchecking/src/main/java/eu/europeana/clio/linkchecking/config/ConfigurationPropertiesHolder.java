@@ -72,8 +72,8 @@ public class ConfigurationPropertiesHolder {
     // Link checking
     @Value("#{T(eu.europeana.clio.linkchecking.config.Mode).getMode('${linkchecking.mode}')}")
     private Mode linkCheckingMode;
-    @Value("${linkchecking.remove.old.data.before.months:6}")
-    private int linkCheckingRemoveOldDataBeforeMonths;
+    @Value("${linkchecking.retention.months:6}")
+    private int linkCheckingRetentionMonths;
     @Value("${linkchecking.sample.records.per.dataset}")
     private int linkCheckingSampleRecordsPerDataset;
     @Value("${linkchecking.run.create.threads}")
@@ -162,8 +162,8 @@ public class ConfigurationPropertiesHolder {
         return linkCheckingMode;
     }
 
-    public int getLinkCheckingRemoveOldDataBeforeMonths() {
-        return linkCheckingRemoveOldDataBeforeMonths;
+    public int getLinkCheckingRetentionMonths() {
+        return linkCheckingRetentionMonths;
     }
 
     public int getLinkCheckingSampleRecordsPerDataset() {

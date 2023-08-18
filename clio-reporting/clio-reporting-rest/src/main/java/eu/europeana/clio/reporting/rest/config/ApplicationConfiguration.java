@@ -1,5 +1,7 @@
 package eu.europeana.clio.reporting.rest.config;
 
+import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.reporting.core.ReportingEngine;
 import eu.europeana.clio.reporting.core.config.ConfigurationPropertiesHolder;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
@@ -25,10 +27,21 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationConfiguration.class);
     private final ConfigurationPropertiesHolder propertiesHolder;
 
-    public ApplicationConfiguration(ConfigurationPropertiesHolder propertiesHolder) throws CustomTruststoreAppender.TrustStoreConfigurationException {
+    /**
+     * Constructor.
+     *
+     * @param propertiesHolder The properties.
+     * @throws CustomTruststoreAppender.TrustStoreConfigurationException If something goes wrong initializing the application
+     * @throws PersistenceException In case of persistence connection error
+     */
+    public ApplicationConfiguration(ConfigurationPropertiesHolder propertiesHolder)
+            throws CustomTruststoreAppender.TrustStoreConfigurationException, PersistenceException {
         this.propertiesHolder = propertiesHolder;
-        LOGGER.info("Found database connection: {}", propertiesHolder.getPostgresServer());
         ApplicationInitUtils.initializeApplication(propertiesHolder);
+        LOGGER.info("Found database connection: {}", propertiesHolder.getPostgresServer());
+        try (final ClioPersistenceConnection persistenceConnection = propertiesHolder.getPersistenceConnectionProvider().createPersistenceConnection()) {
+            persistenceConnection.verifyConnection();
+        }
     }
 
     @Override

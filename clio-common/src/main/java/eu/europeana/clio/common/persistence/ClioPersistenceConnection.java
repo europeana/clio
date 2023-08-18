@@ -5,9 +5,6 @@ import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import java.io.Closeable;
-import java.util.Set;
-import java.util.stream.Stream;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -15,6 +12,10 @@ import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * The connection provider to the Clio database. When created, the provider is not connected. It
@@ -67,6 +68,8 @@ public class ClioPersistenceConnection implements Closeable {
       config.setProperty("hibernate.connection.password", this.password);
       config.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
       config.setProperty("hibernate.c3p0.timeout", "1800");
+      config.setProperty("hibernate.hbm2ddl.auto", "validate");
+
 
       // Build the connection.
       try {

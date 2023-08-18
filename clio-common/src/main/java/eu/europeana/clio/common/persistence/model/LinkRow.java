@@ -12,8 +12,13 @@ import java.util.Optional;
  * This represents the persistent form of a link (to be checked once as part of a run).
  */
 @Entity
-@Table(name = "link",
-        indexes = {@Index(columnList = "server"), @Index(columnList = "link_url")})
+@Table(name = "link", indexes = {
+        @Index(name = "link_server_idx", columnList = "server"),
+        @Index(name = "link_checking_time_idx", columnList = "checking_time"),
+        @Index(name = "link_record_id_idx", columnList = "record_id"),
+        @Index(name = "link_link_type_idx", columnList = "link_type"),
+        @Index(name = "link_link_url_idx", columnList = "link_url"),
+        @Index(name = "Link_run_id_idx", columnList = "run_id")})
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query = "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL")
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
         "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
@@ -66,7 +71,8 @@ public class LinkRow {
   private long linkId;
 
   @ManyToOne
-  @JoinColumn(name = "run_id", referencedColumnName = "run_id", nullable = false, updatable = false)
+  @JoinColumn(name = "run_id", referencedColumnName = "run_id",
+          foreignKey = @ForeignKey(name = "link_run_id_fkey"), nullable = false, updatable = false)
   @OnDelete(action = OnDeleteAction.CASCADE)
   private RunRow run;
 

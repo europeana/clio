@@ -9,3 +9,7 @@
 
 Clio, named after the Muse of History, is the automatic link checking tool (Checking Links In 
 Operation) that runs regularly to signal whether link rot has set in.
+
+# Creating the database tables
+If a database does not exist, it should be manually created or the parameter `createDatabaseIfNotExist=true` on the connection url should be set.
+Creating the tables should be performed through using the hibernate property `hibernate.hbm2ddl.auto=create-only`.

@@ -7,7 +7,8 @@ import java.time.Instant;
  * This represents the persistent form of a batch (of runs).
  */
 @Entity
-@Table(name = "batch")
+@Table(name = "batch", indexes = {
+        @Index(name="batch_creation_time_idx", columnList = "creation_time")})
 @NamedQuery(name = BatchRow.GET_LATEST_BATCHES_QUERY,
         query = "SELECT b FROM BatchRow b ORDER BY b.creationTime DESC ")
 @NamedQuery(name = BatchRow.GET_OLD_BATCHES_QUERY, query = "SELECT b FROM BatchRow b WHERE b.creationTime <= :" +
@@ -15,7 +16,6 @@ import java.time.Instant;
 @NamedQuery(name = BatchRow.DELETE_OLD_BATCHES_QUERY, query = "DELETE FROM BatchRow b WHERE b.creationTime <= :" +
         BatchRow.CREATION_TIME_PARAMETER)
 public class BatchRow {
-
     public static final String GET_LATEST_BATCHES_QUERY = "getLatestBatches";
     public static final String GET_OLD_BATCHES_QUERY = "getOldBatches";
     public static final String DELETE_OLD_BATCHES_QUERY = "deleteOldBatches";

@@ -10,7 +10,7 @@ public enum Mode {
 
     /**
      * Get the mode from a string.
-     * <p>Empty or null strings will default to {@link Mode.FULL_PROCESSING}</p>
+     * <p>Empty or null strings will default to {@link Mode#FULL_PROCESSING}</p>
      * @param modeString the mode string
      * @return the mode
      */

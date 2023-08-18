@@ -8,6 +8,8 @@ import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import java.time.Instant;
 
+import static java.lang.String.format;
+
 /**
  * Data access object for runs (a checking iteration for a given dataset).
  */
@@ -37,13 +39,11 @@ public class RunDao {
     return persistenceConnection.performInTransaction(session -> {
       final DatasetRow datasetRow = session.get(DatasetRow.class, datasetId);
       if (datasetRow == null) {
-        throw new PersistenceException(
-                "Cannot create run: dataset with ID " + datasetId + " does not exist.");
+        throw new PersistenceException(format("Cannot create run: dataset with ID %s does not exist.", datasetId));
       }
       final BatchRow batchRow = session.get(BatchRow.class, batchId);
       if (batchRow == null) {
-        throw new PersistenceException(
-                "Cannot create run: batch with ID " + batchId + " does not exist.");
+        throw new PersistenceException(format("Cannot create run: batch with ID %s does not exist.", batchId));
       }
       final RunRow newRun = new RunRow(Instant.now(), datasetRow, batchRow);
       return (Long) session.save(newRun);

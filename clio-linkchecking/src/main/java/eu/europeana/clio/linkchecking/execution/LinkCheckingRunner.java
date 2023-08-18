@@ -44,24 +44,21 @@ public class LinkCheckingRunner implements CommandLineRunner {
     }
 
     private void mainInternal(Mode mode) throws ClioException {
-
-
         final long startTime = System.nanoTime();
-        //Firstly clean old data.
+        LOGGER.info("Removing old data");
         final LinkCheckingEngine linkCheckingEngine = new LinkCheckingEngine(propertiesHolder);
         linkCheckingEngine.removeOldData();
+        LOGGER.info("Removed old data");
 
-        // Compute and store the sample records.
         if (mode != Mode.LINK_CHECKING_ONLY) {
-            LOGGER.info("Creating runs for all available datasets.");
+            LOGGER.info("Creating runs for all available datasets");
             linkCheckingEngine.createRunsForAllAvailableDatasets();
-            LOGGER.info("Runs created.");
+            LOGGER.info("Runs created");
         }
 
-        // Perform link checking on the links, updating as we go.
-        LOGGER.info("Executing all pending runs.");
+        LOGGER.info("Executing all pending runs");
         linkCheckingEngine.performLinkCheckingOnAllUncheckedLinks();
-        LOGGER.info("All pending runs executed.");
+        LOGGER.info("All pending runs executed");
 
         final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();
         LOGGER.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);

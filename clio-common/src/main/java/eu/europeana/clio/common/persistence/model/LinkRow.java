@@ -1,12 +1,13 @@
 package eu.europeana.clio.common.persistence.model;
 
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.Optional;
+
+import static org.apache.commons.lang3.StringUtils.truncate;
 
 /**
  * This represents the persistent form of a link (to be checked once as part of a run).
@@ -134,14 +135,14 @@ public class LinkRow {
 
     // Set basic properties
     this.run = run;
-    this.recordId = StringUtils.truncate(recordId, MAX_RECORD_ID_LENGTH);
+    this.recordId = truncate(recordId, MAX_RECORD_ID_LENGTH);
     this.recordLastIndexTime = recordLastIndexTime.toEpochMilli();
     this.recordEdmType = recordEdmType;
     this.recordContentTier = recordContentTier;
     this.recordMetadataTier = recordMetadataTier;
     this.linkType = linkType;
-    this.linkUrl = StringUtils.truncate(linkUrl, MAX_LINK_URL_LENGTH);
-    this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
+    this.linkUrl = truncate(linkUrl, MAX_LINK_URL_LENGTH);
+    this.server = truncate(server, MAX_SERVER_LENGTH);
 
     // Test the length of certain properties
     final String errorString;
@@ -165,13 +166,13 @@ public class LinkRow {
       errorString = null;
     }
     if (errorString != null) {
-      setError(errorString);
-      setCheckingTime(Instant.now());
+      this.error = truncate(errorString, MAX_ERROR_LENGTH);
+      this.checkingTime = Instant.now().toEpochMilli();
     }
   }
 
   public void setError(String error) {
-    this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
+    this.error = truncate(error, MAX_ERROR_LENGTH);
   }
 
   public void setCheckingTime(Instant checkingTime) {

@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+
 /**
  * Data access object for runs (a checking iteration for a given dataset).
  */
@@ -67,8 +69,7 @@ public class BatchDao {
         persistenceConnection.performInTransaction(session -> {
             final BatchRow batchRow = session.get(BatchRow.class, batchId);
             if (batchRow == null) {
-                throw new PersistenceException(
-                        "Cannot set counters: batch with ID " + batchId + " does not exist.");
+                throw new PersistenceException(format("Cannot set counters: batch with ID %s does not exist.", batchId));
             }
             batchRow.setCounters(datasetsExcludedAlreadyRunning, datasetsExcludedNotIndexed,
                     datasetsExcludedWithoutLinks);

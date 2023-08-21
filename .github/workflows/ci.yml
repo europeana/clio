@@ -22,13 +22,13 @@ jobs:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-  docker-build_clio-linkchecking:
+  docker-build_clio-link-checking-worker:
     needs: ci
     uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@main
     with:
       docker-organization: europeana
-      docker-image-name: clio-linkchecking
-      project-path: clio-linkchecking/
+      docker-image-name: clio-link-checking-worker
+      project-path: clio-link-checking-worker/
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

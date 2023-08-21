@@ -1,0 +1,68 @@
+version: '3.8'
+#todo to be tested with actual data injection
+services:
+  metis-core-mongo:
+    image: mongo:4.2.9
+    container_name: metis-core-mongo
+    environment:
+      MONGO_INITDB_DATABASE: metis-core
+      MONGO_INITDB_ROOT_USERNAME: guest
+      MONGO_INITDB_ROOT_PASSWORD: guest
+    ports:
+      - '27017:27017'
+  postgres:
+    image: postgres:14-alpine
+    container_name: clio-postgres
+    environment:
+      - POSTGRES_DB=clio_local
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+    ports:
+      - '5432:5432'
+
+  metis-records-zookeeper:
+    image: zookeeper:3.6.2
+    container_name: metis-records-zookeeper
+    networks:
+      - solr
+    ports:
+      - '2181:2181'
+      - '7001:7001'
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181
+
+  metis-records-solr:
+    image: solr:7.7.3-slim
+    container_name: metis-records-solr
+    networks:
+      - solr
+    ports:
+      - '8983:8983'
+    environment:
+      - ZK_HOST=metis-records-zookeeper:2181
+    command:
+      - solr-precreate search_local_publish
+    depends_on:
+      - metis-records-zookeeper
+
+  clio-link-checking-local:
+    image: europeana/clio-link-checking-worker:develop
+    container_name: clio-link-checking-worker-local
+    build:
+      context: ../clio-link-checking-worker
+      dockerfile: Dockerfile
+    environment:
+      MONGO_CORE_HOSTS: metis-core-mongo
+      HIBERNATE_CONNECTION_URL: jdbc:postgresql://clio-postgres:5432/metis-clio_local
+      SOLR_PUBLISH_HOSTS: http//metis-records-solr:8983/solr/
+      ZOOKEEPER_PUBLISH_HOSTS: metis-records-zookeeper
+    volumes:
+      - /data/metis-configuration/clio/clio-link-checking-worker/overlays/test/components/properties/application.properties:/application.properties
+      - /data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks:/data/certificates/custom-truststore.jks
+      - /data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml:/data/logging/log4j2.xml
+    depends_on:
+      - metis-core-mongo
+      - postgres
+      - metis-records-zookeeper
+      - metis-records-solr

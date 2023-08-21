@@ -1,8 +1,8 @@
 package eu.europeana.clio.reporting.runner;
 
 import eu.europeana.clio.common.exception.ClioException;
-import eu.europeana.clio.reporting.core.ReportingEngine;
-import eu.europeana.clio.reporting.core.config.ConfigurationPropertiesHolder;
+import eu.europeana.clio.reporting.common.ReportingEngine;
+import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -23,10 +23,10 @@ public class ReportingRunner implements CommandLineRunner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReportingRunner.class);
 
-    private final ConfigurationPropertiesHolder propertiesHolder;
+    private final ReportingEngineConfiguration reportingEngineConfiguration;
 
-    public ReportingRunner(ConfigurationPropertiesHolder propertiesHolder) {
-        this.propertiesHolder = propertiesHolder;
+    public ReportingRunner(ReportingEngineConfiguration reportingEngineConfiguration) {
+        this.reportingEngineConfiguration = reportingEngineConfiguration;
     }
 
     /**
@@ -52,7 +52,7 @@ public class ReportingRunner implements CommandLineRunner {
         // Generate the report
         LOGGER.info("Saving the report to output file: {}", path);
         try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-            new ReportingEngine(propertiesHolder).generateReport(fileWriter);
+            new ReportingEngine(reportingEngineConfiguration).generateReport(fileWriter);
         } catch (IOException e) {
             throw new ClioException("Error occurred while compiling the report.", e);
         }

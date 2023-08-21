@@ -12,9 +12,10 @@
 
 	<modules>
 		<module>clio-common</module>
-		<module>clio-linkchecking</module>
+		<module>clio-link-checking</module>
 		<module>clio-reporting</module>
-	</modules>
+        <module>clio-link-checking-worker</module>
+    </modules>
 
 	<!-- Github connection -->
 	<scm>

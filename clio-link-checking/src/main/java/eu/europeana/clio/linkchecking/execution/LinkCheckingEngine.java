@@ -66,13 +66,8 @@ public final class LinkCheckingEngine {
      * @throws PersistenceException the persistence connection
      */
     public void removeOldData() throws PersistenceException {
-        try (final ClioPersistenceConnection databaseConnection =
-                     linkCheckingEngineConfiguration.getPersistenceConnectionProvider().createPersistenceConnection()) {
-            BatchDao batchDao = new BatchDao(databaseConnection);
+            BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
             batchDao.deleteOlderBatches(linkCheckingEngineConfiguration.getLinkCheckingRetentionMonths());
-        } catch (PersistenceException e) {
-            throw new PersistenceException("Problem occurred while connecting to data sources.", e);
-        }
     }
 
     /**
@@ -92,8 +87,6 @@ public final class LinkCheckingEngine {
 
         // Create closable connections to the mongo, the solr and the own database.
         try (
-                final ClioPersistenceConnection databaseConnection =
-                        linkCheckingEngineConfiguration.getPersistenceConnectionProvider().createPersistenceConnection();
                 final CompoundSolrClient solrClient = solrClientProvider.createSolrClient();
                 final MongoClient mongoClient = mongoClientProvider.createMongoClient()) {
 
@@ -105,7 +98,7 @@ public final class LinkCheckingEngine {
             final SolrDao solrDao = new SolrDao(nativeSolrClient);
 
             // Set up a batch.
-            final BatchDao batchDao = new BatchDao(databaseConnection);
+            final BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
             final long batchId = batchDao.createBatchStartingNow(solrDao.getLastUpdateTime(),
                     mongoCoreDao.getLastUpdateTime());
 
@@ -115,7 +108,7 @@ public final class LinkCheckingEngine {
             final AtomicInteger datasetsWithoutLinksCounter = new AtomicInteger();
             final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
             ParallelTaskExecutor.executeAndWait(datasetIds,
-                    id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, databaseConnection,
+                    id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, linkCheckingEngineConfiguration.getClioPersistenceConnection(),
                             id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter,
                             datasetsWithoutLinksCounter), linkCheckingEngineConfiguration.getLinkCheckingRunCreateThreads());
 
@@ -181,10 +174,8 @@ public final class LinkCheckingEngine {
      */
     public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
         final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
-        try (final ClioPersistenceConnection databaseConnection =
-                     linkCheckingEngineConfiguration.getPersistenceConnectionProvider().createPersistenceConnection();
-             final LinkChecker linkChecker = linkCheckingEngineConfiguration.createLinkChecker()) {
-            final LinkDao linkDao = new LinkDao(databaseConnection);
+        try (final LinkChecker linkChecker = linkCheckingEngineConfiguration.createLinkChecker()) {
+            final LinkDao linkDao = new LinkDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
             try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
                 // See https://github.com/spotbugs/spotbugs/issues/756
                 @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final Stream<Link> linkStream = linksToCheck.get();

@@ -1,6 +1,7 @@
 package eu.europeana.clio.linkchecking.config;
 
 import eu.europeana.clio.common.exception.ConfigurationException;
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
@@ -9,11 +10,12 @@ import eu.europeana.metis.mongo.connection.MongoProperties;
 import eu.europeana.metis.solr.connection.SolrProperties;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 
-public class LinkCheckingEngineConfiguration {
+public class LinkCheckingEngineConfiguration implements Closeable {
 
     //Mongo Metis Core
     private String[] mongoCoreHosts;
@@ -48,16 +50,15 @@ public class LinkCheckingEngineConfiguration {
     private int linkCheckingResponseTimeout;
     private int linkCheckingDownloadTimeout;
 
-    /**
-     * Create a persistence connection provider.
-     *
-     * @return The connection.
-     */
-    public ClioPersistenceConnectionProvider getPersistenceConnectionProvider() {
-        return new ClioPersistenceConnectionProvider(postgresServer, postgresUsername,
-                postgresPassword);
-    }
+    private ClioPersistenceConnection clioPersistenceConnection;
 
+    public ClioPersistenceConnection getClioPersistenceConnection(){
+        if(clioPersistenceConnection == null){
+            clioPersistenceConnection = new ClioPersistenceConnectionProvider(postgresServer, postgresUsername, postgresPassword)
+                    .createPersistenceConnection();
+        }
+        return clioPersistenceConnection;
+    }
 
     public MongoProperties<ConfigurationException> getMongoProperties()
             throws ConfigurationException {
@@ -104,6 +105,10 @@ public class LinkCheckingEngineConfiguration {
         } catch (MediaProcessorException e) {
             throw new ConfigurationException("Could not create link checker.", e);
         }
+    }
+
+    public String getPostgresServer() {
+        return postgresServer;
     }
 
     public Mode getLinkCheckingMode() {
@@ -232,5 +237,18 @@ public class LinkCheckingEngineConfiguration {
 
     public void setLinkCheckingDownloadTimeout(int linkCheckingDownloadTimeout) {
         this.linkCheckingDownloadTimeout = linkCheckingDownloadTimeout;
+    }
+
+    @Override
+    public final void close() {
+        synchronized (this) {
+            try {
+                if (this.clioPersistenceConnection != null) {
+                    this.clioPersistenceConnection.close();
+                }
+            } finally {
+                this.clioPersistenceConnection = null;
+            }
+        }
     }
 }

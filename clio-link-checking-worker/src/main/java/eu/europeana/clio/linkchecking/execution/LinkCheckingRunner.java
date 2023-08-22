@@ -4,6 +4,7 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.linkchecking.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.linkchecking.config.Mode;
 import eu.europeana.clio.reporting.common.ReportingEngine;
+import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -27,11 +28,11 @@ public class LinkCheckingRunner implements CommandLineRunner {
      * Constructor with parameters.
      *
      * @param linkCheckingEngineConfiguration the configuration properties
-     * @param reportingEngine the reporting engine
+     * @param reportingEngineConfiguration the reporting engine
      */
-    public LinkCheckingRunner(LinkCheckingEngineConfiguration linkCheckingEngineConfiguration, ReportingEngine reportingEngine) {
+    public LinkCheckingRunner(LinkCheckingEngineConfiguration linkCheckingEngineConfiguration, ReportingEngineConfiguration reportingEngineConfiguration) {
         this.linkCheckingEngineConfiguration = linkCheckingEngineConfiguration;
-        this.reportingEngine = reportingEngine;
+        this.reportingEngine = new ReportingEngine(reportingEngineConfiguration);
     }
 
     /**

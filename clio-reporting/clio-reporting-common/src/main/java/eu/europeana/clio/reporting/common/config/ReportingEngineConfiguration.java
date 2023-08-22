@@ -1,7 +1,10 @@
 package eu.europeana.clio.reporting.common.config;
 
+import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 import org.springframework.context.annotation.PropertySource;
+
+import java.io.Closeable;
 
 /**
  * Class that is used to read all configuration properties for the application.
@@ -9,7 +12,7 @@ import org.springframework.context.annotation.PropertySource;
  * It uses {@link PropertySource} to identify the properties on application startup
  * </p>
  */
-public class ReportingEngineConfiguration {
+public class ReportingEngineConfiguration implements Closeable {
 
     // truststore
     private String truststorePath;
@@ -22,6 +25,16 @@ public class ReportingEngineConfiguration {
 
     // Reporting
     private String reportDatasetLinkTemplate;
+
+    private ClioPersistenceConnection clioPersistenceConnection;
+
+    public ClioPersistenceConnection getClioPersistenceConnection(){
+        if(clioPersistenceConnection == null){
+            clioPersistenceConnection = new ClioPersistenceConnectionProvider(postgresServer, postgresUsername, postgresPassword)
+                    .createPersistenceConnection();
+        }
+        return clioPersistenceConnection;
+    }
 
     public void setTruststorePath(String truststorePath) {
         this.truststorePath = truststorePath;
@@ -71,8 +84,16 @@ public class ReportingEngineConfiguration {
         return reportDatasetLinkTemplate;
     }
 
-    public ClioPersistenceConnectionProvider getPersistenceConnectionProvider() {
-        return new ClioPersistenceConnectionProvider(getPostgresServer(), getPostgresUsername(),
-                getPostgresPassword());
+    @Override
+    public final void close() {
+        synchronized (this) {
+            try {
+                if (this.clioPersistenceConnection != null) {
+                    this.clioPersistenceConnection.close();
+                }
+            } finally {
+                this.clioPersistenceConnection = null;
+            }
+        }
     }
 }

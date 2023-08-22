@@ -21,6 +21,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
 
 /**
@@ -32,6 +33,7 @@ import java.lang.invoke.MethodHandles;
 public class ApplicationConfiguration implements WebMvcConfigurer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private ReportingEngineConfiguration reportingEngineConfiguration;
 
 
     /**
@@ -81,7 +83,8 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     public ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
                                                                         PostgresProperties postgresProperties,
                                                                         TruststoreProperties truststoreProperties) throws PersistenceException {
-        final ReportingEngineConfiguration reportingEngineConfiguration = new ReportingEngineConfiguration();
+
+        reportingEngineConfiguration = new ReportingEngineConfiguration();
         reportingEngineConfiguration.setTruststorePath(truststoreProperties.getTruststorePath());
         reportingEngineConfiguration.setTruststorePassword(truststoreProperties.getTruststorePassword());
         reportingEngineConfiguration.setPostgresServer(postgresProperties.getPostgresServer());
@@ -90,10 +93,8 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         reportingEngineConfiguration.setReportDatasetLinkTemplate(reportingEngineProperties.getReportDatasetLinkTemplate());
 
         LOGGER.info("Found database connection: {}", reportingEngineConfiguration.getPostgresServer());
-        try (final ClioPersistenceConnection persistenceConnection =
-                     reportingEngineConfiguration.getPersistenceConnectionProvider().createPersistenceConnection()) {
-            persistenceConnection.verifyConnection();
-        }
+        final ClioPersistenceConnection persistenceConnection = reportingEngineConfiguration.getClioPersistenceConnection();
+        persistenceConnection.verifyConnection();
 
         return reportingEngineConfiguration;
     }
@@ -101,5 +102,15 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     @Bean
     public ReportingEngine getReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
         return new ReportingEngine(reportingEngineConfiguration);
+    }
+
+    /**
+     * Closes any connections previous acquired.
+     */
+    @PreDestroy
+    public void close() {
+        if (reportingEngineConfiguration != null) {
+            reportingEngineConfiguration.close();
+        }
     }
 }

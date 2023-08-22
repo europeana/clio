@@ -4,7 +4,6 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.linkchecking.config.properties.*;
 import eu.europeana.clio.linkchecking.execution.LinkCheckingRunner;
-import eu.europeana.clio.reporting.common.ReportingEngine;
 import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +14,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
 
 /**
@@ -24,6 +24,8 @@ import java.lang.invoke.MethodHandles;
 public class ApplicationConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private ReportingEngineConfiguration reportingEngineConfiguration;
+    private LinkCheckingEngineConfiguration linkCheckingEngineConfiguration;
 
     /**
      * Autowired constructor for Spring Configuration class.
@@ -59,7 +61,7 @@ public class ApplicationConfiguration {
     public ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
                                                                         PostgresProperties postgresProperties,
                                                                         TruststoreProperties truststoreProperties) throws PersistenceException {
-        final ReportingEngineConfiguration reportingEngineConfiguration = new ReportingEngineConfiguration();
+        reportingEngineConfiguration = new ReportingEngineConfiguration();
         reportingEngineConfiguration.setTruststorePath(truststoreProperties.getTruststorePath());
         reportingEngineConfiguration.setTruststorePassword(truststoreProperties.getTruststorePassword());
         reportingEngineConfiguration.setPostgresServer(postgresProperties.getPostgresServer());
@@ -68,17 +70,10 @@ public class ApplicationConfiguration {
         reportingEngineConfiguration.setReportDatasetLinkTemplate(reportingEngineProperties.getReportDatasetLinkTemplate());
 
         LOGGER.info("Found database connection: {}", reportingEngineConfiguration.getPostgresServer());
-        try (final ClioPersistenceConnection persistenceConnection =
-                     reportingEngineConfiguration.getPersistenceConnectionProvider().createPersistenceConnection()) {
-            persistenceConnection.verifyConnection();
-        }
+        final ClioPersistenceConnection persistenceConnection = reportingEngineConfiguration.getClioPersistenceConnection();
+        persistenceConnection.verifyConnection();
 
         return reportingEngineConfiguration;
-    }
-
-    @Bean
-    public ReportingEngine getReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
-        return new ReportingEngine(reportingEngineConfiguration);
     }
 
     @Bean
@@ -86,8 +81,8 @@ public class ApplicationConfiguration {
                                                MongoCoreProperties mongoCoreProperties,
                                                SolrZookeeperProperties solrZookeeperProperties,
                                                PostgresProperties postgresProperties,
-                                               ReportingEngine reportingEngine) {
-        LinkCheckingEngineConfiguration linkCheckingEngineConfiguration = new LinkCheckingEngineConfiguration();
+                                               ReportingEngineConfiguration reportingEngineConfiguration) throws PersistenceException {
+        linkCheckingEngineConfiguration = new LinkCheckingEngineConfiguration();
         linkCheckingEngineConfiguration.setMongoCoreHosts(mongoCoreProperties.getMongoCoreHosts());
         linkCheckingEngineConfiguration.setMongoCorePorts(mongoCoreProperties.getMongoCorePorts());
         linkCheckingEngineConfiguration.setMongoCoreUsername(mongoCoreProperties.getMongoCoreUsername());
@@ -117,6 +112,23 @@ public class ApplicationConfiguration {
         linkCheckingEngineConfiguration.setLinkCheckingResponseTimeout(linkCheckingProperties.getLinkCheckingResponseTimeout());
         linkCheckingEngineConfiguration.setLinkCheckingDownloadTimeout(linkCheckingProperties.getLinkCheckingDownloadTimeout());
 
-        return new LinkCheckingRunner(linkCheckingEngineConfiguration, reportingEngine);
+        LOGGER.info("Found database connection: {}", linkCheckingEngineConfiguration.getPostgresServer());
+        final ClioPersistenceConnection persistenceConnection = linkCheckingEngineConfiguration.getClioPersistenceConnection();
+        persistenceConnection.verifyConnection();
+
+        return new LinkCheckingRunner(linkCheckingEngineConfiguration, reportingEngineConfiguration);
+    }
+
+    /**
+     * Closes any connections previous acquired.
+     */
+    @PreDestroy
+    public void close() {
+        if (linkCheckingEngineConfiguration != null) {
+            linkCheckingEngineConfiguration.close();
+        }
+        if (reportingEngineConfiguration != null) {
+            reportingEngineConfiguration.close();
+        }
     }
 }

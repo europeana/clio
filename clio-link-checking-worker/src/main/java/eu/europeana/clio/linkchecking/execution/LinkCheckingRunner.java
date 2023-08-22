@@ -66,10 +66,8 @@ public class LinkCheckingRunner implements CommandLineRunner {
         LOGGER.info("All pending runs executed");
 
         LOGGER.info("Generating report for batch");
-        //Generate report
-        // TODO: 21/08/2023 Fix generate report writing to in memory output stream.
-//        reportingEngine.generateReport();
-        //Store report in database
+        final String report = reportingEngine.generateReport();
+        reportingEngine.storeReport(report);
         LOGGER.info("Generated report for batch");
 
         final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();

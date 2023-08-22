@@ -5,17 +5,20 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.model.Link;
+import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
+import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
@@ -47,13 +50,35 @@ public final class ReportingEngine {
         this.properties = properties;
     }
 
+    public void storeReport(String report) throws ClioException {
+        try (final ClioPersistenceConnection databaseConnection = properties
+                .getPersistenceConnectionProvider().createPersistenceConnection()) {
+            final BatchDao batchDao = new BatchDao(databaseConnection);
+            final ReportDao reportDao = new ReportDao(databaseConnection);
+
+            BatchWithCounters latestBatch = batchDao.getLatestBatches(1).stream().findFirst().orElse(null);
+            if(latestBatch != null){
+                reportDao.saveReport(report, latestBatch.getBatchId());
+            }
+        } catch (PersistenceException e) {
+            throw new ClioException("Error occurred while saving the report.", e);
+        }
+
+    }
+
+    public String generateReport() throws ClioException {
+        StringWriter stringWriter = new StringWriter();
+        generateReport(stringWriter);
+        return stringWriter.toString();
+    }
+
     /**
      * Generates a report and saves it to the output file.
      *
-     * @param output The destination/output writer.
+     * @param writer The destination/output writer.
      * @throws ClioException In case of a problem with accessing or saving the required data.
      */
-    public void generateReport(Writer output) throws ClioException {
+    public void generateReport(Writer writer) throws ClioException {
 
         final long startTime = System.nanoTime();
         // Write the report.
@@ -61,10 +86,10 @@ public final class ReportingEngine {
                 .getPersistenceConnectionProvider().createPersistenceConnection();
              final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(databaseConnection)
                      .getBrokenLinksInLatestCompletedRuns();
-             final CSVWriter writer = new CSVWriter(output)) {
+             final CSVWriter csvWriter = new CSVWriter(writer)) {
 
             // Write header
-            writer.writeNext(new String[]{
+            csvWriter.writeNext(new String[]{
                     "Dataset ID",
                     "Dataset's Metis page",
                     "Dataset size",
@@ -87,7 +112,7 @@ public final class ReportingEngine {
             final Stream<Pair<Run, Link>> linkStream = brokenLinks.get();
 
             // Write records
-            linkStream.forEach(link -> writer.writeNext(new String[]{
+            linkStream.forEach(link -> csvWriter.writeNext(new String[]{
                     link.getLeft().getDataset().getDatasetId(),
                     String.format(properties.getReportDatasetLinkTemplate(),
                             link.getLeft().getDataset().getDatasetId()),
@@ -124,6 +149,10 @@ public final class ReportingEngine {
         return fileNameFormatter.format(Instant.now());
     }
 
+    public static String getReportFileNameSuggestion(Instant instant) {
+        return fileNameFormatter.format(instant);
+    }
+
     /**
      * Compiles information on the latest executed batches.
      *
@@ -135,6 +164,13 @@ public final class ReportingEngine {
         try (final ClioPersistenceConnection databaseConnection = properties
                 .getPersistenceConnectionProvider().createPersistenceConnection()) {
             return new BatchDao(databaseConnection).getLatestBatches(maxResults);
+        }
+    }
+
+    public List<Report> getLatestReports(int maxResults) throws PersistenceException {
+        try (final ClioPersistenceConnection databaseConnection = properties
+                .getPersistenceConnectionProvider().createPersistenceConnection()) {
+            return new ReportDao(databaseConnection).getLatestReports(maxResults);
         }
     }
 }

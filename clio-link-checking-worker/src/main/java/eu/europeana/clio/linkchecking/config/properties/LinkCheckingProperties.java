@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class LinkCheckingProperties {
 
     // Link checking
-    @Value("#{T(eu.europeana.clio.linkchecking.config.Mode).getMode('${linkchecking.mode}')}")
+    @Value("#{T(eu.europeana.clio.linkchecking.config.Mode).getMode('${link.checking.mode}')}")
     private Mode linkCheckingMode;
     @Value("${link.checking.retention.months:6}")
     private int linkCheckingRetentionMonths;

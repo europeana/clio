@@ -36,6 +36,10 @@
             <artifactId>slf4j-api</artifactId>
             <version>${version.slf4j}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,12 +1,11 @@
-package eu.europeana.clio.reporting.config.properties;
+package eu.europeana.clio.common.config.properties;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration
 public class PostgresProperties {
 
-    // PostgreSQL
     @Value("${postgresql.server}")
     private String postgresServer;
     @Value("${postgresql.username}")

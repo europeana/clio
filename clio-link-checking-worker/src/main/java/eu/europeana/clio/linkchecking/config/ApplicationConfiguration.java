@@ -1,5 +1,8 @@
 package eu.europeana.clio.linkchecking.config;
 
+import eu.europeana.clio.common.config.properties.PostgresProperties;
+import eu.europeana.clio.common.config.properties.ReportingEngineProperties;
+import eu.europeana.clio.common.config.properties.TruststoreProperties;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.linkchecking.config.properties.*;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
@@ -21,6 +25,7 @@ import java.lang.invoke.MethodHandles;
  * Entry class with configuration fields and beans initialization for the application.
  */
 @Configuration
+@Import({TruststoreProperties.class, PostgresProperties.class, ReportingEngineProperties.class})
 public class ApplicationConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -30,12 +35,12 @@ public class ApplicationConfiguration {
     /**
      * Autowired constructor for Spring Configuration class.
      *
-     * @param propertiesHolder the object that holds all boot configuration values
+     * @param truststoreProperties the object that holds all boot configuration values
      * @throws CustomTruststoreAppender.TrustStoreConfigurationException if the configuration of the truststore failed
      */
     @Autowired
-    public ApplicationConfiguration(TruststoreProperties propertiesHolder) throws CustomTruststoreAppender.TrustStoreConfigurationException {
-        ApplicationConfiguration.initializeApplication(propertiesHolder);
+    public ApplicationConfiguration(TruststoreProperties truststoreProperties) throws CustomTruststoreAppender.TrustStoreConfigurationException {
+        ApplicationConfiguration.initializeApplication(truststoreProperties);
     }
 
     /**

@@ -1,11 +1,11 @@
 package eu.europeana.clio.reporting.config;
 
+import eu.europeana.clio.common.config.properties.PostgresProperties;
+import eu.europeana.clio.common.config.properties.ReportingEngineProperties;
+import eu.europeana.clio.common.config.properties.TruststoreProperties;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
-import eu.europeana.clio.reporting.config.properties.PostgresProperties;
-import eu.europeana.clio.reporting.config.properties.ReportingEngineProperties;
-import eu.europeana.clio.reporting.config.properties.TruststoreProperties;
 import eu.europeana.clio.reporting.runner.ReportingRunner;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
@@ -23,6 +24,7 @@ import java.lang.invoke.MethodHandles;
  * Entry class with configuration fields and beans initialization for the application.
  */
 @Configuration
+@Import({TruststoreProperties.class, PostgresProperties.class, ReportingEngineProperties.class})
 public class ApplicationConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -41,7 +41,7 @@ public class LinkCheckingRunner implements CommandLineRunner {
      * @param args The input arguments.
      */
     @Override
-    public void run(String... args) {
+    public void run(String[] args) {
         try {
             mainInternal(linkCheckingEngineConfiguration.getLinkCheckingMode());
         } catch (ClioException | RuntimeException e) {

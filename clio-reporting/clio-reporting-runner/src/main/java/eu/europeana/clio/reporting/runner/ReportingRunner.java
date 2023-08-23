@@ -35,7 +35,7 @@ public class ReportingRunner implements CommandLineRunner {
      * @param args The input arguments.
      */
     @Override
-    public void run(String... args) {
+    public void run(String[] args) {
         try {
             mainInternal();
         } catch (ClioException | RuntimeException e) {

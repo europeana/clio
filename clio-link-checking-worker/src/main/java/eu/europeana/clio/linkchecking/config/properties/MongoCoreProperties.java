@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class MongoCoreProperties {
 
-    //Mongo Metis Core
     @Value("${mongo.core.hosts}")
     private String[] mongoCoreHosts;
     @Value("${mongo.core.port}")

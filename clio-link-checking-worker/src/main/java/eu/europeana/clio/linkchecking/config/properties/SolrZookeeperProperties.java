@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class SolrZookeeperProperties {
 
-    // Solr/Zookeeper publish
     @Value("${solr.publish.hosts}")
     private String[] publishSolrHosts;
     @Value("${zookeeper.publish.hosts}")

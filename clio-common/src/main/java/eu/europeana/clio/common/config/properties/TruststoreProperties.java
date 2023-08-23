@@ -1,8 +1,8 @@
-package eu.europeana.clio.reporting.rest.config.properties;
+package eu.europeana.clio.common.config.properties;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 
 /**
  * Class that is used to read all configuration properties for the application.
@@ -10,10 +10,9 @@ import org.springframework.stereotype.Component;
  * It uses {@link PropertySource} to identify the properties on application startup
  * </p>
  */
-@Component
+@Configuration
 public class TruststoreProperties {
 
-  //Custom truststore
   @Value("${truststore.path}")
   private String truststorePath;
   @Value("${truststore.password}")

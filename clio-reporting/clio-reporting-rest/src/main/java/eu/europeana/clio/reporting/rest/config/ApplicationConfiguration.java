@@ -59,11 +59,11 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
             throws CustomTruststoreAppender.TrustStoreConfigurationException {
 
         // Load the trust store file.
-        if (StringUtils.isNotEmpty(propertiesHolder.getTruststorePath()) && StringUtils
-                .isNotEmpty(propertiesHolder.getTruststorePassword())) {
+        if (StringUtils.isNotEmpty(propertiesHolder.getPath()) && StringUtils
+                .isNotEmpty(propertiesHolder.getPassword())) {
             CustomTruststoreAppender
-                    .appendCustomTrustoreToDefault(propertiesHolder.getTruststorePath(),
-                            propertiesHolder.getTruststorePassword());
+                    .appendCustomTrustoreToDefault(propertiesHolder.getPath(),
+                            propertiesHolder.getPassword());
             LOGGER.info("Custom truststore appended to default truststore");
         }
     }
@@ -86,12 +86,12 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
                                                                         TruststoreProperties truststoreProperties) throws PersistenceException {
 
         reportingEngineConfiguration = new ReportingEngineConfiguration();
-        reportingEngineConfiguration.setTruststorePath(truststoreProperties.getTruststorePath());
-        reportingEngineConfiguration.setTruststorePassword(truststoreProperties.getTruststorePassword());
-        reportingEngineConfiguration.setPostgresServer(postgresProperties.getPostgresServer());
-        reportingEngineConfiguration.setPostgresUsername(postgresProperties.getPostgresUsername());
-        reportingEngineConfiguration.setPostgresPassword(postgresProperties.getPostgresPassword());
-        reportingEngineConfiguration.setReportDatasetLinkTemplate(reportingEngineProperties.getReportDatasetLinkTemplate());
+        reportingEngineConfiguration.setTruststorePath(truststoreProperties.getPath());
+        reportingEngineConfiguration.setTruststorePassword(truststoreProperties.getPassword());
+        reportingEngineConfiguration.setPostgresServer(postgresProperties.getServer());
+        reportingEngineConfiguration.setPostgresUsername(postgresProperties.getUsername());
+        reportingEngineConfiguration.setPostgresPassword(postgresProperties.getPassword());
+        reportingEngineConfiguration.setReportDatasetLinkTemplate(reportingEngineProperties.getDatasetLinkTemplate());
 
         LOGGER.info("Found database connection: {}", reportingEngineConfiguration.getPostgresServer());
         final ClioPersistenceConnection persistenceConnection = reportingEngineConfiguration.getClioPersistenceConnection();

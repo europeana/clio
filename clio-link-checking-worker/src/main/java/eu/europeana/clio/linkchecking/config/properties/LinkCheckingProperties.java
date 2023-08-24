@@ -1,64 +1,92 @@
 package eu.europeana.clio.linkchecking.config.properties;
 
 import eu.europeana.clio.linkchecking.config.Mode;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
+@ConfigurationProperties(prefix = "link-checking")
 public class LinkCheckingProperties {
 
-    @Value("#{T(eu.europeana.clio.linkchecking.config.Mode).getMode('${link.checking.mode}')}")
-    private Mode linkCheckingMode;
-    @Value("${link.checking.retention.months:6}")
-    private int linkCheckingRetentionMonths;
-    @Value("${link.checking.sample.records.per.dataset}")
-    private int linkCheckingSampleRecordsPerDataset;
-    @Value("${link.checking.run.create.threads}")
-    private int linkCheckingRunCreateThreads;
-    @Value("${link.checking.run.execute.threads}")
-    private int linkCheckingRunExecuteThreads;
-    @Value("${link.checking.min.time.between.same.server.checks}")
-    private int linkCheckingMinTimeBetweenSameServerChecks;
-    @Value("${link.checking.connect.timeout}")
-    private int linkCheckingConnectTimeout;
-    @Value("${link.checking.response.timeout}")
-    private int linkCheckingResponseTimeout;
-    @Value("${link.checking.download.timeout}")
-    private int linkCheckingDownloadTimeout;
+    private static final Mode DEFAULT_MODE = Mode.FULL_PROCESSING;
+    private static final int DEFAULT_RETENTION_MONTHS = 6;
+    private Mode checkingMode = DEFAULT_MODE;
+    private int retentionMonths = DEFAULT_RETENTION_MONTHS;
+    private int sampleRecordsPerDataset;
+    private int runCreateThreads;
+    private int runExecuteThreads;
+    private int minTimeBetweenSameServerChecks;
+    private int connectTimeout;
+    private int responseTimeout;
+    private int downloadTimeout;
 
-    public Mode getLinkCheckingMode() {
-        return linkCheckingMode;
+    public void setCheckingMode(Mode checkingMode) {
+        this.checkingMode = checkingMode;
     }
 
-    public int getLinkCheckingRetentionMonths() {
-        return linkCheckingRetentionMonths;
+    public void setRetentionMonths(int retentionMonths) {
+        this.retentionMonths = retentionMonths;
     }
 
-    public int getLinkCheckingSampleRecordsPerDataset() {
-        return linkCheckingSampleRecordsPerDataset;
+    public void setSampleRecordsPerDataset(int sampleRecordsPerDataset) {
+        this.sampleRecordsPerDataset = sampleRecordsPerDataset;
     }
 
-    public int getLinkCheckingRunCreateThreads() {
-        return linkCheckingRunCreateThreads;
+    public void setRunCreateThreads(int runCreateThreads) {
+        this.runCreateThreads = runCreateThreads;
     }
 
-    public int getLinkCheckingRunExecuteThreads() {
-        return linkCheckingRunExecuteThreads;
+    public void setRunExecuteThreads(int runExecuteThreads) {
+        this.runExecuteThreads = runExecuteThreads;
     }
 
-    public int getLinkCheckingMinTimeBetweenSameServerChecks() {
-        return linkCheckingMinTimeBetweenSameServerChecks;
+    public void setMinTimeBetweenSameServerChecks(int minTimeBetweenSameServerChecks) {
+        this.minTimeBetweenSameServerChecks = minTimeBetweenSameServerChecks;
     }
 
-    public int getLinkCheckingConnectTimeout() {
-        return linkCheckingConnectTimeout;
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
     }
 
-    public int getLinkCheckingResponseTimeout() {
-        return linkCheckingResponseTimeout;
+    public void setResponseTimeout(int responseTimeout) {
+        this.responseTimeout = responseTimeout;
     }
 
-    public int getLinkCheckingDownloadTimeout() {
-        return linkCheckingDownloadTimeout;
+    public void setDownloadTimeout(int downloadTimeout) {
+        this.downloadTimeout = downloadTimeout;
+    }
+
+    public Mode getCheckingMode() {
+        return checkingMode;
+    }
+
+    public int getRetentionMonths() {
+        return retentionMonths;
+    }
+
+    public int getSampleRecordsPerDataset() {
+        return sampleRecordsPerDataset;
+    }
+
+    public int getRunCreateThreads() {
+        return runCreateThreads;
+    }
+
+    public int getRunExecuteThreads() {
+        return runExecuteThreads;
+    }
+
+    public int getMinTimeBetweenSameServerChecks() {
+        return minTimeBetweenSameServerChecks;
+    }
+
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public int getResponseTimeout() {
+        return responseTimeout;
+    }
+
+    public int getDownloadTimeout() {
+        return downloadTimeout;
     }
 }

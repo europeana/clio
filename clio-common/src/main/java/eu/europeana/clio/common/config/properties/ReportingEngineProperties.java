@@ -1,15 +1,17 @@
 package eu.europeana.clio.common.config.properties;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Configuration
+@ConfigurationProperties(prefix = "reporting")
 public class ReportingEngineProperties {
 
-    @Value("${report.dataset.link.template}")
-    private String reportDatasetLinkTemplate;
+    private String datasetLinkTemplate;
 
-    public String getReportDatasetLinkTemplate() {
-        return reportDatasetLinkTemplate;
+    public void setDatasetLinkTemplate(String datasetLinkTemplate) {
+        this.datasetLinkTemplate = datasetLinkTemplate;
+    }
+
+    public String getDatasetLinkTemplate() {
+        return datasetLinkTemplate;
     }
 }

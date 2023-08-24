@@ -110,7 +110,7 @@ public class MongoCoreDao {
             final String datasetIdField = "datasetId";
 
             // Project the dataset ID to the right field name.
-            pipeline.project(Projection.of().exclude(ID.getFieldName())
+            pipeline.project(Projection.project().exclude(ID.getFieldName())
                     .include(datasetIdField, Expressions.field(DATASET_ID.getFieldName())));
 
             // Perform the aggregation and add the IDs in the result set.

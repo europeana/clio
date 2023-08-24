@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
+/**
+ * Data access class for accessing reports.
+ */
 public class ReportDao {
 
     private final ClioPersistenceConnection persistenceConnection;
@@ -45,6 +48,13 @@ public class ReportDao {
         });
     }
 
+    /**
+     * Get the latest reports.
+     *
+     * @param maxResults maximum results to return
+     * @return the list of reports
+     * @throws PersistenceException in case of a persistence exception
+     */
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
         return persistenceConnection.performInSession(session ->
                 session.createNamedQuery(ReportRow.GET_LATEST_REPORT_QUERY, ReportRow.class)

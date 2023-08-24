@@ -25,6 +25,11 @@ public class ReportingRunner implements CommandLineRunner {
 
     private final ReportingEngineConfiguration reportingEngineConfiguration;
 
+    /**
+     * Constructor.
+     *
+     * @param reportingEngineConfiguration the reporting engine configuration
+     */
     public ReportingRunner(ReportingEngineConfiguration reportingEngineConfiguration) {
         this.reportingEngineConfiguration = reportingEngineConfiguration;
     }

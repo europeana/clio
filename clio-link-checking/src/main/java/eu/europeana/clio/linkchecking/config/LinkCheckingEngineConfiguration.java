@@ -15,6 +15,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 
+/**
+ * Class containing configuration for the {@link eu.europeana.clio.linkchecking.execution.LinkCheckingEngine}
+ */
 public class LinkCheckingEngineConfiguration implements Closeable {
 
     //Mongo Metis Core
@@ -140,11 +143,11 @@ public class LinkCheckingEngineConfiguration implements Closeable {
     }
 
     public void setMongoCoreHosts(String[] mongoCoreHosts) {
-        this.mongoCoreHosts = mongoCoreHosts;
+        this.mongoCoreHosts = mongoCoreHosts == null ? null : mongoCoreHosts.clone();
     }
 
     public void setMongoCorePorts(int[] mongoCorePorts) {
-        this.mongoCorePorts = mongoCorePorts;
+        this.mongoCorePorts = mongoCorePorts == null ? null : mongoCorePorts.clone();
     }
 
     public void setMongoCoreUsername(String mongoCoreUsername) {
@@ -172,15 +175,15 @@ public class LinkCheckingEngineConfiguration implements Closeable {
     }
 
     public void setPublishSolrHosts(String[] publishSolrHosts) {
-        this.publishSolrHosts = publishSolrHosts;
+        this.publishSolrHosts = publishSolrHosts == null ? null : publishSolrHosts.clone();
     }
 
     public void setPublishZookeeperHosts(String[] publishZookeeperHosts) {
-        this.publishZookeeperHosts = publishZookeeperHosts;
+        this.publishZookeeperHosts = publishZookeeperHosts == null ? null : publishZookeeperHosts.clone();
     }
 
     public void setPublishZookeeperPorts(int[] publishZookeeperPorts) {
-        this.publishZookeeperPorts = publishZookeeperPorts;
+        this.publishZookeeperPorts = publishZookeeperPorts == null ? null : publishZookeeperPorts.clone();
     }
 
     public void setPublishZookeeperChroot(String publishZookeeperChroot) {

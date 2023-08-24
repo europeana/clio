@@ -35,13 +35,13 @@ import java.util.stream.Stream;
 public final class ReportingEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+    private static final DateTimeFormatter FILE_NAME_DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("'clio_report_'yyyy-MM-dd_kk-mm-ss'.csv'").withZone(ZoneId.systemDefault());
     private final ReportingEngineConfiguration reportingEngineConfiguration;
 
-    private static final DateTimeFormatter fileNameFormatter = DateTimeFormatter
-            .ofPattern("'clio_report_'yyyy-MM-dd_kk-mm-ss'.csv'").withZone(ZoneId.systemDefault());
 
     /**
-     * Constrcutor.
+     * Constructor.
      *
      * @param reportingEngineConfiguration The properties of this module.
      */
@@ -49,6 +49,12 @@ public final class ReportingEngine {
         this.reportingEngineConfiguration = reportingEngineConfiguration;
     }
 
+    /**
+     * Store the report file.
+     *
+     * @param report the report file in String format
+     * @throws ClioException if an error occurred during the storing of the report
+     */
     public void storeReport(String report) throws ClioException {
         final BatchDao batchDao = new BatchDao(reportingEngineConfiguration.getClioPersistenceConnection());
         final ReportDao reportDao = new ReportDao(reportingEngineConfiguration.getClioPersistenceConnection());
@@ -60,6 +66,11 @@ public final class ReportingEngine {
 
     }
 
+    /**
+     * Generate an im memory {@link String} report.
+     * @return the report
+     * @throws ClioException if an error occurred during generating the report
+     */
     public String generateReport() throws ClioException {
         StringWriter stringWriter = new StringWriter();
         generateReport(stringWriter);
@@ -137,11 +148,17 @@ public final class ReportingEngine {
     }
 
     public static String getReportFileNameSuggestion() {
-        return fileNameFormatter.format(Instant.now());
+        return getReportFileNameSuggestion(Instant.now());
     }
 
+    /**
+     * Get a file name suggestion.
+     *
+     * @param instant the instant to base the file name suggestion
+     * @return the file name suggestion
+     */
     public static String getReportFileNameSuggestion(Instant instant) {
-        return fileNameFormatter.format(instant);
+        return FILE_NAME_DATE_TIME_FORMATTER.format(instant);
     }
 
     /**
@@ -155,6 +172,13 @@ public final class ReportingEngine {
         return new BatchDao(reportingEngineConfiguration.getClioPersistenceConnection()).getLatestBatches(maxResults);
     }
 
+    /**
+     * Get the latest reports.
+     *
+     * @param maxResults maximum results to return
+     * @return the list of reports
+     * @throws PersistenceException in case of a persistence exception
+     */
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
         return new ReportDao(reportingEngineConfiguration.getClioPersistenceConnection()).getLatestReports(maxResults);
     }

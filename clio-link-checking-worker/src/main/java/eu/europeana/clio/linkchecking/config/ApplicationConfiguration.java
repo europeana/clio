@@ -57,7 +57,7 @@ public class ApplicationConfiguration {
      * @param propertiesHolder The properties.
      * @throws CustomTruststoreAppender.TrustStoreConfigurationException In case a problem occurred with the truststore.
      */
-    static void initializeApplication(TruststoreProperties propertiesHolder)
+    private static void initializeApplication(TruststoreProperties propertiesHolder)
             throws CustomTruststoreAppender.TrustStoreConfigurationException {
 
         // Load the trust store file.
@@ -71,7 +71,7 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
+    protected ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
                                                                         PostgresProperties postgresProperties,
                                                                         TruststoreProperties truststoreProperties) throws PersistenceException {
         reportingEngineConfiguration = new ReportingEngineConfiguration();
@@ -90,7 +90,7 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public CommandLineRunner commandLineRunner(LinkCheckingProperties linkCheckingProperties,
+    protected CommandLineRunner commandLineRunner(LinkCheckingProperties linkCheckingProperties,
                                                MongoProperties mongoProperties,
                                                SolrZookeeperProperties solrZookeeperProperties,
                                                PostgresProperties postgresProperties,

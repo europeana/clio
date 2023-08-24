@@ -52,7 +52,7 @@ public final class LinkCheckingEngine {
     private final LinkCheckingEngineConfiguration linkCheckingEngineConfiguration;
 
     /**
-     * Constrcutor.
+     * Constructor.
      *
      * @param linkCheckingEngineConfiguration The properties of this module.
      */

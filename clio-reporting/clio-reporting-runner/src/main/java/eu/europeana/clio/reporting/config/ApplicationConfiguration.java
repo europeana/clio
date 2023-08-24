@@ -61,7 +61,7 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public CommandLineRunner commandLineRunner(ReportingEngineProperties reportingEngineProperties,
+    protected CommandLineRunner commandLineRunner(ReportingEngineProperties reportingEngineProperties,
                                                PostgresProperties postgresProperties,
                                                TruststoreProperties truststoreProperties) throws PersistenceException {
         reportingEngineConfiguration = new ReportingEngineConfiguration();

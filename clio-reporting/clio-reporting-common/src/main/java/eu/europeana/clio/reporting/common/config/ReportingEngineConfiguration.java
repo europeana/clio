@@ -2,15 +2,11 @@ package eu.europeana.clio.reporting.common.config;
 
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
-import org.springframework.context.annotation.PropertySource;
 
 import java.io.Closeable;
 
 /**
- * Class that is used to read all configuration properties for the application.
- * <p>
- * It uses {@link PropertySource} to identify the properties on application startup
- * </p>
+ * Class containing configuration for the {@link eu.europeana.clio.reporting.common.ReportingEngine}
  */
 public class ReportingEngineConfiguration implements Closeable {
 

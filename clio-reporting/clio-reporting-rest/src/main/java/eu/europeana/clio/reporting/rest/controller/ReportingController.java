@@ -44,7 +44,6 @@ public class ReportingController {
     /**
      * Computes and returns the latest version of the link checking report.
      * <p>
-     * TODO JV In the future we can cache the result so that we don't have to compute it every time.
      * We can even invalidate it if we have a new execution (or we can check the most recent run
      * starting time in the DB).
      *
@@ -60,7 +59,7 @@ public class ReportingController {
         if (report == null) {
             throw new ClioException("No report found");
         } else {
-            byte[] reportBytes = report.getReport().getBytes(StandardCharsets.UTF_8);
+            byte[] reportBytes = report.getReportString().getBytes(StandardCharsets.UTF_8);
             // Return the report.
             final HttpHeaders headers = new HttpHeaders();
             headers.setContentDisposition(ContentDisposition.builder("inline")

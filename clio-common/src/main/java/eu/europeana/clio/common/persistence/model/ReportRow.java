@@ -6,6 +6,9 @@ import org.hibernate.annotations.OnDeleteAction;
 import javax.persistence.*;
 import java.time.Instant;
 
+/**
+ * Database {@link Entity} for a report.
+ */
 @Entity
 @Table(name = "report", indexes = {
         @Index(name = "report_batch_id_idx", columnList = "batch_id")})
@@ -36,6 +39,13 @@ public class ReportRow {
     public ReportRow() {
     }
 
+    /**
+     * Constructor.
+     *
+     * @param creationTime the creation time
+     * @param report the report in String format
+     * @param batch the matching batch
+     */
     public ReportRow(Instant creationTime, String report, BatchRow batch) {
         this.creationTime = creationTime.toEpochMilli();
         this.report = report;

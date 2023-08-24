@@ -50,6 +50,13 @@ public class BatchRow {
     protected BatchRow() {
     }
 
+    /**
+     * Constructor.
+     *
+     * @param creationTime the creation time of the batch
+     * @param lastUpdateTimeInSolr the last update timestamp available in solr
+     * @param lastUpdateTimeInMetisCore the last update timestamp available in metis core
+     */
     public BatchRow(Instant creationTime, Instant lastUpdateTimeInSolr,
                     Instant lastUpdateTimeInMetisCore) {
         this.creationTime = creationTime.toEpochMilli();
@@ -57,6 +64,13 @@ public class BatchRow {
         this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore.toEpochMilli();
     }
 
+    /**
+     * Set counters.
+     *
+     * @param datasetsExcludedAlreadyRunning datasets excluded that are already running counter
+     * @param datasetsExcludedNotIndexed datasets excluded that are not indexed counter
+     * @param datasetsExcludedWithoutLinks datasets excluded that do not contain links to check
+     */
     public void setCounters(int datasetsExcludedAlreadyRunning, int datasetsExcludedNotIndexed,
                             int datasetsExcludedWithoutLinks) {
         this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;

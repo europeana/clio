@@ -81,7 +81,7 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
+    protected ReportingEngineConfiguration getReportingEngineConfiguration(ReportingEngineProperties reportingEngineProperties,
                                                                         PostgresProperties postgresProperties,
                                                                         TruststoreProperties truststoreProperties) throws PersistenceException {
 
@@ -101,7 +101,7 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public ReportingEngine getReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
+    protected ReportingEngine getReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
         return new ReportingEngine(reportingEngineConfiguration);
     }
 

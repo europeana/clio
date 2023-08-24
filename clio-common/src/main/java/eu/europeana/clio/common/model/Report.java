@@ -1,16 +1,27 @@
 package eu.europeana.clio.common.model;
 
+/**
+ * Class representing a report relevant to a batch.
+ */
 public class Report {
-    private long reportId;
-    private long batchId;
-    private long creationTime;
-    private String report;
+    private final long reportId;
+    private final long batchId;
+    private final long creationTime;
+    private final String reportString;
 
-    public Report(long reportId, long batchId, long creationTime, String report) {
+    /**
+     * Constructor.
+     *
+     * @param reportId the report identifier
+     * @param batchId the batch identifier
+     * @param creationTime the creation time of the report
+     * @param reportString the report file in string format
+     */
+    public Report(long reportId, long batchId, long creationTime, String reportString) {
         this.reportId = reportId;
         this.batchId = batchId;
         this.creationTime = creationTime;
-        this.report = report;
+        this.reportString = reportString;
     }
 
     public long getReportId() {
@@ -25,7 +36,7 @@ public class Report {
         return creationTime;
     }
 
-    public String getReport() {
-        return report;
+    public String getReportString() {
+        return reportString;
     }
 }

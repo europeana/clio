@@ -3,6 +3,9 @@ package eu.europeana.clio.linkchecking.config.properties;
 import eu.europeana.clio.linkchecking.config.Mode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Class using {@link ConfigurationProperties} loading.
+ */
 @ConfigurationProperties(prefix = "link-checking")
 public class LinkCheckingProperties {
 

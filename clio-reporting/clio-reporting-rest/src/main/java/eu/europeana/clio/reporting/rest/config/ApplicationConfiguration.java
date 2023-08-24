@@ -13,10 +13,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -28,7 +28,7 @@ import java.lang.invoke.MethodHandles;
  * Entry class with configuration fields and beans initialization for the application.
  */
 @Configuration
-@Import({ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
+@EnableConfigurationProperties({ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
         PostgresConfigurationProperties.class, ReportingEngineConfigurationProperties.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
 public class ApplicationConfiguration implements WebMvcConfigurer {

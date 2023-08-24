@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
@@ -24,7 +24,9 @@ import java.lang.invoke.MethodHandles;
  * Entry class with configuration fields and beans initialization for the application.
  */
 @Configuration
-@Import({TruststoreConfigurationProperties.class, PostgresConfigurationProperties.class, ReportingEngineConfigurationProperties.class})
+@EnableConfigurationProperties({
+        TruststoreConfigurationProperties.class, PostgresConfigurationProperties.class,
+        ReportingEngineConfigurationProperties.class})
 public class ApplicationConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -37,7 +39,8 @@ public class ApplicationConfiguration {
      * @throws CustomTruststoreAppender.TrustStoreConfigurationException if the configuration of the truststore failed
      */
     @Autowired
-    public ApplicationConfiguration(TruststoreConfigurationProperties truststoreConfigurationProperties) throws CustomTruststoreAppender.TrustStoreConfigurationException {
+    public ApplicationConfiguration(TruststoreConfigurationProperties truststoreConfigurationProperties)
+            throws CustomTruststoreAppender.TrustStoreConfigurationException {
         ApplicationConfiguration.initializeApplication(truststoreConfigurationProperties);
     }
 

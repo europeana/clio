@@ -1,50 +1,53 @@
 #Spring
-#logging.config=/data/logging/log4j2.xml
-logging.config=log4j2.xml
+logging.config=/data/logging/log4j2.xml
+#logging.config=log4j2.xml
 spring.autoconfigure.exclude=\
   org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration, \
   org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration, \
-  org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration, \
-  org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration
+  org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
 
 #Mongo metis-core
-mongo.core.hosts=
-mongo.core.port=
-mongo.core.authentication.db=
-mongo.core.username=
-mongo.core.password=
-mongo.core.enableSSL=
-mongo.core.db=
-mongo.core.application.name=
+metis-core.mongo.hosts=
+metis-core.mongo.ports=
+metis-core.mongo.authenticationDatabase=
+metis-core.mongo.username=
+metis-core.mongo.password=
+metis-core.mongo.enableSsl=
+metis-core.mongo.database=
+metis-core.mongo.applicationName=
 
 #Truststore
 truststore.path=
 truststore.password=
 
 #Solr/Zookeeper published records
-solr.publish.hosts=
-zookeeper.publish.hosts=
-zookeeper.publish.port=
-zookeeper.publish.chroot=
-zookeeper.publish.defaultCollection=
+publish.solr.hosts=
+publish.solr.zookeeper.hosts=
+publish.solr.zookeeper.ports=
+publish.solr.zookeeper.chroot=
+publish.solr.zookeeper.defaultCollection=
 
-#PostGreSQL
-postgresql.server=jdbc:postgresql://
-postgresql.username=
-postgresql.password=
+postgres.server=jdbc:postgresql://
+postgres.username=
+postgres.password=
 
 #Link Checking
 # Note: There should be significantly more (say 3 times) execute threads than sample records. Since
 # all links for a dataset (likely with the same server) may come through to the link checker in quick
 # succession, this would decreases the likelihood and impact of the bottleneck that is created this
 # way (threads needing to spend a lot of time waiting for other threads to free up a server).
-link.checking.mode=
-link.checking.retention.months=
-link.checking.sample.records.per.dataset=
-link.checking.run.create.threads=
-link.checking.run.execute.threads=
-link.checking.min.time.between.same.server.checks=
-link.checking.connect.timeout=
-link.checking.response.timeout=
-link.checking.download.timeout=
+link-checking.mode=
+link-checking.retentionMonths=
+link-checking.sampleRecordsPerDataset=
+link-checking.runCreateThreads=
+link-checking.runExecuteThreads=
+link-checking.minTimeBetweenSameServerChecks=
+link-checking.connectTimeout=
+link-checking.responseTimeout=
+link-checking.downloadTimeout=
+
+#Reports
+# The String.format() - compatible template for the link to the dataset to be included in the
+# report. It expects one occurrence of '%s' that will contain the dataset ID.
+reporting.datasetLinkTemplate=https://metis.europeana.eu/dataset/edit/%s
 

@@ -1,14 +1,14 @@
 package eu.europeana.clio.reporting.rest.config;
 
-import eu.europeana.clio.common.config.properties.PostgresProperties;
 import eu.europeana.clio.common.config.properties.ReportingEngineProperties;
-import eu.europeana.clio.common.config.properties.TruststoreProperties;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.reporting.common.ReportingEngine;
 import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.apm.ElasticAPMConfiguration;
+import metis.common.config.properties.TruststoreProperties;
+import metis.common.config.properties.postgres.PostgresProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

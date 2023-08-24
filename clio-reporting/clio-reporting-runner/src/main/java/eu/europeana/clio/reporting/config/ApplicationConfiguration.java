@@ -1,13 +1,13 @@
 package eu.europeana.clio.reporting.config;
 
-import eu.europeana.clio.common.config.properties.PostgresProperties;
 import eu.europeana.clio.common.config.properties.ReportingEngineProperties;
-import eu.europeana.clio.common.config.properties.TruststoreProperties;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.reporting.common.config.ReportingEngineConfiguration;
 import eu.europeana.clio.reporting.runner.ReportingRunner;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
+import metis.common.config.properties.TruststoreProperties;
+import metis.common.config.properties.postgres.PostgresProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,18 +44,18 @@ public class ApplicationConfiguration {
     /**
      * This method performs the initializing tasks for the application.
      *
-     * @param propertiesHolder The properties.
+     * @param truststoreProperties The properties.
      * @throws CustomTruststoreAppender.TrustStoreConfigurationException In case a problem occurred with the truststore.
      */
-    static void initializeApplication(TruststoreProperties propertiesHolder)
+    static void initializeApplication(TruststoreProperties truststoreProperties)
             throws CustomTruststoreAppender.TrustStoreConfigurationException {
 
         // Load the trust store file.
-        if (StringUtils.isNotEmpty(propertiesHolder.getPath()) && StringUtils
-                .isNotEmpty(propertiesHolder.getPassword())) {
+        if (StringUtils.isNotEmpty(truststoreProperties.getPath()) && StringUtils
+                .isNotEmpty(truststoreProperties.getPassword())) {
             CustomTruststoreAppender
-                    .appendCustomTrustoreToDefault(propertiesHolder.getPath(),
-                            propertiesHolder.getPassword());
+                    .appendCustomTrustoreToDefault(truststoreProperties.getPath(),
+                            truststoreProperties.getPassword());
             LOGGER.info("Custom truststore appended to default truststore");
         }
     }

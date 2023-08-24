@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Class using {@link ConfigurationProperties} loading.
  */
 @ConfigurationProperties(prefix = "reporting")
-public class ReportingEngineProperties {
+public class ReportingEngineConfigurationProperties {
 
     private String datasetLinkTemplate;
 

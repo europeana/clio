@@ -68,6 +68,7 @@ public final class ReportingEngine {
 
     /**
      * Generate an im memory {@link String} report.
+     *
      * @return the report
      * @throws ClioException if an error occurred during generating the report
      */
@@ -116,7 +117,7 @@ public final class ReportingEngine {
             // Write records
             linkStream.forEach(link -> csvWriter.writeNext(new String[]{
                     link.getLeft().getDataset().getDatasetId(),
-                    String.format(reportingEngineConfiguration.getReportDatasetLinkTemplate(),
+                    String.format(reportingEngineConfiguration.getReportingEngineConfigurationProperties().getDatasetLinkTemplate(),
                             link.getLeft().getDataset().getDatasetId()),
                     Optional.ofNullable(link.getLeft().getDataset().getSize())
                             .map(Object::toString).orElse(null),

@@ -3,11 +3,15 @@ package eu.europeana.clio.linkchecking.config;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
+import eu.europeana.clio.linkchecking.config.properties.LinkCheckingConfigurationProperties;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
 import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
 import eu.europeana.metis.mongo.connection.MongoProperties;
 import eu.europeana.metis.solr.connection.SolrProperties;
+import metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
+import metis.common.config.properties.postgres.PostgresConfigurationProperties;
+import metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
@@ -20,69 +24,65 @@ import java.time.Duration;
  */
 public class LinkCheckingEngineConfiguration implements Closeable {
 
-    //Mongo Metis Core
-    private String[] mongoCoreHosts;
-    private int[] mongoCorePorts;
-    private String mongoCoreUsername;
-    private String mongoCorePassword;
-    private String mongoCoreAuthenticationDatabase;
-    private String mongoCoreDatabase;
-    private boolean mongoCoreEnableSsl;
-    private String mongoCoreApplicationName;
-
-    // Solr/Zookeeper publish
-    private String[] publishSolrHosts;
-    private String[] publishZookeeperHosts;
-    private int[] publishZookeeperPorts;
-    private String publishZookeeperChroot;
-    private String publishZookeeperDefaultCollection;
-
-    // PostgreSQL
-    private String postgresServer;
-    private String postgresUsername;
-    private String postgresPassword;
-
-    // Link checking
-    private Mode linkCheckingMode;
-    private int linkCheckingRetentionMonths;
-    private int linkCheckingSampleRecordsPerDataset;
-    private int linkCheckingRunCreateThreads;
-    private int linkCheckingRunExecuteThreads;
-    private int linkCheckingMinTimeBetweenSameServerChecks;
-    private int linkCheckingConnectTimeout;
-    private int linkCheckingResponseTimeout;
-    private int linkCheckingDownloadTimeout;
+    private final LinkCheckingConfigurationProperties linkCheckingConfigurationProperties;
+    private final MetisCoreMongoConfigurationProperties metisCoreMongoConfigurationProperties;
+    private final PublishSolrZookeeperConfigurationProperties publishSolrZookeeperConfigurationProperties;
+    private final PostgresConfigurationProperties postgresConfigurationProperties;
 
     private ClioPersistenceConnection clioPersistenceConnection;
 
-    public ClioPersistenceConnection getClioPersistenceConnection(){
-        if(clioPersistenceConnection == null){
-            clioPersistenceConnection = new ClioPersistenceConnectionProvider(postgresServer, postgresUsername, postgresPassword)
+    /**
+     * Constructor.
+     *
+     * @param linkCheckingConfigurationProperties the link checking configuration properties
+     * @param metisCoreMongoConfigurationProperties the metis core mongo configuration properties
+     * @param publishSolrZookeeperConfigurationProperties the publish solr zookeeper configuration properties
+     * @param postgresConfigurationProperties the postgres configuration properties
+     */
+    public LinkCheckingEngineConfiguration(LinkCheckingConfigurationProperties linkCheckingConfigurationProperties,
+                                           MetisCoreMongoConfigurationProperties metisCoreMongoConfigurationProperties,
+                                           PublishSolrZookeeperConfigurationProperties publishSolrZookeeperConfigurationProperties,
+                                           PostgresConfigurationProperties postgresConfigurationProperties) {
+        this.linkCheckingConfigurationProperties = linkCheckingConfigurationProperties;
+
+        this.metisCoreMongoConfigurationProperties = metisCoreMongoConfigurationProperties;
+        this.publishSolrZookeeperConfigurationProperties = publishSolrZookeeperConfigurationProperties;
+        this.postgresConfigurationProperties = postgresConfigurationProperties;
+    }
+
+    public ClioPersistenceConnection getClioPersistenceConnection() {
+        if (clioPersistenceConnection == null) {
+            clioPersistenceConnection = new ClioPersistenceConnectionProvider(
+                    postgresConfigurationProperties.getServer(), postgresConfigurationProperties.getUsername(), postgresConfigurationProperties.getPassword())
                     .createPersistenceConnection();
         }
         return clioPersistenceConnection;
     }
 
-    public MongoProperties<ConfigurationException> getMongoProperties()
+    public MongoProperties<ConfigurationException> getMetisCoreMongoProperties()
             throws ConfigurationException {
         final MongoProperties<ConfigurationException> properties =
                 new MongoProperties<>(ConfigurationException::new);
-        properties.setAllProperties(mongoCoreHosts, mongoCorePorts, mongoCoreAuthenticationDatabase,
-                mongoCoreUsername, mongoCorePassword, mongoCoreEnableSsl, null, mongoCoreApplicationName);
+        properties.setAllProperties(
+                metisCoreMongoConfigurationProperties.getHosts(), metisCoreMongoConfigurationProperties.getPorts(),
+                metisCoreMongoConfigurationProperties.getAuthenticationDatabase(), metisCoreMongoConfigurationProperties.getUsername(),
+                metisCoreMongoConfigurationProperties.getPassword(), metisCoreMongoConfigurationProperties.isEnableSsl(),
+                null, metisCoreMongoConfigurationProperties.getApplicationName());
         return properties;
     }
 
     public SolrProperties<ConfigurationException> getSolrProperties() throws ConfigurationException {
         final SolrProperties<ConfigurationException> properties =
                 new SolrProperties<>(ConfigurationException::new);
-        properties.setZookeeperHosts(publishZookeeperHosts, publishZookeeperPorts);
-        if (StringUtils.isNotBlank(publishZookeeperChroot)) {
-            properties.setZookeeperChroot(publishZookeeperChroot);
+        properties.setZookeeperHosts(
+                publishSolrZookeeperConfigurationProperties.getHosts(), publishSolrZookeeperConfigurationProperties.getZookeeper().getPorts());
+        if (StringUtils.isNotBlank(publishSolrZookeeperConfigurationProperties.getZookeeper().getChroot())) {
+            properties.setZookeeperChroot(publishSolrZookeeperConfigurationProperties.getZookeeper().getChroot());
         }
-        if (StringUtils.isNotBlank(publishZookeeperDefaultCollection)) {
-            properties.setZookeeperDefaultCollection(publishZookeeperDefaultCollection);
+        if (StringUtils.isNotBlank(publishSolrZookeeperConfigurationProperties.getZookeeper().getDefaultCollection())) {
+            properties.setZookeeperDefaultCollection(publishSolrZookeeperConfigurationProperties.getZookeeper().getDefaultCollection());
         }
-        for (String host : publishSolrHosts) {
+        for (String host : publishSolrZookeeperConfigurationProperties.getHosts()) {
             try {
                 properties.addSolrHost(new URI(host));
             } catch (URISyntaxException e) {
@@ -100,9 +100,9 @@ public class LinkCheckingEngineConfiguration implements Closeable {
      */
     public LinkChecker createLinkChecker() throws ConfigurationException {
         final MediaProcessorFactory mediaProcessorFactory = new MediaProcessorFactory();
-        mediaProcessorFactory.setResourceConnectTimeout(this.linkCheckingConnectTimeout);
-        mediaProcessorFactory.setResourceResponseTimeout(this.linkCheckingResponseTimeout);
-        mediaProcessorFactory.setResourceDownloadTimeout(this.linkCheckingDownloadTimeout);
+        mediaProcessorFactory.setResourceConnectTimeout(linkCheckingConfigurationProperties.getConnectTimeout());
+        mediaProcessorFactory.setResourceResponseTimeout(linkCheckingConfigurationProperties.getResponseTimeout());
+        mediaProcessorFactory.setResourceDownloadTimeout(linkCheckingConfigurationProperties.getDownloadTimeout());
         try {
             return mediaProcessorFactory.createLinkChecker();
         } catch (MediaProcessorException e) {
@@ -110,136 +110,24 @@ public class LinkCheckingEngineConfiguration implements Closeable {
         }
     }
 
-    public String getPostgresServer() {
-        return postgresServer;
+    public MetisCoreMongoConfigurationProperties getMetisCoreMongoConfigurationProperties() {
+        return metisCoreMongoConfigurationProperties;
     }
 
-    public Mode getLinkCheckingMode() {
-        return linkCheckingMode;
+    public LinkCheckingConfigurationProperties getLinkCheckingConfigurationProperties() {
+        return linkCheckingConfigurationProperties;
     }
 
-    public int getLinkCheckingRetentionMonths() {
-        return linkCheckingRetentionMonths;
+    public PublishSolrZookeeperConfigurationProperties getPublishSolrZookeeperConfigurationProperties() {
+        return publishSolrZookeeperConfigurationProperties;
     }
 
-    public int getLinkCheckingRunCreateThreads() {
-        return linkCheckingRunCreateThreads;
-    }
-
-    public int getLinkCheckingSampleRecordsPerDataset() {
-        return linkCheckingSampleRecordsPerDataset;
-    }
-
-    public int getLinkCheckingRunExecuteThreads() {
-        return linkCheckingRunExecuteThreads;
+    public PostgresConfigurationProperties getPostgresConfigurationProperties() {
+        return postgresConfigurationProperties;
     }
 
     public Duration getLinkCheckingMinTimeBetweenSameServerChecks() {
-        return Duration.ofMillis(this.linkCheckingMinTimeBetweenSameServerChecks);
-    }
-
-    public String getMongoCoreDatabase() {
-        return mongoCoreDatabase;
-    }
-
-    public void setMongoCoreHosts(String[] mongoCoreHosts) {
-        this.mongoCoreHosts = mongoCoreHosts == null ? null : mongoCoreHosts.clone();
-    }
-
-    public void setMongoCorePorts(int[] mongoCorePorts) {
-        this.mongoCorePorts = mongoCorePorts == null ? null : mongoCorePorts.clone();
-    }
-
-    public void setMongoCoreUsername(String mongoCoreUsername) {
-        this.mongoCoreUsername = mongoCoreUsername;
-    }
-
-    public void setMongoCorePassword(String mongoCorePassword) {
-        this.mongoCorePassword = mongoCorePassword;
-    }
-
-    public void setMongoCoreAuthenticationDatabase(String mongoCoreAuthenticationDatabase) {
-        this.mongoCoreAuthenticationDatabase = mongoCoreAuthenticationDatabase;
-    }
-
-    public void setMongoCoreDatabase(String mongoCoreDatabase) {
-        this.mongoCoreDatabase = mongoCoreDatabase;
-    }
-
-    public void setMongoCoreEnableSsl(boolean mongoCoreEnableSsl) {
-        this.mongoCoreEnableSsl = mongoCoreEnableSsl;
-    }
-
-    public void setMongoCoreApplicationName(String mongoCoreApplicationName) {
-        this.mongoCoreApplicationName = mongoCoreApplicationName;
-    }
-
-    public void setPublishSolrHosts(String[] publishSolrHosts) {
-        this.publishSolrHosts = publishSolrHosts == null ? null : publishSolrHosts.clone();
-    }
-
-    public void setPublishZookeeperHosts(String[] publishZookeeperHosts) {
-        this.publishZookeeperHosts = publishZookeeperHosts == null ? null : publishZookeeperHosts.clone();
-    }
-
-    public void setPublishZookeeperPorts(int[] publishZookeeperPorts) {
-        this.publishZookeeperPorts = publishZookeeperPorts == null ? null : publishZookeeperPorts.clone();
-    }
-
-    public void setPublishZookeeperChroot(String publishZookeeperChroot) {
-        this.publishZookeeperChroot = publishZookeeperChroot;
-    }
-
-    public void setPublishZookeeperDefaultCollection(String publishZookeeperDefaultCollection) {
-        this.publishZookeeperDefaultCollection = publishZookeeperDefaultCollection;
-    }
-
-    public void setPostgresServer(String postgresServer) {
-        this.postgresServer = postgresServer;
-    }
-
-    public void setPostgresUsername(String postgresUsername) {
-        this.postgresUsername = postgresUsername;
-    }
-
-    public void setPostgresPassword(String postgresPassword) {
-        this.postgresPassword = postgresPassword;
-    }
-
-    public void setLinkCheckingMode(Mode linkCheckingMode) {
-        this.linkCheckingMode = linkCheckingMode;
-    }
-
-    public void setLinkCheckingRetentionMonths(int linkCheckingRetentionMonths) {
-        this.linkCheckingRetentionMonths = linkCheckingRetentionMonths;
-    }
-
-    public void setLinkCheckingSampleRecordsPerDataset(int linkCheckingSampleRecordsPerDataset) {
-        this.linkCheckingSampleRecordsPerDataset = linkCheckingSampleRecordsPerDataset;
-    }
-
-    public void setLinkCheckingRunCreateThreads(int linkCheckingRunCreateThreads) {
-        this.linkCheckingRunCreateThreads = linkCheckingRunCreateThreads;
-    }
-
-    public void setLinkCheckingRunExecuteThreads(int linkCheckingRunExecuteThreads) {
-        this.linkCheckingRunExecuteThreads = linkCheckingRunExecuteThreads;
-    }
-
-    public void setLinkCheckingMinTimeBetweenSameServerChecks(int linkCheckingMinTimeBetweenSameServerChecks) {
-        this.linkCheckingMinTimeBetweenSameServerChecks = linkCheckingMinTimeBetweenSameServerChecks;
-    }
-
-    public void setLinkCheckingConnectTimeout(int linkCheckingConnectTimeout) {
-        this.linkCheckingConnectTimeout = linkCheckingConnectTimeout;
-    }
-
-    public void setLinkCheckingResponseTimeout(int linkCheckingResponseTimeout) {
-        this.linkCheckingResponseTimeout = linkCheckingResponseTimeout;
-    }
-
-    public void setLinkCheckingDownloadTimeout(int linkCheckingDownloadTimeout) {
-        this.linkCheckingDownloadTimeout = linkCheckingDownloadTimeout;
+        return Duration.ofMillis(linkCheckingConfigurationProperties.getMinTimeBetweenSameServerChecks());
     }
 
     @Override

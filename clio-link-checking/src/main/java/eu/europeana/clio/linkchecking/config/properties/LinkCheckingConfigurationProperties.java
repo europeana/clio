@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Class using {@link ConfigurationProperties} loading.
  */
 @ConfigurationProperties(prefix = "link-checking")
-public class LinkCheckingProperties {
+public class LinkCheckingConfigurationProperties {
 
     private static final Mode DEFAULT_MODE = Mode.FULL_PROCESSING;
     private static final int DEFAULT_RETENTION_MONTHS = 6;

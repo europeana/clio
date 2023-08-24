@@ -43,7 +43,7 @@ public class LinkCheckingRunner implements CommandLineRunner {
     @Override
     public void run(String[] args) {
         try {
-            mainInternal(linkCheckingEngineConfiguration.getLinkCheckingMode());
+            mainInternal(linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getCheckingMode());
         } catch (ClioException | RuntimeException e) {
             LOGGER.warn("Something happened while performing link checking.", e);
         }

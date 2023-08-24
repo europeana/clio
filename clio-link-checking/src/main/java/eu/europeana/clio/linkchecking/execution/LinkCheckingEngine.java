@@ -67,7 +67,7 @@ public final class LinkCheckingEngine {
      */
     public void removeOldData() throws PersistenceException {
             BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
-            batchDao.deleteOlderBatches(linkCheckingEngineConfiguration.getLinkCheckingRetentionMonths());
+            batchDao.deleteOlderBatches(linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getRetentionMonths());
     }
 
     /**
@@ -81,7 +81,7 @@ public final class LinkCheckingEngine {
 
         // Create access for the mongo (metis core) and the solr.
         final MongoClientProvider<ConfigurationException> mongoClientProvider = new MongoClientProvider<>(
-                linkCheckingEngineConfiguration.getMongoProperties());
+                linkCheckingEngineConfiguration.getMetisCoreMongoProperties());
         final SolrClientProvider<ConfigurationException> solrClientProvider = new SolrClientProvider<>(
                 linkCheckingEngineConfiguration.getSolrProperties());
 
@@ -92,7 +92,7 @@ public final class LinkCheckingEngine {
 
             // Finish setting up the connections.
             final MongoCoreDao mongoCoreDao = new MongoCoreDao(mongoClient,
-                    linkCheckingEngineConfiguration.getMongoCoreDatabase());
+                    linkCheckingEngineConfiguration.getMetisCoreMongoConfigurationProperties().getDatabase());
             // See https://github.com/spotbugs/spotbugs/issues/756
             @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final SolrClient nativeSolrClient = solrClient.getSolrClient();
             final SolrDao solrDao = new SolrDao(nativeSolrClient);
@@ -110,7 +110,7 @@ public final class LinkCheckingEngine {
             ParallelTaskExecutor.executeAndWait(datasetIds,
                     id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, linkCheckingEngineConfiguration.getClioPersistenceConnection(),
                             id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter,
-                            datasetsWithoutLinksCounter), linkCheckingEngineConfiguration.getLinkCheckingRunCreateThreads());
+                            datasetsWithoutLinksCounter), linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getRunCreateThreads());
 
             // Set the counters.
             batchDao.setCountersForBatch(batchId, datasetsAlreadyRunningCounter.get(),
@@ -144,7 +144,7 @@ public final class LinkCheckingEngine {
 
         // Obtain the sample records from the Solr database.
         final List<SampleRecord> sampleRecords = solrDao
-                .getRandomSampleRecords(datasetId, linkCheckingEngineConfiguration.getLinkCheckingSampleRecordsPerDataset());
+                .getRandomSampleRecords(datasetId, linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getSampleRecordsPerDataset());
         if (sampleRecords.isEmpty()) {
             LOGGER.info("Skipping dataset {} as it has no records with links to check.", datasetId);
             datasetsWithoutLinksCounter.incrementAndGet();
@@ -182,7 +182,7 @@ public final class LinkCheckingEngine {
                 ParallelTaskExecutor.executeAndWait(linkStream,
                         link -> performLinkCheckingOnUncheckedLink(linkChecker, linkDao,
                                 semaphoreReleasePool, link),
-                        linkCheckingEngineConfiguration.getLinkCheckingRunExecuteThreads());
+                        linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getRunExecuteThreads());
             }
         } catch (IOException e) {
             throw new ClioException("Could not close link checker.", e);

@@ -56,8 +56,8 @@ public final class ReportingEngine {
      * @throws ClioException if an error occurred during the storing of the report
      */
     public void storeReport(String report) throws ClioException {
-        final BatchDao batchDao = new BatchDao(reportingEngineConfiguration.getClioPersistenceConnection());
-        final ReportDao reportDao = new ReportDao(reportingEngineConfiguration.getClioPersistenceConnection());
+        final BatchDao batchDao = new BatchDao(reportingEngineConfiguration.getSessionFactory());
+        final ReportDao reportDao = new ReportDao(reportingEngineConfiguration.getSessionFactory());
 
         BatchWithCounters latestBatch = batchDao.getLatestBatches(1).stream().findFirst().orElse(null);
         if (latestBatch != null) {
@@ -88,7 +88,7 @@ public final class ReportingEngine {
 
         final long startTime = System.nanoTime();
         // Write the report.
-        try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(reportingEngineConfiguration.getClioPersistenceConnection())
+        try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(reportingEngineConfiguration.getSessionFactory())
                 .getBrokenLinksInLatestCompletedRuns();
              final CSVWriter csvWriter = new CSVWriter(writer)) {
 
@@ -170,7 +170,7 @@ public final class ReportingEngine {
      * @throws PersistenceException In case there was a problem with accessing the data.
      */
     public List<BatchWithCounters> getLatestBatches(int maxResults) throws PersistenceException {
-        return new BatchDao(reportingEngineConfiguration.getClioPersistenceConnection()).getLatestBatches(maxResults);
+        return new BatchDao(reportingEngineConfiguration.getSessionFactory()).getLatestBatches(maxResults);
     }
 
     /**
@@ -181,6 +181,6 @@ public final class ReportingEngine {
      * @throws PersistenceException in case of a persistence exception
      */
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.getClioPersistenceConnection()).getLatestReports(maxResults);
+        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getLatestReports(maxResults);
     }
 }

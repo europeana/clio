@@ -2,10 +2,11 @@ package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -21,16 +22,16 @@ import static java.lang.String.format;
 public class BatchDao {
 
     public static final long DAYS_IN_MONTH = 30L;
-    private final ClioPersistenceConnection persistenceConnection;
+    private final HibernateSessionUtils hibernateSessionUtils;
 
     /**
      * Constructor.
      *
-     * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
-     *                              object does not close the connection.
+     * @param sessionFactory The connection to the Clio persistence. Should be connected. This
+     * object does not close the connection.
      */
-    public BatchDao(ClioPersistenceConnection persistenceConnection) {
-        this.persistenceConnection = persistenceConnection;
+    public BatchDao(SessionFactory sessionFactory) {
+        this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
     }
 
     /**
@@ -44,7 +45,7 @@ public class BatchDao {
      */
     public long createBatchStartingNow(Instant lastUpdateTimeInSolr,
                                        Instant lastUpdateTimeInMetisCore) throws PersistenceException {
-        return persistenceConnection.performInTransaction(session -> {
+        return hibernateSessionUtils.performInTransaction(session -> {
             final BatchRow newBatch = new BatchRow(Instant.now(), lastUpdateTimeInSolr,
                     lastUpdateTimeInMetisCore);
             return (Long) session.save(newBatch);
@@ -66,7 +67,7 @@ public class BatchDao {
     public void setCountersForBatch(long batchId, int datasetsExcludedAlreadyRunning,
                                     int datasetsExcludedNotIndexed, int datasetsExcludedWithoutLinks)
             throws PersistenceException {
-        persistenceConnection.performInTransaction(session -> {
+        hibernateSessionUtils.performInTransaction(session -> {
             final BatchRow batchRow = session.get(BatchRow.class, batchId);
             if (batchRow == null) {
                 throw new PersistenceException(format("Cannot set counters: batch with ID %s does not exist.", batchId));
@@ -85,7 +86,7 @@ public class BatchDao {
      * @throws PersistenceException In case there was a problem with accessing the data.
      */
     public List<BatchWithCounters> getLatestBatches(int maxResults) throws PersistenceException {
-        return persistenceConnection.performInSession(session ->
+        return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(BatchRow.GET_LATEST_BATCHES_QUERY, BatchRow.class)
                         .setMaxResults(maxResults).getResultList().stream()
                         .map(batch -> convert(batch, session)).collect(Collectors.toList()));
@@ -100,7 +101,7 @@ public class BatchDao {
      */
     public List<BatchRow> getOlderBatches(int retentionMonths) throws PersistenceException {
         long creationTimeCutOff = Instant.now().minus(retentionMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
-        return persistenceConnection.performInSession(session ->
+        return hibernateSessionUtils.performInSession(session ->
                 new ArrayList<>(
                         session.createNamedQuery(BatchRow.GET_OLD_BATCHES_QUERY, BatchRow.class)
                                 .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeCutOff)
@@ -117,7 +118,7 @@ public class BatchDao {
      */
     public int deleteOlderBatches(int retentionMonths) throws PersistenceException {
         long creationTimeCutOff = Instant.now().minus(retentionMonths * DAYS_IN_MONTH, ChronoUnit.DAYS).toEpochMilli();
-        return persistenceConnection.performInTransaction(session ->
+        return hibernateSessionUtils.performInTransaction(session ->
                 session.createNamedQuery(BatchRow.DELETE_OLD_BATCHES_QUERY)
                         .setParameter(BatchRow.CREATION_TIME_PARAMETER, creationTimeCutOff)
                         .executeUpdate());

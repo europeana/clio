@@ -7,7 +7,6 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
@@ -23,6 +22,7 @@ import eu.europeana.metis.mongo.connection.MongoClientProvider;
 import eu.europeana.metis.solr.client.CompoundSolrClient;
 import eu.europeana.metis.solr.connection.SolrClientProvider;
 import org.apache.solr.client.solrj.SolrClient;
+import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public final class LinkCheckingEngine {
      * @throws PersistenceException the persistence connection
      */
     public void removeOldData() throws PersistenceException {
-            BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
+            BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getSessionFactory());
             batchDao.deleteOlderBatches(linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getRetentionMonths());
     }
 
@@ -98,7 +98,7 @@ public final class LinkCheckingEngine {
             final SolrDao solrDao = new SolrDao(nativeSolrClient);
 
             // Set up a batch.
-            final BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
+            final BatchDao batchDao = new BatchDao(linkCheckingEngineConfiguration.getSessionFactory());
             final long batchId = batchDao.createBatchStartingNow(solrDao.getLastUpdateTime(),
                     mongoCoreDao.getLastUpdateTime());
 
@@ -108,7 +108,7 @@ public final class LinkCheckingEngine {
             final AtomicInteger datasetsWithoutLinksCounter = new AtomicInteger();
             final Stream<String> datasetIds = mongoCoreDao.getAllDatasetIds();
             ParallelTaskExecutor.executeAndWait(datasetIds,
-                    id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, linkCheckingEngineConfiguration.getClioPersistenceConnection(),
+                    id -> createRunWithUncheckedLinksForDataset(mongoCoreDao, solrDao, linkCheckingEngineConfiguration.getSessionFactory(),
                             id, batchId, datasetsAlreadyRunningCounter, datasetsNotYetIndexedCounter,
                             datasetsWithoutLinksCounter), linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getRunCreateThreads());
 
@@ -122,12 +122,12 @@ public final class LinkCheckingEngine {
     }
 
     private void createRunWithUncheckedLinksForDataset(MongoCoreDao mongoCoreDao, SolrDao solrDao,
-                                                       ClioPersistenceConnection databaseConnection, String datasetId, long batchId,
+                                                       SessionFactory sessionFactory, String datasetId, long batchId,
                                                        AtomicInteger datasetsAlreadyRunningCounter, AtomicInteger datasetsNotYetIndexedCounter,
                                                        AtomicInteger datasetsWithoutLinksCounter) throws ClioException {
 
         // If the dataset already has a run in progress, we don't proceed.
-        final RunDao runDao = new RunDao(databaseConnection);
+        final RunDao runDao = new RunDao(linkCheckingEngineConfiguration.getSessionFactory());
         if (runDao.datasetHasActiveRun(datasetId)) {
             LOGGER.info("Skipping dataset {} as it already has an active run.", datasetId);
             datasetsAlreadyRunningCounter.incrementAndGet();
@@ -152,9 +152,9 @@ public final class LinkCheckingEngine {
         }
 
         // Save the information to the Clio database
-        new DatasetDao(databaseConnection).createOrUpdateDataset(dataset);
+        new DatasetDao(sessionFactory).createOrUpdateDataset(dataset);
         final long runId = runDao.createRunStartingNow(dataset.getDatasetId(), batchId);
-        final LinkDao linkDao = new LinkDao(databaseConnection);
+        final LinkDao linkDao = new LinkDao(sessionFactory);
         for (SampleRecord sampleRecord : sampleRecords) {
             for (Entry<LinkType, Set<String>> links : sampleRecord.getLinks().entrySet()) {
                 for (String url : links.getValue()) {
@@ -175,7 +175,7 @@ public final class LinkCheckingEngine {
     public void performLinkCheckingOnAllUncheckedLinks() throws ClioException {
         final ScheduledExecutorService semaphoreReleasePool = Executors.newScheduledThreadPool(0);
         try (final LinkChecker linkChecker = linkCheckingEngineConfiguration.createLinkChecker()) {
-            final LinkDao linkDao = new LinkDao(linkCheckingEngineConfiguration.getClioPersistenceConnection());
+            final LinkDao linkDao = new LinkDao(linkCheckingEngineConfiguration.getSessionFactory());
             try (final StreamResult<Link> linksToCheck = linkDao.getAllUncheckedLinks()) {
                 // See https://github.com/spotbugs/spotbugs/issues/756
                 @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final Stream<Link> linkStream = linksToCheck.get();

@@ -2,9 +2,10 @@ package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Report;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.ReportRow;
+import org.hibernate.SessionFactory;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,16 +18,16 @@ import static java.lang.String.format;
  */
 public class ReportDao {
 
-    private final ClioPersistenceConnection persistenceConnection;
+    private final HibernateSessionUtils hibernateSessionUtils;
 
     /**
      * Constructor.
      *
-     * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
-     *                              object does not close the connection.
+     * @param sessionFactory The connection to the Clio persistence. Should be connected. This
+     * object does not close the connection.
      */
-    public ReportDao(ClioPersistenceConnection persistenceConnection) {
-        this.persistenceConnection = persistenceConnection;
+    public ReportDao(SessionFactory sessionFactory) {
+        this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
     }
 
     /**
@@ -38,7 +39,7 @@ public class ReportDao {
      * @throws PersistenceException In case there was a persistence problem.
      */
     public long saveReport(String report, long batchId) throws PersistenceException {
-        return persistenceConnection.performInTransaction(session -> {
+        return hibernateSessionUtils.performInTransaction(session -> {
             final BatchRow batchRow = session.get(BatchRow.class, batchId);
             if (batchRow == null) {
                 throw new PersistenceException(format("Cannot create run: batch with ID %s does not exist.", batchId));
@@ -56,7 +57,7 @@ public class ReportDao {
      * @throws PersistenceException in case of a persistence exception
      */
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
-        return persistenceConnection.performInSession(session ->
+        return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(ReportRow.GET_LATEST_REPORT_QUERY, ReportRow.class)
                         .setMaxResults(maxResults).getResultList().stream()
                         .map(ReportDao::convert).collect(Collectors.toList()));

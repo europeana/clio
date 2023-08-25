@@ -30,7 +30,8 @@ public class LinkCheckingRunner implements CommandLineRunner {
      * @param linkCheckingEngineConfiguration the configuration properties
      * @param reportingEngineConfiguration the reporting engine
      */
-    public LinkCheckingRunner(LinkCheckingEngineConfiguration linkCheckingEngineConfiguration, ReportingEngineConfiguration reportingEngineConfiguration) {
+    public LinkCheckingRunner(LinkCheckingEngineConfiguration linkCheckingEngineConfiguration,
+                              ReportingEngineConfiguration reportingEngineConfiguration) {
         this.linkCheckingEngineConfiguration = linkCheckingEngineConfiguration;
         this.reportingEngine = new ReportingEngine(reportingEngineConfiguration);
     }

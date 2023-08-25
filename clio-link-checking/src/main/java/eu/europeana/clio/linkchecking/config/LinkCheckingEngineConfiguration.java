@@ -1,8 +1,6 @@
 package eu.europeana.clio.linkchecking.config;
 
 import eu.europeana.clio.common.exception.ConfigurationException;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnectionProvider;
 import eu.europeana.clio.linkchecking.config.properties.LinkCheckingConfigurationProperties;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
@@ -10,11 +8,10 @@ import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
 import eu.europeana.metis.mongo.connection.MongoProperties;
 import eu.europeana.metis.solr.connection.SolrProperties;
 import metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
-import metis.common.config.properties.postgres.PostgresConfigurationProperties;
 import metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.SessionFactory;
 
-import java.io.Closeable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -22,14 +19,12 @@ import java.time.Duration;
 /**
  * Class containing configuration for the {@link eu.europeana.clio.linkchecking.execution.LinkCheckingEngine}
  */
-public class LinkCheckingEngineConfiguration implements Closeable {
+public class LinkCheckingEngineConfiguration {
 
     private final LinkCheckingConfigurationProperties linkCheckingConfigurationProperties;
     private final MetisCoreMongoConfigurationProperties metisCoreMongoConfigurationProperties;
     private final PublishSolrZookeeperConfigurationProperties publishSolrZookeeperConfigurationProperties;
-    private final PostgresConfigurationProperties postgresConfigurationProperties;
-
-    private ClioPersistenceConnection clioPersistenceConnection;
+    private final SessionFactory sessionFactory;
 
     /**
      * Constructor.
@@ -37,26 +32,16 @@ public class LinkCheckingEngineConfiguration implements Closeable {
      * @param linkCheckingConfigurationProperties the link checking configuration properties
      * @param metisCoreMongoConfigurationProperties the metis core mongo configuration properties
      * @param publishSolrZookeeperConfigurationProperties the publish solr zookeeper configuration properties
-     * @param postgresConfigurationProperties the postgres configuration properties
+     * @param sessionFactory the postgres configuration properties
      */
     public LinkCheckingEngineConfiguration(LinkCheckingConfigurationProperties linkCheckingConfigurationProperties,
                                            MetisCoreMongoConfigurationProperties metisCoreMongoConfigurationProperties,
                                            PublishSolrZookeeperConfigurationProperties publishSolrZookeeperConfigurationProperties,
-                                           PostgresConfigurationProperties postgresConfigurationProperties) {
+                                           SessionFactory sessionFactory) {
         this.linkCheckingConfigurationProperties = linkCheckingConfigurationProperties;
-
         this.metisCoreMongoConfigurationProperties = metisCoreMongoConfigurationProperties;
         this.publishSolrZookeeperConfigurationProperties = publishSolrZookeeperConfigurationProperties;
-        this.postgresConfigurationProperties = postgresConfigurationProperties;
-    }
-
-    public ClioPersistenceConnection getClioPersistenceConnection() {
-        if (clioPersistenceConnection == null) {
-            clioPersistenceConnection = new ClioPersistenceConnectionProvider(
-                    postgresConfigurationProperties.getServer(), postgresConfigurationProperties.getUsername(), postgresConfigurationProperties.getPassword())
-                    .createPersistenceConnection();
-        }
-        return clioPersistenceConnection;
+        this.sessionFactory = sessionFactory;
     }
 
     public MongoProperties<ConfigurationException> getMetisCoreMongoProperties()
@@ -75,7 +60,7 @@ public class LinkCheckingEngineConfiguration implements Closeable {
         final SolrProperties<ConfigurationException> properties =
                 new SolrProperties<>(ConfigurationException::new);
         properties.setZookeeperHosts(
-                publishSolrZookeeperConfigurationProperties.getHosts(), publishSolrZookeeperConfigurationProperties.getZookeeper().getPorts());
+                publishSolrZookeeperConfigurationProperties.getZookeeper().getHosts(), publishSolrZookeeperConfigurationProperties.getZookeeper().getPorts());
         if (StringUtils.isNotBlank(publishSolrZookeeperConfigurationProperties.getZookeeper().getChroot())) {
             properties.setZookeeperChroot(publishSolrZookeeperConfigurationProperties.getZookeeper().getChroot());
         }
@@ -122,24 +107,11 @@ public class LinkCheckingEngineConfiguration implements Closeable {
         return publishSolrZookeeperConfigurationProperties;
     }
 
-    public PostgresConfigurationProperties getPostgresConfigurationProperties() {
-        return postgresConfigurationProperties;
-    }
-
     public Duration getLinkCheckingMinTimeBetweenSameServerChecks() {
         return Duration.ofMillis(linkCheckingConfigurationProperties.getMinTimeBetweenSameServerChecks());
     }
 
-    @Override
-    public final void close() {
-        synchronized (this) {
-            try {
-                if (this.clioPersistenceConnection != null) {
-                    this.clioPersistenceConnection.close();
-                }
-            } finally {
-                this.clioPersistenceConnection = null;
-            }
-        }
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
     }
 }

@@ -28,7 +28,7 @@ jobs:
     with:
       docker-organization: europeana
       docker-image-name: clio-link-checking-runner
-      project-path: clio-link-checking-runner/
+      project-path: clio-link-checking/clio-link-checking-runner/
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}

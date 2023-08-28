@@ -12,7 +12,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>clio-reporting-common</module>
+        <module>clio-reporting-service</module>
         <module>clio-reporting-rest</module>
         <module>clio-reporting-runner</module>
     </modules>

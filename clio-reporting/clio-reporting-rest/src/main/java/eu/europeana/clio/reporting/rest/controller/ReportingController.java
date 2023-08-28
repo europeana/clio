@@ -2,7 +2,7 @@ package eu.europeana.clio.reporting.rest.controller;
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.model.Report;
-import eu.europeana.clio.reporting.common.ReportingEngine;
+import eu.europeana.clio.reporting.service.ReportingEngine;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,11 +1,10 @@
-package eu.europeana.clio.reporting.rest.config;
+package eu.europeana.clio.reporting.runner.config;
 
 import eu.europeana.clio.common.config.properties.ReportingEngineConfigurationProperties;
 import eu.europeana.clio.common.persistence.model.*;
-import eu.europeana.clio.reporting.service.ReportingEngine;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
+import eu.europeana.clio.reporting.runner.execution.ReportingRunner;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
-import eu.europeana.metis.utils.apm.ElasticAPMConfiguration;
 import metis.common.config.properties.TruststoreConfigurationProperties;
 import metis.common.config.properties.postgres.HibernateConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -15,15 +14,13 @@ import org.hibernate.service.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 /**
@@ -31,14 +28,12 @@ import java.lang.invoke.MethodHandles;
  */
 @Configuration
 @EnableConfigurationProperties({
-        ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
-        ReportingEngineConfigurationProperties.class, HibernateConfigurationProperties.class})
-@ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
-public class ApplicationConfiguration implements WebMvcConfigurer {
+        TruststoreConfigurationProperties.class, HibernateConfigurationProperties.class,
+        ReportingEngineConfigurationProperties.class})
+public class ApplicationConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private SessionFactory sessionFactory;
-
 
     /**
      * Autowired constructor for Spring Configuration class.
@@ -73,9 +68,10 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
      *
      * @param hibernateConfigurationProperties the hibernate configuration properties
      * @return the session factory
+     * @throws IOException if an I/O error occurs during sql script initialization
      */
     @Bean
-    public SessionFactory getSessionFactory(HibernateConfigurationProperties hibernateConfigurationProperties) {
+    public SessionFactory getSessionFactory(HibernateConfigurationProperties hibernateConfigurationProperties) throws IOException {
 
         org.hibernate.cfg.Configuration configuration = new org.hibernate.cfg.Configuration();
         configuration.addAnnotatedClass(DatasetRow.class);
@@ -103,28 +99,12 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         return sessionFactory;
     }
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/swagger-ui/**")
-                .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/")
-                .resourceChain(false);
-    }
-
-    @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addRedirectViewController("/", "/swagger-ui/index.html");
-    }
-
     @Bean
-    protected ReportingEngineConfiguration getReportingEngineConfiguration(
-            ReportingEngineConfigurationProperties reportingEngineConfigurationProperties,
-            SessionFactory sessionFactory) {
-        return new ReportingEngineConfiguration(reportingEngineConfigurationProperties, sessionFactory);
-    }
-
-    @Bean
-    protected ReportingEngine getReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
-        return new ReportingEngine(reportingEngineConfiguration);
+    protected CommandLineRunner commandLineRunner(ReportingEngineConfigurationProperties reportingEngineConfigurationProperties,
+                                                  SessionFactory sessionFactory) {
+        final ReportingEngineConfiguration reportingEngineConfiguration =
+                new ReportingEngineConfiguration(reportingEngineConfigurationProperties, sessionFactory);
+        return new ReportingRunner(reportingEngineConfiguration);
     }
 
     /**

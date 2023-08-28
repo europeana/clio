@@ -7,8 +7,7 @@
         <version>9-SNAPSHOT</version>
     </parent>
 
-    <artifactId>clio-link-checking-worker</artifactId>
-    <name>clio-link-checking-worker</name>
+    <artifactId>clio-link-checking-runner</artifactId>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -57,8 +57,7 @@ public class ApplicationConfiguration {
             throws CustomTruststoreAppender.TrustStoreConfigurationException {
         if (StringUtils.isNotEmpty(truststoreConfigurationProperties.getPath()) && StringUtils
                 .isNotEmpty(truststoreConfigurationProperties.getPassword())) {
-            CustomTruststoreAppender
-                    .appendCustomTrustoreToDefault(truststoreConfigurationProperties.getPath(),
+            CustomTruststoreAppender.appendCustomTruststoreToDefault(truststoreConfigurationProperties.getPath(),
                             truststoreConfigurationProperties.getPassword());
             LOGGER.info("Custom truststore appended to default truststore");
         }

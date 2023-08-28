@@ -15,7 +15,7 @@
         <module>clio-common</module>
         <module>clio-link-checking</module>
         <module>clio-reporting</module>
-        <module>clio-link-checking-worker</module>
+        <module>clio-link-checking-runner</module>
     </modules>
 
     <!-- Github connection -->

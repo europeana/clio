@@ -47,10 +47,10 @@ services:
       - metis-records-zookeeper
 
   clio-link-checking-local:
-    image: europeana/clio-link-checking-worker:develop
-    container_name: clio-link-checking-worker-local
+    image: europeana/clio-link-checking-runner:develop
+    container_name: clio-link-checking-runner-local
     build:
-      context: ../clio-link-checking-worker
+      context: ../clio-link-checking-runner
       dockerfile: Dockerfile
     environment:
       MONGO_CORE_HOSTS: metis-core-mongo
@@ -58,7 +58,7 @@ services:
       SOLR_PUBLISH_HOSTS: http//metis-records-solr:8983/solr/
       ZOOKEEPER_PUBLISH_HOSTS: metis-records-zookeeper
     volumes:
-      - /data/metis-configuration/clio/clio-link-checking-worker/overlays/test/components/properties/application.properties:/application.properties
+      - /data/metis-configuration/clio/clio-link-checking-runner/overlays/test/components/properties/application.properties:/application.properties
       - /data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks:/data/certificates/custom-truststore.jks
       - /data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml:/data/logging/log4j2.xml
     depends_on:

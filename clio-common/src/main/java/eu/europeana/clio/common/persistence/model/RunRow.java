@@ -8,9 +8,6 @@ import java.time.Instant;
 
 /**
  * This represents the persistent form of a run (a checking iteration for a given dataset).
- * <p>
- * TODO JV after some time has passed, we can add a unique constraint on columns dataset_id and
- * batch_id. We should first remove all runs and links connected to the bogus first batch (id = 1).
  */
 @Entity
 @Table(name = "run", indexes = {
@@ -67,6 +64,7 @@ public class RunRow {
      *
      * @param startingTime The starting time of this run.
      * @param dataset      The dataset to which this run belongs.
+     * @param batch        The batch to which this run belongs.
      */
     public RunRow(Instant startingTime, DatasetRow dataset, BatchRow batch) {
         this.startingTime = startingTime.toEpochMilli();

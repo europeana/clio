@@ -183,4 +183,25 @@ public final class ReportingEngine {
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
         return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getLatestReports(maxResults);
     }
+
+    /**
+     * Get all report details.
+     *
+     * @return the list of report details
+     * @throws PersistenceException in case of a persistence exception
+     */
+    public List<Report> getAllReportDetails() throws PersistenceException {
+        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getAllReportDetails();
+    }
+
+    /**
+     * Get a report by its creation time.
+     *
+     * @param creationTime the creation time
+     * @return the report
+     * @throws PersistenceException if there was an error while getting the report
+     */
+    public Report getReportByCreationTime(Instant creationTime) throws PersistenceException {
+        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getReport(creationTime);
+    }
 }

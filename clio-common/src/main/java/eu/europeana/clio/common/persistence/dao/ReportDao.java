@@ -24,7 +24,7 @@ public class ReportDao {
      * Constructor.
      *
      * @param sessionFactory The connection to the Clio persistence. Should be connected. This
-     * object does not close the connection.
+     *                       object does not close the connection.
      */
     public ReportDao(SessionFactory sessionFactory) {
         this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
@@ -61,6 +61,32 @@ public class ReportDao {
                 session.createNamedQuery(ReportRow.GET_LATEST_REPORT_QUERY, ReportRow.class)
                         .setMaxResults(maxResults).getResultList().stream()
                         .map(ReportDao::convert).collect(Collectors.toList()));
+    }
+
+    /**
+     * Get all report details.
+     * @return the list of report details
+     * @throws PersistenceException in case of a persistence exception
+     */
+    public List<Report> getAllReportDetails() throws PersistenceException {
+        return hibernateSessionUtils.performInSession(session ->
+                session.createNamedQuery(ReportRow.GET_ALL_REPORT_DETAILS_QUERY, ReportRow.class)
+                        .getResultList().stream()
+                        .map(ReportDao::convert).collect(Collectors.toList()));
+    }
+
+    /**
+     * Get a report by its creation time
+     *
+     * @param creationTime the creation time
+     * @return the report
+     * @throws PersistenceException if there was an error while getting the report
+     */
+    public Report getReport(Instant creationTime) throws PersistenceException {
+        return hibernateSessionUtils.performInSession(session ->
+                session.createNamedQuery(ReportRow.GET_REPORT_BY_DATE_QUERY, ReportRow.class)
+                        .setParameter(ReportRow.CREATION_DATE_PARAMETER, creationTime.toEpochMilli())
+                        .getResultList().stream().map(ReportDao::convert).findFirst().orElse(null));
     }
 
     private static Report convert(ReportRow reportRow) {

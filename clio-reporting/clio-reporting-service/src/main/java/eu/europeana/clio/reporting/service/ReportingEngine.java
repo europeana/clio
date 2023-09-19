@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -35,8 +36,10 @@ import java.util.stream.Stream;
 public final class ReportingEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final DateTimeFormatter FILE_NAME_DATE_TIME_FORMATTER = DateTimeFormatter
-            .ofPattern("'clio_report_'yyyy-MM-dd_kk-mm-ss'.csv'").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd_kk-mm-ss").withZone(ZoneOffset.UTC);
+    private static final String CLIO_REPORT_PREFIX = "clio_report";
+    private static final String CLIO_REPORT_SUFFIX = "csv";
     private final ReportingEngineConfiguration reportingEngineConfiguration;
 
 
@@ -149,17 +152,18 @@ public final class ReportingEngine {
     }
 
     public static String getReportFileNameSuggestion() {
-        return getReportFileNameSuggestion(Instant.now());
+        return String.format("%s_%s.%s", CLIO_REPORT_PREFIX, DATE_TIME_FORMATTER.format(Instant.now()), CLIO_REPORT_SUFFIX);
     }
 
     /**
      * Get a file name suggestion.
      *
-     * @param instant the instant to base the file name suggestion
+     * @param report the report
      * @return the file name suggestion
      */
-    public static String getReportFileNameSuggestion(Instant instant) {
-        return FILE_NAME_DATE_TIME_FORMATTER.format(instant);
+    public static String getReportFileNameSuggestion(Report report) {
+        return String.format("%s_%s_%s.%s",
+                CLIO_REPORT_PREFIX, report.getBatchId(), DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(report.getCreationTime())), CLIO_REPORT_SUFFIX);
     }
 
     /**
@@ -197,11 +201,11 @@ public final class ReportingEngine {
     /**
      * Get a report by its creation time.
      *
-     * @param creationTime the creation time
+     * @param batchId the batch id
      * @return the report
      * @throws PersistenceException if there was an error while getting the report
      */
-    public Report getReportByCreationTime(Instant creationTime) throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getReport(creationTime);
+    public Report getReportByBatchId(Long batchId) throws PersistenceException {
+        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getReport(batchId);
     }
 }

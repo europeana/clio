@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 public class ReportingController {
 
     public static final String CONTROLLER_TAG_NAME = "ReportingController";
+    public static final String REPORT_BY_BATCH_ID_ENDPOINT_PATH = "report-by-batch-id";
+    public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
 
     private final ReportingEngine reportingEngine;
 
@@ -54,7 +56,7 @@ public class ReportingController {
      * Get all available report details.
      *
      * @return the report details
-     * @throws ClioException if an error occurred
+     * @throws ClioException        if an error occurred
      * @throws PersistenceException if there was an error while getting the report details
      */
     @GetMapping(value = "/available-reports", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,7 +73,7 @@ public class ReportingController {
                 report -> {
                     Instant instant = Instant.ofEpochMilli(report.getCreationTime());
                     final String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                            .path("/report-by-creation-time").queryParam("creationTime", instant).toUriString();
+                            .path("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH).queryParam(BATCH_ID_ENDPOINT_PARAMETER, report.getBatchId()).toUriString();
                     return new ReportDetailsView(report.getReportId(), report.getBatchId(), instant, url);
                 }).collect(Collectors.toList());
 
@@ -83,26 +85,26 @@ public class ReportingController {
     /**
      * Get a report by providing its creation time
      *
-     * @param creationTime the creation time
+     * @param batchId the batch id
      * @return the report
-     * @throws ClioException if an error occurred
+     * @throws ClioException           if an error occurred
      * @throws ReportNotFoundException if the report was not found
      * @throws PersistenceException    if there was an error while getting the report
      */
-    @GetMapping(value = "report-by-creation-time", produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = REPORT_BY_BATCH_ID_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
     @ResponseBody
     @Operation(summary = "Get a report by creation timestamp")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OK",
-                    content = {@Content(mediaType = "text/csv, "+ MediaType.APPLICATION_JSON_VALUE)}),
+                    content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
             @ApiResponse(responseCode = "404", description = "Report not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Persistence error",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), mediaType = MediaType.APPLICATION_JSON_VALUE))
     })
-    public HttpEntity<byte[]> getReportByCreationTime(@RequestParam(value = "creationTime") Instant creationTime)
+    public HttpEntity<byte[]> getReportByBatchId(@RequestParam(value = BATCH_ID_ENDPOINT_PARAMETER) Long batchId)
             throws ClioException {
-        Report report = reportingEngine.getReportByCreationTime(creationTime);
+        Report report = reportingEngine.getReportByBatchId(batchId);
         return getHttpEntity(report);
     }
 
@@ -113,7 +115,7 @@ public class ReportingController {
      * starting time in the DB).
      *
      * @return The link checking report as a byte array (UTF-8 encoded).
-     * @throws ClioException if an error occurred
+     * @throws ClioException           if an error occurred
      * @throws ReportNotFoundException if the report was not found
      * @throws PersistenceException    if there was an error while getting the report
      */
@@ -121,7 +123,7 @@ public class ReportingController {
     @ResponseBody
     @Operation(summary = "Get full report with the the latest link checking results.", description = "The links in the report may be part of multiple batches.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "text/csv, "+ MediaType.APPLICATION_JSON_VALUE)}),
+            @ApiResponse(responseCode = "200", description = "OK", content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
             @ApiResponse(responseCode = "404", description = "Report not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), mediaType = MediaType.APPLICATION_JSON_VALUE)),
             @ApiResponse(responseCode = "500", description = "Persistence error",
@@ -138,8 +140,8 @@ public class ReportingController {
         } else {
             byte[] reportBytes = report.getReportString().getBytes(StandardCharsets.UTF_8);
             final HttpHeaders headers = new HttpHeaders();
-            headers.setContentDisposition(ContentDisposition.builder("inline")
-                    .filename(ReportingEngine.getReportFileNameSuggestion(Instant.ofEpochMilli(report.getCreationTime()))).build());
+            headers.setContentDisposition(
+                    ContentDisposition.builder("inline").filename(ReportingEngine.getReportFileNameSuggestion(report)).build());
             headers.setContentLength(reportBytes.length);
             return new HttpEntity<>(reportBytes, headers);
         }
@@ -150,7 +152,7 @@ public class ReportingController {
      *
      * @param maxResults the maximum number of results to return
      * @return the most recent batches
-     * @throws ClioException if an error occurred
+     * @throws ClioException        if an error occurred
      * @throws PersistenceException if there was an error while getting the batches
      */
     @GetMapping(value = "batches", produces = MediaType.APPLICATION_JSON_VALUE)

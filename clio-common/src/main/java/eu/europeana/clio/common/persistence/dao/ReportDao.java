@@ -78,14 +78,14 @@ public class ReportDao {
     /**
      * Get a report by its creation time
      *
-     * @param creationTime the creation time
+     * @param batchId the batch id
      * @return the report
      * @throws PersistenceException if there was an error while getting the report
      */
-    public Report getReport(Instant creationTime) throws PersistenceException {
+    public Report getReport(Long batchId) throws PersistenceException {
         return hibernateSessionUtils.performInSession(session ->
-                session.createNamedQuery(ReportRow.GET_REPORT_BY_DATE_QUERY, ReportRow.class)
-                        .setParameter(ReportRow.CREATION_DATE_PARAMETER, creationTime.toEpochMilli())
+                session.createNamedQuery(ReportRow.GET_REPORT_BY_BATCH_ID_QUERY, ReportRow.class)
+                        .setParameter(ReportRow.BATCH_ID_PARAMETER, batchId)
                         .getResultList().stream().map(ReportDao::convert).findFirst().orElse(null));
     }
 

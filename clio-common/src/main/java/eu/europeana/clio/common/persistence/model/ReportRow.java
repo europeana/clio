@@ -16,14 +16,14 @@ import java.time.Instant;
         query = "SELECT r FROM ReportRow r ORDER BY r.creationTime DESC")
 @NamedQuery(query = "SELECT new ReportRow(r.batch, r.creationTime) FROM ReportRow r ORDER BY r.creationTime DESC",
         name = ReportRow.GET_ALL_REPORT_DETAILS_QUERY)
-@NamedQuery(name = ReportRow.GET_REPORT_BY_DATE_QUERY,
-        query = "FROM ReportRow AS r WHERE r.creationTime = :" + ReportRow.CREATION_DATE_PARAMETER)
+@NamedQuery(name = ReportRow.GET_REPORT_BY_BATCH_ID_QUERY,
+        query = "FROM ReportRow AS r WHERE r.batch.batchId = :" + ReportRow.BATCH_ID_PARAMETER)
 public class ReportRow {
 
     public static final String GET_LATEST_REPORT_QUERY = "getLatestReport";
     public static final String GET_ALL_REPORT_DETAILS_QUERY = "getAllReportDetails";
-    public static final String GET_REPORT_BY_DATE_QUERY = "getReportByDate";
-    public static final String CREATION_DATE_PARAMETER = "creationTime";
+    public static final String GET_REPORT_BY_BATCH_ID_QUERY = "getReportByBatchId";
+    public static final String BATCH_ID_PARAMETER = "batchId";
 
     @Id
     @Column(name = "report_id")

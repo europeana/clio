@@ -2,6 +2,9 @@ package eu.europeana.clio.reporting.rest.view;
 
 import java.time.Instant;
 
+/**
+ * Represents the report details.
+ */
 public class ReportDetailsView {
     private final long reportId;
     private final long batchId;

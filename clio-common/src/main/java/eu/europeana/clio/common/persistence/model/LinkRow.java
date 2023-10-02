@@ -1,11 +1,14 @@
 package eu.europeana.clio.common.persistence.model;
 
+import static org.apache.commons.lang3.StringUtils.truncate;
+
 import java.time.Instant;
 import java.util.Optional;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -14,29 +17,35 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
-import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * This represents the persistent form of a link (to be checked once as part of a run).
  */
 @Entity
-@Table(name = "link",
-        indexes = {@Index(columnList = "server"), @Index(columnList = "link_url")})
+@Table(name = "link", indexes = {
+    @Index(name = "link_server_idx", columnList = "server"),
+    @Index(name = "link_checking_time_idx", columnList = "checking_time"),
+    @Index(name = "link_record_id_idx", columnList = "record_id"),
+    @Index(name = "link_link_type_idx", columnList = "link_type"),
+    @Index(name = "link_link_url_idx", columnList = "link_url"),
+    @Index(name = "Link_run_id_idx", columnList = "run_id")})
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS, query = "SELECT l FROM LinkRow AS l WHERE l.checkingTime IS NULL")
 @NamedQuery(name = LinkRow.GET_UNCHECKED_LINKS_BY_URL, query =
-        "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
-                + " AND l.checkingTime IS NULL")
+    "SELECT l FROM LinkRow AS l WHERE l.linkUrl = :" + LinkRow.LINK_URL_PARAMETER
+        + " AND l.checkingTime IS NULL")
 @NamedQuery(name = LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, query = "SELECT l"
-        + " FROM LinkRow l"
-        + " WHERE l.error IS NOT NULL"
-        + " AND l.run.startingTime = ("
-        + "   SELECT MAX(r2.startingTime) FROM RunRow AS r2"
-        + "   WHERE r2.dataset = l.run.dataset"
-        + "   AND NOT EXISTS("
-        + "     SELECT l2 FROM LinkRow l2 WHERE l2.run = r2 AND l2.checkingTime IS NULL"
-        + "   )"
-        + " )"
-        + " ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC")
+    + " FROM LinkRow l"
+    + " WHERE l.error IS NOT NULL"
+    + " AND l.run.startingTime = ("
+    + "   SELECT MAX(r2.startingTime) FROM RunRow AS r2"
+    + "   WHERE r2.dataset = l.run.dataset"
+    + "   AND NOT EXISTS("
+    + "     SELECT l2 FROM LinkRow l2 WHERE l2.run = r2 AND l2.checkingTime IS NULL"
+    + "   )"
+    + " )"
+    + " ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC")
 public class LinkRow {
 
   public static final String GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS = "getBrokenLinksInLatestCompletedRuns";
@@ -74,7 +83,9 @@ public class LinkRow {
   private long linkId;
 
   @ManyToOne
-  @JoinColumn(name = "run_id", referencedColumnName = "run_id", nullable = false, updatable = false)
+  @JoinColumn(name = "run_id", referencedColumnName = "run_id",
+      foreignKey = @ForeignKey(name = "link_run_id_fkey"), nullable = false, updatable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private RunRow run;
 
   @Column(name = "record_id", nullable = false, updatable = false, length = MAX_RECORD_ID_LENGTH)
@@ -115,9 +126,8 @@ public class LinkRow {
   }
 
   /**
-   * Constructor. Creates a link in an unchecked state. If the string of either the record ID, the
-   * link URL or the server is too long to fit in the field, this instance will be in a state of
-   * being checked with errors.
+   * Constructor. Creates a link in an unchecked state. If the string of either the record ID, the link URL or the server is too
+   * long to fit in the field, this instance will be in a state of being checked with errors.
    *
    * @param run The run to which this link belongs.
    * @param recordId The Europeana record ID in which this link is present.
@@ -130,19 +140,19 @@ public class LinkRow {
    * @param server The server of the link. Can be null if the server could not be computed.
    */
   public LinkRow(RunRow run, String recordId, Instant recordLastIndexTime, String recordEdmType,
-          String recordContentTier, String recordMetadataTier, LinkType linkType, String linkUrl,
-          String server) {
+      String recordContentTier, String recordMetadataTier, LinkType linkType, String linkUrl,
+      String server) {
 
     // Set basic properties
     this.run = run;
-    this.recordId = StringUtils.truncate(recordId, MAX_RECORD_ID_LENGTH);
+    this.recordId = truncate(recordId, MAX_RECORD_ID_LENGTH);
     this.recordLastIndexTime = recordLastIndexTime.toEpochMilli();
     this.recordEdmType = recordEdmType;
     this.recordContentTier = recordContentTier;
     this.recordMetadataTier = recordMetadataTier;
     this.linkType = linkType;
-    this.linkUrl = StringUtils.truncate(linkUrl, MAX_LINK_URL_LENGTH);
-    this.server = StringUtils.truncate(server, MAX_SERVER_LENGTH);
+    this.linkUrl = truncate(linkUrl, MAX_LINK_URL_LENGTH);
+    this.server = truncate(server, MAX_SERVER_LENGTH);
 
     // Test the length of certain properties
     final String errorString;
@@ -151,10 +161,10 @@ public class LinkRow {
     } else if (recordEdmType != null && recordEdmType.length() > MAX_RECORD_EDM_TYPE_LENGTH) {
       errorString = "Record edm:type is too long: " + recordEdmType;
     } else if (recordContentTier != null
-            && recordContentTier.length() > MAX_RECORD_CONTENT_TIER_LENGTH) {
+        && recordContentTier.length() > MAX_RECORD_CONTENT_TIER_LENGTH) {
       errorString = "Record content tier is too long: " + recordContentTier;
     } else if (recordMetadataTier != null
-            && recordMetadataTier.length() > MAX_RECORD_METADATA_TIER_LENGTH) {
+        && recordMetadataTier.length() > MAX_RECORD_METADATA_TIER_LENGTH) {
       errorString = "Record metadata tier is too long: " + recordMetadataTier;
     } else if (linkUrl.length() > MAX_LINK_URL_LENGTH) {
       errorString = "Link URL is too long: " + linkUrl;
@@ -166,13 +176,13 @@ public class LinkRow {
       errorString = null;
     }
     if (errorString != null) {
-      setError(errorString);
-      setCheckingTime(Instant.now());
+      this.error = truncate(errorString, MAX_ERROR_LENGTH);
+      this.checkingTime = Instant.now().toEpochMilli();
     }
   }
 
   public void setError(String error) {
-    this.error = StringUtils.truncate(error, MAX_ERROR_LENGTH);
+    this.error = truncate(error, MAX_ERROR_LENGTH);
   }
 
   public void setCheckingTime(Instant checkingTime) {

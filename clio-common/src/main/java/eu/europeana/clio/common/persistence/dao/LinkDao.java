@@ -3,33 +3,35 @@ package eu.europeana.clio.common.persistence.dao;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.hibernate.SessionFactory;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.List;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Data access object for links (to be checked once as part of a run).
  */
 public class LinkDao {
 
-  private final ClioPersistenceConnection persistenceConnection;
+  private final HibernateSessionUtils hibernateSessionUtils;
 
   /**
    * Constructor.
    *
-   * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
+   * @param sessionFactory The connection to the Clio persistence. Should be connected. This
    * object does not close the connection.
    */
-  public LinkDao(ClioPersistenceConnection persistenceConnection) {
-    this.persistenceConnection = persistenceConnection;
+  public LinkDao(SessionFactory sessionFactory) {
+    this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
   }
 
   /**
@@ -64,7 +66,7 @@ public class LinkDao {
     }
 
     // Create and save the link
-    return persistenceConnection.performInTransaction(session -> {
+    return hibernateSessionUtils.performInTransaction(session -> {
       final RunRow runRow = session.get(RunRow.class, runId);
       if (runRow == null) {
         throw new PersistenceException(
@@ -93,7 +95,7 @@ public class LinkDao {
    * @throws PersistenceException In case there was a persistence problem.
    */
   public StreamResult<Link> getAllUncheckedLinks() throws PersistenceException {
-    return persistenceConnection.performForStream(
+    return hibernateSessionUtils.performForStream(
             session -> session.createNamedQuery(LinkRow.GET_UNCHECKED_LINKS, LinkRow.class)
                     .getResultStream().map(LinkDao::convert));
   }
@@ -109,7 +111,7 @@ public class LinkDao {
    */
   public void registerLinkChecking(String linkUrl, String error) throws PersistenceException {
     final Instant checkingTime = Instant.now();
-    persistenceConnection.performInTransaction(session -> {
+    hibernateSessionUtils.performInTransaction(session -> {
       final List<LinkRow> linksToUpdate = session
               .createNamedQuery(LinkRow.GET_UNCHECKED_LINKS_BY_URL, LinkRow.class)
               .setParameter(LinkRow.LINK_URL_PARAMETER, linkUrl).getResultList();
@@ -132,7 +134,7 @@ public class LinkDao {
    */
   public StreamResult<Pair<Run, Link>> getBrokenLinksInLatestCompletedRuns()
           throws PersistenceException {
-    return persistenceConnection.performForStream(session -> session
+    return hibernateSessionUtils.performForStream(session -> session
             .createNamedQuery(LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, LinkRow.class)
             .getResultStream()
             .map(link -> new ImmutablePair<>(RunDao.convert(link.getRun()), convert(link)))

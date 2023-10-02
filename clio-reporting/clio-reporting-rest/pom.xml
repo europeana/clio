@@ -52,9 +52,14 @@
             <version>${version.elastic.apm}</version>
         </dependency>
         <dependency>
-            <artifactId>clio-reporting-common</artifactId>
+            <artifactId>clio-reporting-service</artifactId>
             <groupId>eu.europeana.clio</groupId>
             <version>9-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-spring-properties</artifactId>
+            <version>${version.metis}</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>
@@ -82,17 +87,7 @@
             <version>${version.log4j}</version>
         </dependency>
     </dependencies>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${version.spring.boot}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>

@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * This represents a dataset as presisted in the Clio database.
+ * This represents a dataset as persisted in the Clio database.
  */
 public class Dataset {
 

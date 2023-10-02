@@ -1,0 +1,17 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>eu.europeana.clio</groupId>
+        <artifactId>clio</artifactId>
+        <version>9-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>clio-link-checking</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>clio-link-checking-service</module>
+        <module>clio-link-checking-runner</module>
+    </modules>
+</project>

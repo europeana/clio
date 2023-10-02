@@ -6,6 +6,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
@@ -13,12 +14,20 @@ import javax.persistence.Table;
  * This represents the persistent form of a batch (of runs).
  */
 @Entity
-@Table(name = "batch")
+@Table(name = "batch", indexes = {
+    @Index(name = "batch_creation_time_idx", columnList = "creation_time")})
 @NamedQuery(name = BatchRow.GET_LATEST_BATCHES_QUERY,
-        query = "SELECT b FROM BatchRow b ORDER BY b.creationTime DESC ")
+    query = "SELECT b FROM BatchRow b ORDER BY b.creationTime DESC ")
+@NamedQuery(name = BatchRow.GET_OLD_BATCHES_QUERY, query = "SELECT b FROM BatchRow b WHERE b.creationTime <= :" +
+    BatchRow.CREATION_TIME_PARAMETER)
+@NamedQuery(name = BatchRow.DELETE_OLD_BATCHES_QUERY, query = "DELETE FROM BatchRow b WHERE b.creationTime <= :" +
+    BatchRow.CREATION_TIME_PARAMETER)
 public class BatchRow {
 
   public static final String GET_LATEST_BATCHES_QUERY = "getLatestBatches";
+  public static final String GET_OLD_BATCHES_QUERY = "getOldBatches";
+  public static final String DELETE_OLD_BATCHES_QUERY = "deleteOldBatches";
+  public static final String CREATION_TIME_PARAMETER = "creationTime";
 
   @Id
   @Column(name = "batch_id")
@@ -49,15 +58,29 @@ public class BatchRow {
   protected BatchRow() {
   }
 
+  /**
+   * Constructor.
+   *
+   * @param creationTime the creation time of the batch
+   * @param lastUpdateTimeInSolr the last update timestamp available in solr
+   * @param lastUpdateTimeInMetisCore the last update timestamp available in metis core
+   */
   public BatchRow(Instant creationTime, Instant lastUpdateTimeInSolr,
-          Instant lastUpdateTimeInMetisCore) {
+      Instant lastUpdateTimeInMetisCore) {
     this.creationTime = creationTime.toEpochMilli();
     this.lastUpdateTimeInSolr = lastUpdateTimeInSolr.toEpochMilli();
     this.lastUpdateTimeInMetisCore = lastUpdateTimeInMetisCore.toEpochMilli();
   }
 
+  /**
+   * Set counters.
+   *
+   * @param datasetsExcludedAlreadyRunning datasets excluded that are already running counter
+   * @param datasetsExcludedNotIndexed datasets excluded that are not indexed counter
+   * @param datasetsExcludedWithoutLinks datasets excluded that do not contain links to check
+   */
   public void setCounters(int datasetsExcludedAlreadyRunning, int datasetsExcludedNotIndexed,
-          int datasetsExcludedWithoutLinks) {
+      int datasetsExcludedWithoutLinks) {
     this.datasetsExcludedAlreadyRunning = datasetsExcludedAlreadyRunning;
     this.datasetsExcludedNotIndexed = datasetsExcludedNotIndexed;
     this.datasetsExcludedWithoutLinks = datasetsExcludedWithoutLinks;

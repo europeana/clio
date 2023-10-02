@@ -2,24 +2,25 @@ package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Dataset;
-import eu.europeana.clio.common.persistence.ClioPersistenceConnection;
+import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
+import org.hibernate.SessionFactory;
 
 /**
  * Data access object for (Clio) datasets.
  */
 public class DatasetDao {
 
-  private final ClioPersistenceConnection persistenceConnection;
+  private final HibernateSessionUtils hibernateSessionUtils;
 
   /**
    * Constructor.
    *
-   * @param persistenceConnection The connection to the Clio persistence. Should be connected. This
+   * @param sessionFactory The connection to the Clio persistence. Should be connected. This
    * object does not close the connection.
    */
-  public DatasetDao(ClioPersistenceConnection persistenceConnection) {
-    this.persistenceConnection = persistenceConnection;
+  public DatasetDao(SessionFactory sessionFactory) {
+    this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
   }
 
   /**
@@ -30,7 +31,7 @@ public class DatasetDao {
    * @throws PersistenceException In case there was a persistence problem.
    */
   public void createOrUpdateDataset(Dataset dataset) throws PersistenceException {
-    persistenceConnection.performInTransaction(session -> {
+    hibernateSessionUtils.performInTransaction(session -> {
       final DatasetRow existingRow = session.get(DatasetRow.class, dataset.getDatasetId());
       if (existingRow == null) {
         final DatasetRow newRow = new DatasetRow(dataset.getDatasetId());

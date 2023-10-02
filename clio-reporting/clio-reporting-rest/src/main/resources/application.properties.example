@@ -6,14 +6,14 @@ springdoc.paths-to-match=/**
 truststore.path=
 truststore.password=
 
-postgresql.server=
-postgresql.username=
-postgresql.password=
+postgres.server=jdbc:postgresql://
+postgres.username=
+postgres.password=
 
 #Reports
 # The String.format() - compatible template for the link to the dataset to be included in the
 # report. It expects one occurrence of '%s' that will contain the dataset ID.
-report.dataset.link.template=
+reporting.datasetLinkTemplate=
 
 # Elastic APM
 elastic.apm.enabled=false

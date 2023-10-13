@@ -4,7 +4,7 @@
     <parent>
         <artifactId>clio-link-checking</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>9-SNAPSHOT</version>
+        <version>9</version>
     </parent>
 
     <artifactId>clio-link-checking-runner</artifactId>
@@ -31,12 +31,12 @@
         <dependency>
             <groupId>eu.europeana.clio</groupId>
             <artifactId>clio-link-checking-service</artifactId>
-            <version>9-SNAPSHOT</version>
+            <version>9</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.clio</groupId>
             <artifactId>clio-reporting-service</artifactId>
-            <version>9-SNAPSHOT</version>
+            <version>9</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>

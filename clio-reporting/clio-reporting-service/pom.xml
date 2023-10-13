@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio-reporting</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>9-SNAPSHOT</version>
+        <version>10-SNAPSHOT</version>
     </parent>
     <artifactId>clio-reporting-service</artifactId>
 
@@ -13,7 +13,7 @@
         <dependency>
             <artifactId>clio-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>9-SNAPSHOT</version>
+            <version>10-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>clio-link-checking</artifactId>
+        <groupId>eu.europeana.clio</groupId>
+        <version>10-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>clio-link-checking-service</artifactId>
+    <name>clio-link-checking</name>
+
+    <dependencies>
+        <dependency>
+            <artifactId>clio-common</artifactId>
+            <groupId>eu.europeana.clio</groupId>
+            <version>10-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-core-service</artifactId>
+            <version>${version.metis}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.zoho.crm</groupId>
+                    <artifactId>java-sdk</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-media-service</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-mongo</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-network</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-solr</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europeana.metis</groupId>
+            <artifactId>metis-common-spring-properties</artifactId>
+            <version>${version.metis}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${version.log4j}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
+    </dependencies>
+</project>

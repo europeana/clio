@@ -17,6 +17,19 @@ public class BatchWithCounters {
   private final int datasetsProcessed;
   private final int datasetsPending;
 
+  /**
+   * Constructor.
+   *
+   * @param batchId the batch identifier
+   * @param creationTime the batch creation time
+   * @param lastUpdateTimeInSolr the last update timestamp available in solr
+   * @param lastUpdateTimeInMetisCore the last update timestamp available in metis core
+   * @param datasetsExcludedAlreadyRunning the datasets excluded that are already running counter
+   * @param datasetsExcludedNotIndexed the datasets excluded that are not indexed counter
+   * @param datasetsExcludedWithoutLinks the datasets excluded that do not have links to check counter
+   * @param datasetsProcessed the datasets processed
+   * @param datasetsPending the datasets pending
+   */
   public BatchWithCounters(long batchId, Instant creationTime, Instant lastUpdateTimeInSolr,
           Instant lastUpdateTimeInMetisCore, Integer datasetsExcludedAlreadyRunning,
           Integer datasetsExcludedNotIndexed, Integer datasetsExcludedWithoutLinks,

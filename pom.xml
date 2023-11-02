@@ -35,7 +35,7 @@
         <version.spring.boot>2.7.8</version.spring.boot>
         <version.spring>5.2.3.RELEASE</version.spring>
         <version.springdoc.openapi>1.7.0</version.springdoc.openapi>
-        <version.elastic.apm>1.34.1</version.elastic.apm>
+        <version.elastic.apm>1.43.0</version.elastic.apm>
         <version.slf4j>1.7.30</version.slf4j>
         <version.log4j>2.17.1</version.log4j>
         <version.junit>5.7.2</version.junit>

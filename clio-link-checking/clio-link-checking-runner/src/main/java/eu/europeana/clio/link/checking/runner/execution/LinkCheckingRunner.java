@@ -3,12 +3,13 @@ package eu.europeana.clio.link.checking.runner.execution;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.link.checking.service.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.link.checking.service.config.Mode;
+import eu.europeana.clio.link.checking.service.execution.LinkCheckingEngine;
 import eu.europeana.clio.reporting.service.ReportingEngine;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
-import eu.europeana.clio.link.checking.service.execution.LinkCheckingEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -28,7 +29,7 @@ public class LinkCheckingRunner implements CommandLineRunner {
      * Constructor with parameters.
      *
      * @param linkCheckingEngineConfiguration the configuration properties
-     * @param reportingEngineConfiguration the reporting engine
+     * @param reportingEngineConfiguration    the reporting engine
      */
     public LinkCheckingRunner(LinkCheckingEngineConfiguration linkCheckingEngineConfiguration,
                               ReportingEngineConfiguration reportingEngineConfiguration) {
@@ -42,12 +43,8 @@ public class LinkCheckingRunner implements CommandLineRunner {
      * @param args The input arguments.
      */
     @Override
-    public void run(String[] args) {
-        try {
-            mainInternal(linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getCheckingMode());
-        } catch (ClioException | RuntimeException e) {
-            LOGGER.warn("Something happened while performing link checking.", e);
-        }
+    public void run(String[] args) throws ClioException {
+        mainInternal(linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getCheckingMode());
     }
 
     private void mainInternal(Mode mode) throws ClioException {

@@ -32,7 +32,7 @@
         <version.metis>11</version.metis>
         <version.hibernate>5.4.10.Final</version.hibernate>
         <version.postgresql>42.4.1</version.postgresql>
-        <version.spring.boot>2.7.8</version.spring.boot>
+        <version.spring.boot>2.7.18</version.spring.boot>
         <version.spring>5.2.3.RELEASE</version.spring>
         <version.springdoc.openapi>1.7.0</version.springdoc.openapi>
         <version.elastic.apm>1.43.0</version.elastic.apm>
@@ -110,7 +110,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${version.maven.compiler.plugin}</version>
                     <configuration>
-                        <release>17</release>
+                        <release>21</release>
                     </configuration>
                 </plugin>
             </plugins>

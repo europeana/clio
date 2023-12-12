@@ -4,7 +4,7 @@ on: push
 
 jobs:
   ci:
-    uses: europeana/metis-actions/.github/workflows/ci.yml@jdk17
+    uses: europeana/metis-actions/.github/workflows/ci.yml@jdk21
     with:
       sonar_organization: europeana
       sonar_project_key: europeana_clio
@@ -13,7 +13,7 @@ jobs:
 
   docker-build_clio-reporting:
     needs: ci
-    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@jdk17
+    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@jdk21
     with:
       docker-organization: europeana
       docker-image-name: clio-reporting
@@ -24,7 +24,7 @@ jobs:
 
   docker-build_clio-link-checking-runner:
     needs: ci
-    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@jdk17
+    uses: europeana/metis-actions/.github/workflows/docker-build-push.yml@jdk21
     with:
       docker-organization: europeana
       docker-image-name: clio-link-checking-runner

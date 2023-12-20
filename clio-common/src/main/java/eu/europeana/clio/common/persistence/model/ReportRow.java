@@ -24,7 +24,7 @@ import org.hibernate.annotations.OnDeleteAction;
     @Index(name = "report_batch_id_idx", columnList = "batch_id")})
 @NamedQuery(name = ReportRow.GET_LATEST_REPORT_QUERY,
     query = "SELECT r FROM ReportRow r ORDER BY r.creationTime DESC")
-@NamedQuery(query = "SELECT new ReportRow(r.batch, r.creationTime) FROM ReportRow r ORDER BY r.creationTime DESC",
+@NamedQuery(query = "SELECT new ReportRow(r.reportId, r.batch, r.creationTime) FROM ReportRow r ORDER BY r.creationTime DESC",
     name = ReportRow.GET_ALL_REPORT_DETAILS_QUERY)
 @NamedQuery(name = ReportRow.GET_REPORT_BY_BATCH_ID_QUERY,
     query = "FROM ReportRow AS r WHERE r.batch.batchId = :" + ReportRow.BATCH_ID_PARAMETER)
@@ -72,10 +72,12 @@ public class ReportRow {
   /**
    * Used for an optimized named query
    *
+   * @param reportId the report id
    * @param batch the batch
    * @param creationTime the creation time
    */
-  public ReportRow(BatchRow batch, long creationTime) {
+  public ReportRow(long reportId, BatchRow batch, long creationTime) {
+    this.reportId = reportId;
     this.batch = batch;
     this.creationTime = creationTime;
   }

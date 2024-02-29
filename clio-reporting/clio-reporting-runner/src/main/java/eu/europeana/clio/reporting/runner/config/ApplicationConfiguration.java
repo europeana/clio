@@ -89,7 +89,6 @@ public class ApplicationConfiguration {
     configuration.setProperty("hibernate.connection.url", hibernateConfigurationProperties.getConnection().getUrl());
     configuration.setProperty("hibernate.connection.username", hibernateConfigurationProperties.getConnection().getUsername());
     configuration.setProperty("hibernate.connection.password", hibernateConfigurationProperties.getConnection().getPassword());
-    configuration.setProperty("hibernate.dialect", hibernateConfigurationProperties.getDialect());
     configuration.setProperty("hibernate.c3p0.min_size", hibernateConfigurationProperties.getC3p0().getMinSize());
     configuration.setProperty("hibernate.c3p0.max_size", hibernateConfigurationProperties.getC3p0().getMaxSize());
     configuration.setProperty("hibernate.c3p0.timeout", hibernateConfigurationProperties.getC3p0().getTimeout());

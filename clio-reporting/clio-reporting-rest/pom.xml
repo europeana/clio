@@ -13,11 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.europeana.metis</groupId>
-            <artifactId>metis-common-utils</artifactId>
-            <version>${version.metis}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <exclusions>
@@ -80,11 +75,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${version.jackson}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${version.log4j}</version>
         </dependency>
     </dependencies>
 

@@ -37,7 +37,7 @@
         <version.springdoc.openapi>1.7.0</version.springdoc.openapi>
         <version.elastic.apm>1.43.0</version.elastic.apm>
         <version.slf4j>2.0.12</version.slf4j>
-        <version.log4j>2.21.1</version.log4j>
+        <version.log4j>2.23.0</version.log4j>
         <version.junit>5.10.2</version.junit>
         <version.jackson>2.16.1</version.jackson>
     </properties>

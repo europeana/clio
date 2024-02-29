@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -37,6 +38,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
     ReportingEngineConfigurationProperties.class, HibernateConfigurationProperties.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
+@EnableWebMvc
 public class ApplicationConfiguration implements WebMvcConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -93,7 +95,6 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     configuration.setProperty("hibernate.connection.url", hibernateConfigurationProperties.getConnection().getUrl());
     configuration.setProperty("hibernate.connection.username", hibernateConfigurationProperties.getConnection().getUsername());
     configuration.setProperty("hibernate.connection.password", hibernateConfigurationProperties.getConnection().getPassword());
-    configuration.setProperty("hibernate.dialect", hibernateConfigurationProperties.getDialect());
     configuration.setProperty("hibernate.c3p0.min_size", hibernateConfigurationProperties.getC3p0().getMinSize());
     configuration.setProperty("hibernate.c3p0.max_size", hibernateConfigurationProperties.getC3p0().getMaxSize());
     configuration.setProperty("hibernate.c3p0.timeout", hibernateConfigurationProperties.getC3p0().getTimeout());

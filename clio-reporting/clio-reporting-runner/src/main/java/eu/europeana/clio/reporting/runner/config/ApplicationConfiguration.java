@@ -11,7 +11,7 @@ import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import metis.common.config.properties.TruststoreConfigurationProperties;
 import metis.common.config.properties.postgres.HibernateConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;

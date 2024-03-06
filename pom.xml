@@ -34,7 +34,7 @@
         <version.postgresql>42.7.2</version.postgresql>
         <version.spring.boot>3.2.3</version.spring.boot>
         <version.spring>6.1.4</version.spring>
-        <version.springdoc.openapi>1.7.0</version.springdoc.openapi>
+        <version.springdoc-openapi-starter-webmvc-ui>2.3.0</version.springdoc-openapi-starter-webmvc-ui>
         <version.elastic.apm>1.43.0</version.elastic.apm>
         <version.slf4j>2.0.12</version.slf4j>
         <version.log4j>2.23.0</version.log4j>

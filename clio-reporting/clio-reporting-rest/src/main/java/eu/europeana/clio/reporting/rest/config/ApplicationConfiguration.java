@@ -25,10 +25,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Entry class with configuration fields and beans initialization for the application.
@@ -38,8 +34,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
     ReportingEngineConfigurationProperties.class, HibernateConfigurationProperties.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
-@EnableWebMvc
-public class ApplicationConfiguration implements WebMvcConfigurer {
+public class ApplicationConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SessionFactory sessionFactory;
@@ -105,18 +100,6 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         .applySettings(configuration.getProperties()).build();
     sessionFactory = configuration.buildSessionFactory(serviceRegistry);
     return sessionFactory;
-  }
-
-  @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("/swagger-ui/**")
-            .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/")
-            .resourceChain(false);
-  }
-
-  @Override
-  public void addViewControllers(ViewControllerRegistry registry) {
-    registry.addRedirectViewController("/", "/swagger-ui/index.html");
   }
 
   @Bean

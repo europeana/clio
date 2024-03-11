@@ -11,7 +11,7 @@ import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import metis.common.config.properties.TruststoreConfigurationProperties;
 import metis.common.config.properties.postgres.HibernateConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -89,7 +89,6 @@ public class ApplicationConfiguration {
     configuration.setProperty("hibernate.connection.url", hibernateConfigurationProperties.getConnection().getUrl());
     configuration.setProperty("hibernate.connection.username", hibernateConfigurationProperties.getConnection().getUsername());
     configuration.setProperty("hibernate.connection.password", hibernateConfigurationProperties.getConnection().getPassword());
-    configuration.setProperty("hibernate.dialect", hibernateConfigurationProperties.getDialect());
     configuration.setProperty("hibernate.c3p0.min_size", hibernateConfigurationProperties.getC3p0().getMinSize());
     configuration.setProperty("hibernate.c3p0.max_size", hibernateConfigurationProperties.getC3p0().getMaxSize());
     configuration.setProperty("hibernate.c3p0.timeout", hibernateConfigurationProperties.getC3p0().getTimeout());

@@ -12,14 +12,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>${version.hibernate}</version>
+            <version>${version.hibernate.core}</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-c3p0</artifactId>
-            <version>${version.hibernate}</version>
+            <version>${version.hibernate.core}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

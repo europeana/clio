@@ -10,8 +10,8 @@ import eu.europeana.clio.reporting.service.ReportingEngine;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import eu.europeana.metis.utils.apm.ElasticAPMConfiguration;
+import jakarta.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
-import javax.annotation.PreDestroy;
 import metis.common.config.properties.TruststoreConfigurationProperties;
 import metis.common.config.properties.postgres.HibernateConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
@@ -25,9 +25,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Entry class with configuration fields and beans initialization for the application.
@@ -37,7 +34,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
     ElasticAPMConfiguration.class, TruststoreConfigurationProperties.class,
     ReportingEngineConfigurationProperties.class, HibernateConfigurationProperties.class})
 @ComponentScan(basePackages = {"eu.europeana.clio.reporting.rest.controller"})
-public class ApplicationConfiguration implements WebMvcConfigurer {
+public class ApplicationConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SessionFactory sessionFactory;
@@ -93,7 +90,6 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
     configuration.setProperty("hibernate.connection.url", hibernateConfigurationProperties.getConnection().getUrl());
     configuration.setProperty("hibernate.connection.username", hibernateConfigurationProperties.getConnection().getUsername());
     configuration.setProperty("hibernate.connection.password", hibernateConfigurationProperties.getConnection().getPassword());
-    configuration.setProperty("hibernate.dialect", hibernateConfigurationProperties.getDialect());
     configuration.setProperty("hibernate.c3p0.min_size", hibernateConfigurationProperties.getC3p0().getMinSize());
     configuration.setProperty("hibernate.c3p0.max_size", hibernateConfigurationProperties.getC3p0().getMaxSize());
     configuration.setProperty("hibernate.c3p0.timeout", hibernateConfigurationProperties.getC3p0().getTimeout());
@@ -104,18 +100,6 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         .applySettings(configuration.getProperties()).build();
     sessionFactory = configuration.buildSessionFactory(serviceRegistry);
     return sessionFactory;
-  }
-
-  @Override
-  public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry.addResourceHandler("/swagger-ui/**")
-            .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/")
-            .resourceChain(false);
-  }
-
-  @Override
-  public void addViewControllers(ViewControllerRegistry registry) {
-    registry.addRedirectViewController("/", "/swagger-ui/index.html");
   }
 
   @Bean

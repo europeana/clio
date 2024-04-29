@@ -1,18 +1,18 @@
 package eu.europeana.clio.common.persistence.model;
 
 import java.time.Instant;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -24,7 +24,7 @@ import org.hibernate.annotations.OnDeleteAction;
     @Index(name = "report_batch_id_idx", columnList = "batch_id")})
 @NamedQuery(name = ReportRow.GET_LATEST_REPORT_QUERY,
     query = "SELECT r FROM ReportRow r ORDER BY r.creationTime DESC")
-@NamedQuery(query = "SELECT new ReportRow(r.batch, r.creationTime) FROM ReportRow r ORDER BY r.creationTime DESC",
+@NamedQuery(query = "SELECT new ReportRow(r.reportId, r.batch, r.creationTime) FROM ReportRow r ORDER BY r.creationTime DESC",
     name = ReportRow.GET_ALL_REPORT_DETAILS_QUERY)
 @NamedQuery(name = ReportRow.GET_REPORT_BY_BATCH_ID_QUERY,
     query = "FROM ReportRow AS r WHERE r.batch.batchId = :" + ReportRow.BATCH_ID_PARAMETER)
@@ -72,10 +72,12 @@ public class ReportRow {
   /**
    * Used for an optimized named query
    *
+   * @param reportId the report id
    * @param batch the batch
    * @param creationTime the creation time
    */
-  public ReportRow(BatchRow batch, long creationTime) {
+  public ReportRow(long reportId, BatchRow batch, long creationTime) {
+    this.reportId = reportId;
     this.batch = batch;
     this.creationTime = creationTime;
   }

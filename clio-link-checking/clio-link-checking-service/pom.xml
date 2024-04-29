@@ -5,7 +5,7 @@
     <parent>
         <artifactId>clio-link-checking</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>9</version>
+        <version>10</version>
     </parent>
 
     <artifactId>clio-link-checking-service</artifactId>
@@ -15,7 +15,7 @@
         <dependency>
             <artifactId>clio-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>9</version>
+            <version>10</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>
@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
             <version>${version.log4j}</version>
         </dependency>
         <dependency>

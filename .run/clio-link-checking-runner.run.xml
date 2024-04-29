@@ -1,0 +1,30 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="clio-link-checking-runner" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" folderName="spring-run-configuration">
+    <envs>
+      <env name="logging.config" value="file:///data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml" />
+      <env name="spring.config.location" value="file:///data/metis-configuration/clio/clio-link-checking/clio-link-checking-runner/k8s/overlays/local/components/properties/application.properties" />
+      <env name="truststore_path" value="/data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks" />
+    </envs>
+    <module name="clio-link-checking-runner" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="eu.europeana.clio.link.checking.runner.Application" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="eu.europeana.clio.link.checking.runner.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <extension name="net.ashald.envfile">
+      <option name="IS_ENABLED" value="false" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+      </ENTRIES>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

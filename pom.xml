@@ -5,7 +5,7 @@
 
     <groupId>eu.europeana.clio</groupId>
     <artifactId>clio</artifactId>
-    <version>10-SNAPSHOT</version>
+    <version>10</version>
 
     <packaging>pom</packaging>
 

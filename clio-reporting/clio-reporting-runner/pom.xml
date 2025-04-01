@@ -36,12 +36,12 @@
         <dependency>
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-common-spring-properties</artifactId>
-            <version>${version.metis}</version>
+            <version>${version.metis-common}</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-common-utils</artifactId>
-            <version>${version.metis}</version>
+            <version>${version.metis-common}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>

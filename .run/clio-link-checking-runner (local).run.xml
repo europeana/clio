@@ -1,11 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="clio-link-checking-runner" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" folderName="spring-run-configuration">
-    <envs>
-      <env name="logging.config" value="file:///data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml" />
-      <env name="spring.config.location" value="file:///data/metis-configuration/clio/clio-link-checking/clio-link-checking-runner/k8s/overlays/local/components/properties/application.properties" />
-      <env name="truststore_path" value="/data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks" />
-    </envs>
+  <configuration default="false" name="clio-link-checking-runner (local)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" folderName="spring-run-configuration">
     <module name="clio-link-checking-runner" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.config.location=file:///data/metis-configuration/clio/clio-link-checking/clio-link-checking-runner/k8s/overlays/local/components/properties/application.properties --logging.config=file:///data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml --truststore.path=/data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="eu.europeana.clio.link.checking.runner.Application" />
     <extension name="coverage">
       <pattern>

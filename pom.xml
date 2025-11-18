@@ -34,7 +34,7 @@
     <!--Internal-->
     <version.metis-common>15</version.metis-common>
     <version.metis>13-SNAPSHOT</version.metis>
-    <version.metis-core>14-SNAPSHOT</version.metis-core>
+    <version.metis-core>16-SNAPSHOT</version.metis-core>
 
     <!--External-->
     <version.hibernate.core>6.4.4.Final</version.hibernate.core>

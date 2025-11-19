@@ -55,8 +55,7 @@ public class MongoCoreDao {
     public Dataset getPublishedDatasetById(String datasetId) throws ClioException {
 
         // Find the dataset from Metis.
-        final eu.europeana.metis.core.dataset.Dataset metisDataset = new DatasetDao(datastoreProvider,
-                null).getDatasetByDatasetId(datasetId);
+        final eu.europeana.metis.core.dataset.Dataset metisDataset = new DatasetDao(datastoreProvider).getDatasetByDatasetId(datasetId);
         if (metisDataset == null) {
             throw new ClioException("Cannot process dataset " + datasetId + ": it does not exist.");
         }
@@ -130,7 +129,7 @@ public class MongoCoreDao {
         final ResultList<WorkflowExecution> executions = new WorkflowExecutionDao(datastoreProvider)
                 .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
                         DaoFieldNames.FINISHED_DATE, false, 0, 1, false);
-        return executions.getResults().stream().findFirst().map(WorkflowExecution::getFinishedDate)
+        return executions.results().stream().findFirst().map(WorkflowExecution::getFinishedDate)
                 .map(Date::toInstant).orElse(Instant.EPOCH);
     }
 

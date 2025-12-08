@@ -75,7 +75,7 @@ public class ReportingController {
                     final String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                             .path("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH).queryParam(BATCH_ID_ENDPOINT_PARAMETER, report.getBatchId()).toUriString();
                     return new ReportDetailsView(report.getReportId(), report.getBatchId(), instant, url);
-                }).collect(Collectors.toList());
+                }).toList();
 
         return new ResponseEntity<>(reportDetailsViews, HttpStatus.OK);
 
@@ -173,7 +173,7 @@ public class ReportingController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         final List<BatchesRequestResult> result = this.reportingEngine.getLatestBatches(maxResults)
-                .stream().map(BatchesRequestResult::new).collect(Collectors.toList());
+                .stream().map(BatchesRequestResult::new).toList();
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

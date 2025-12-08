@@ -12,36 +12,37 @@ import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
+import eu.europeana.clio.link.checking.service.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.link.checking.service.dao.MongoCoreDao;
 import eu.europeana.clio.link.checking.service.dao.SolrDao;
-import eu.europeana.clio.link.checking.service.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.link.checking.service.model.SampleRecord;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.exception.LinkCheckingException;
 import eu.europeana.metis.mongo.connection.MongoClientProvider;
 import eu.europeana.metis.solr.client.CompoundSolrClient;
 import eu.europeana.metis.solr.connection.SolrClientProvider;
-import org.apache.solr.client.solrj.SolrClient;
-import org.hibernate.SessionFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.solr.client.solrj.SolrClient;
+import org.hibernate.SessionFactory;
 
 /**
  * This class provides core functionality for the link checking module of Clio.
  */
+@Slf4j
 public final class LinkCheckingEngine {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(LinkCheckingEngine.class);
 
     private static final int NUMBER_OF_CONCURRENT_THREADS_PER_SERVER = 1;
 
@@ -129,7 +130,7 @@ public final class LinkCheckingEngine {
         // If the dataset already has a run in progress, we don't proceed.
         final RunDao runDao = new RunDao(linkCheckingEngineConfiguration.getSessionFactory());
         if (runDao.datasetHasActiveRun(datasetId)) {
-            LOGGER.info("Skipping dataset {} as it already has an active run.", datasetId);
+            log.info("Skipping dataset {} as it already has an active run.", datasetId);
             datasetsAlreadyRunningCounter.incrementAndGet();
             return;
         }
@@ -137,7 +138,7 @@ public final class LinkCheckingEngine {
         // Check and get the dataset from the Metis database
         final Dataset dataset = mongoCoreDao.getPublishedDatasetById(datasetId);
         if (dataset == null) {
-            LOGGER.info("Skipping dataset {} as it is not currently published.", datasetId);
+            log.info("Skipping dataset {} as it is not currently published.", datasetId);
             datasetsNotYetIndexedCounter.incrementAndGet();
             return;
         }
@@ -146,7 +147,7 @@ public final class LinkCheckingEngine {
         final List<SampleRecord> sampleRecords = solrDao
                 .getRandomSampleRecords(datasetId, linkCheckingEngineConfiguration.getLinkCheckingConfigurationProperties().getSampleRecordsPerDataset());
         if (sampleRecords.isEmpty()) {
-            LOGGER.info("Skipping dataset {} as it has no records with links to check.", datasetId);
+            log.info("Skipping dataset {} as it has no records with links to check.", datasetId);
             datasetsWithoutLinksCounter.incrementAndGet();
             return;
         }
@@ -164,7 +165,7 @@ public final class LinkCheckingEngine {
                 }
             }
         }
-        LOGGER.info("Run created for dataset {}.", datasetId);
+        log.info("Run created for dataset {}.", datasetId);
     }
 
     /**
@@ -286,12 +287,12 @@ public final class LinkCheckingEngine {
 
         // Check the link and trigger the waiting period before releasing the semaphore.
         final String linkString = linkToCheck.getLinkUrl();
-        LOGGER.info("Checking link {}.", linkString);
+        log.info("Checking link {}.", linkString);
         String error = null;
         try {
             linkChecker.performLinkChecking(linkString);
         } catch (LinkCheckingException e) {
-            LOGGER.debug("Link checking failed for link '{}'.", linkString, e);
+            log.debug("Link checking failed for link '{}'.", linkString, e);
             error = convertToErrorString(e);
         } finally {
             scheduleSemaphoreRelease(linkToCheck.getServer(), semaphore, semaphoreReleasePool);
@@ -305,7 +306,7 @@ public final class LinkCheckingEngine {
         final StringBuilder stringBuilder = new StringBuilder();
         Throwable nestedException = exception;
         while (nestedException != null) {
-            if (stringBuilder.length() > 0) {
+            if (!stringBuilder.isEmpty()) {
                 stringBuilder.append("\n  caused by:\n");
             }
             stringBuilder.append(nestedException.getMessage());

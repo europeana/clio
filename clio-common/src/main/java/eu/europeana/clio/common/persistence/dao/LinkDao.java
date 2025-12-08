@@ -144,17 +144,10 @@ public class LinkDao {
   private static Link convert(LinkRow row) {
 
     // Compute the link type.
-    final eu.europeana.clio.common.model.LinkType publicLinkType;
-    switch (row.getLinkType()) {
-      case IS_SHOWN_AT:
-        publicLinkType = eu.europeana.clio.common.model.LinkType.IS_SHOWN_AT;
-        break;
-      case IS_SHOWN_BY:
-        publicLinkType = eu.europeana.clio.common.model.LinkType.IS_SHOWN_BY;
-        break;
-      default:
-        throw new IllegalStateException();
-    }
+    final eu.europeana.clio.common.model.LinkType publicLinkType = switch (row.getLinkType()) {
+      case IS_SHOWN_AT -> eu.europeana.clio.common.model.LinkType.IS_SHOWN_AT;
+      case IS_SHOWN_BY -> eu.europeana.clio.common.model.LinkType.IS_SHOWN_BY;
+    };
 
     // Return link
     return new Link(row.getLinkId(), row.getRecordId(), row.getRecordLastIndexTime(),

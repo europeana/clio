@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -89,7 +88,7 @@ public class BatchDao {
         return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(BatchRow.GET_LATEST_BATCHES_QUERY, BatchRow.class)
                         .setMaxResults(maxResults).getResultList().stream()
-                        .map(batch -> convert(batch, session)).collect(Collectors.toList()));
+                        .map(batch -> convert(batch, session)).toList());
     }
 
     /**

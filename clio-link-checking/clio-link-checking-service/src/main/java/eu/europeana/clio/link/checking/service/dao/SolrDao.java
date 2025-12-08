@@ -3,6 +3,18 @@ package eu.europeana.clio.link.checking.service.dao;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.LinkType;
 import eu.europeana.clio.link.checking.service.model.SampleRecord;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -10,20 +22,12 @@ import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Data access object for the Solr.
  */
+@Slf4j
 public class SolrDao {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SolrDao.class);
 
     private static final String CONTENT_TIER_FIELD = "contentTier";
     private static final String EDM_DATASET_NAME_FIELD = "edm_datasetName";
@@ -68,7 +72,7 @@ public class SolrDao {
                 METADATA_TIER_FIELD, RECORD_ID_FIELD, TIMESTAMP_UPDATE_FIELD);
 
         // Get and return result.
-        return executeQuery(solrQuery).stream().map(SolrDao::convert).collect(Collectors.toList());
+        return executeQuery(solrQuery).stream().map(SolrDao::convert).toList();
     }
 
     private static SampleRecord convert(SolrDocument result) {
@@ -99,13 +103,13 @@ public class SolrDao {
         final List<String> edmTypes = Optional
                 .ofNullable((List<?>) result.getFieldValue(EDM_TYPE_FIELD)).stream()
                 .flatMap(Collection::stream).filter(Objects::nonNull).map(String.class::cast)
-                .filter(type -> !type.isBlank()).distinct().collect(Collectors.toList());
+                .filter(type -> !type.isBlank()).distinct().toList();
         final String recordId = (String) result.getFieldValue(RECORD_ID_FIELD);
-        if (edmTypes.size() > 1 && LOGGER.isInfoEnabled()) {
-            LOGGER.info("Found multiple types for record '{}': {}", recordId,
+        if (edmTypes.size() > 1 && log.isInfoEnabled()) {
+            log.info("Found multiple types for record '{}': {}", recordId,
                     String.join(", ", edmTypes));
         }
-        final String edmType = edmTypes.isEmpty() ? null : edmTypes.get(0);
+        final String edmType = edmTypes.isEmpty() ? null : edmTypes.getFirst();
 
         // Done.
         return new SampleRecord(recordId, lastIndexedTime, edmType,

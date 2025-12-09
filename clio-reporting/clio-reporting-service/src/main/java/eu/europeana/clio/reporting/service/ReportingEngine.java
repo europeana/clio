@@ -12,14 +12,9 @@ import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,28 +24,22 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class provides core functionality for the reporting module of Clio.
  */
+@Slf4j
+@RequiredArgsConstructor
 public final class ReportingEngine {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd_kk-mm-ss").withZone(ZoneOffset.UTC);
     private static final String CLIO_REPORT_PREFIX = "clio_report";
     private static final String CLIO_REPORT_SUFFIX = "csv";
     private final ReportingEngineConfiguration reportingEngineConfiguration;
-
-
-    /**
-     * Constructor.
-     *
-     * @param reportingEngineConfiguration The properties of this module.
-     */
-    public ReportingEngine(ReportingEngineConfiguration reportingEngineConfiguration) {
-        this.reportingEngineConfiguration = reportingEngineConfiguration;
-    }
 
     /**
      * Store the report file.
@@ -59,8 +48,8 @@ public final class ReportingEngine {
      * @throws ClioException if an error occurred during the storing of the report
      */
     public void storeReport(String report) throws ClioException {
-        final BatchDao batchDao = new BatchDao(reportingEngineConfiguration.getSessionFactory());
-        final ReportDao reportDao = new ReportDao(reportingEngineConfiguration.getSessionFactory());
+        final BatchDao batchDao = new BatchDao(reportingEngineConfiguration.sessionFactory());
+        final ReportDao reportDao = new ReportDao(reportingEngineConfiguration.sessionFactory());
 
         BatchWithCounters latestBatch = batchDao.getLatestBatches(1).stream().findFirst().orElse(null);
         if (latestBatch != null) {
@@ -91,7 +80,7 @@ public final class ReportingEngine {
 
         final long startTime = System.nanoTime();
         // Write the report.
-        try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(reportingEngineConfiguration.getSessionFactory())
+        try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(reportingEngineConfiguration.sessionFactory())
                 .getBrokenLinksInLatestCompletedRuns();
              final CSVWriter csvWriter = new CSVWriter(writer)) {
 
@@ -120,7 +109,7 @@ public final class ReportingEngine {
             // Write records
             linkStream.forEach(link -> csvWriter.writeNext(new String[]{
                     link.getLeft().getDataset().getDatasetId(),
-                    String.format(reportingEngineConfiguration.getReportingEngineConfigurationProperties().getDatasetLinkTemplate(),
+                    String.format(reportingEngineConfiguration.clioConfigurationProperties().datasetReportLinkTemplate(),
                             link.getLeft().getDataset().getDatasetId()),
                     Optional.ofNullable(link.getLeft().getDataset().getSize())
                             .map(Object::toString).orElse(null),
@@ -142,7 +131,7 @@ public final class ReportingEngine {
         }
 
         final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();
-        LOGGER.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
+        log.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
     }
 
     private static String convert(Instant instant) {
@@ -174,7 +163,7 @@ public final class ReportingEngine {
      * @throws PersistenceException In case there was a problem with accessing the data.
      */
     public List<BatchWithCounters> getLatestBatches(int maxResults) throws PersistenceException {
-        return new BatchDao(reportingEngineConfiguration.getSessionFactory()).getLatestBatches(maxResults);
+        return new BatchDao(reportingEngineConfiguration.sessionFactory()).getLatestBatches(maxResults);
     }
 
     /**
@@ -185,7 +174,7 @@ public final class ReportingEngine {
      * @throws PersistenceException in case of a persistence exception
      */
     public List<Report> getLatestReports(int maxResults) throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getLatestReports(maxResults);
+        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getLatestReports(maxResults);
     }
 
     /**
@@ -195,7 +184,7 @@ public final class ReportingEngine {
      * @throws PersistenceException in case of a persistence exception
      */
     public List<Report> getAllReportDetails() throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getAllReportDetails();
+        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getAllReportDetails();
     }
 
     /**
@@ -206,6 +195,6 @@ public final class ReportingEngine {
      * @throws PersistenceException if there was an error while getting the report
      */
     public Report getReportByBatchId(Long batchId) throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.getSessionFactory()).getReport(batchId);
+        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getReport(batchId);
     }
 }

@@ -3,13 +3,13 @@ package eu.europeana.clio.link.checking.service.config;
 import eu.europeana.clio.common.exception.ConfigurationException;
 import eu.europeana.clio.link.checking.service.config.properties.LinkCheckingConfigurationProperties;
 import eu.europeana.clio.link.checking.service.execution.LinkCheckingEngine;
+import eu.europeana.metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
+import eu.europeana.metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
 import eu.europeana.metis.mediaprocessing.LinkChecker;
 import eu.europeana.metis.mediaprocessing.MediaProcessorFactory;
 import eu.europeana.metis.mediaprocessing.exception.MediaProcessorException;
 import eu.europeana.metis.mongo.connection.MongoProperties;
 import eu.europeana.metis.solr.connection.SolrProperties;
-import metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
-import metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 

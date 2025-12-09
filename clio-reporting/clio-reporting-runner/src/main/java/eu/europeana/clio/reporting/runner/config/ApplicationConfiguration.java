@@ -1,6 +1,6 @@
 package eu.europeana.clio.reporting.runner.config;
 
-import eu.europeana.clio.common.config.properties.ReportingEngineConfigurationProperties;
+import eu.europeana.clio.common.config.properties.ClioConfigurationProperties;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -8,18 +8,16 @@ import eu.europeana.clio.common.persistence.model.ReportRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import eu.europeana.clio.reporting.runner.execution.ReportingRunner;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
+import eu.europeana.metis.common.config.properties.TruststoreConfigurationProperties;
+import eu.europeana.metis.common.config.properties.postgres.HibernateConfigurationProperties;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import jakarta.annotation.PreDestroy;
-import metis.common.config.properties.TruststoreConfigurationProperties;
-import metis.common.config.properties.postgres.HibernateConfigurationProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.service.ServiceRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -32,10 +30,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties({
     TruststoreConfigurationProperties.class, HibernateConfigurationProperties.class,
-    ReportingEngineConfigurationProperties.class})
+    ClioConfigurationProperties.class})
+@Slf4j
 public class ApplicationConfiguration {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SessionFactory sessionFactory;
 
   /**
@@ -62,7 +60,7 @@ public class ApplicationConfiguration {
         .isNotEmpty(truststoreConfigurationProperties.getPassword())) {
       CustomTruststoreAppender.appendCustomTruststoreToDefault(truststoreConfigurationProperties.getPath(),
           truststoreConfigurationProperties.getPassword());
-      LOGGER.info("Custom truststore appended to default truststore");
+      log.info("Custom truststore appended to default truststore");
     }
   }
 
@@ -74,7 +72,7 @@ public class ApplicationConfiguration {
    * @throws IOException if an I/O error occurs during sql script initialization
    */
   @Bean
-  public SessionFactory getSessionFactory(HibernateConfigurationProperties hibernateConfigurationProperties) throws IOException {
+  public SessionFactory getSessionFactory(HibernateConfigurationProperties hibernateConfigurationProperties) {
 
     org.hibernate.cfg.Configuration configuration = new org.hibernate.cfg.Configuration();
     configuration.addAnnotatedClass(DatasetRow.class);
@@ -102,10 +100,10 @@ public class ApplicationConfiguration {
   }
 
   @Bean
-  protected CommandLineRunner commandLineRunner(ReportingEngineConfigurationProperties reportingEngineConfigurationProperties,
+  protected CommandLineRunner commandLineRunner(ClioConfigurationProperties clioConfigurationProperties,
       SessionFactory sessionFactory) {
     final ReportingEngineConfiguration reportingEngineConfiguration =
-        new ReportingEngineConfiguration(reportingEngineConfigurationProperties, sessionFactory);
+        new ReportingEngineConfiguration(clioConfigurationProperties, sessionFactory);
     return new ReportingRunner(reportingEngineConfiguration);
   }
 

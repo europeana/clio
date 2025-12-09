@@ -9,7 +9,6 @@ import org.hibernate.SessionFactory;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -60,7 +59,7 @@ public class ReportDao {
         return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(ReportRow.GET_LATEST_REPORT_QUERY, ReportRow.class)
                         .setMaxResults(maxResults).getResultList().stream()
-                        .map(ReportDao::convert).collect(Collectors.toList()));
+                        .map(ReportDao::convert).toList());
     }
 
     /**
@@ -72,7 +71,7 @@ public class ReportDao {
         return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(ReportRow.GET_ALL_REPORT_DETAILS_QUERY, ReportRow.class)
                         .getResultList().stream()
-                        .map(ReportDao::convert).collect(Collectors.toList()));
+                        .map(ReportDao::convert).toList());
     }
 
     /**

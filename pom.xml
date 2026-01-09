@@ -46,6 +46,8 @@
     <version.slf4j>2.0.12</version.slf4j>
     <version.log4j>2.23.0</version.log4j>
     <version.junit>5.10.2</version.junit>
+    <version.mockito.core>5.17.0</version.mockito.core>
+    <version.json.path>2.9.0</version.json.path>
     <version.jackson>2.16.1</version.jackson>
   </properties>
 
@@ -77,6 +79,12 @@
         <artifactId>junit-jupiter-engine</artifactId>
         <scope>test</scope>
         <version>${version.junit}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.mockito.core}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

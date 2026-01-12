@@ -127,6 +127,7 @@ class ReportingControllerTest {
     String expectedTimestamp = batchTimestamp.atZone(ZoneId.systemDefault())
                                              .toOffsetDateTime()
                                              .toString();
+    batchTimestamp = Instant.parse(expectedTimestamp);
     when(batchMock.getBatchId()).thenReturn(123L);
     when(batchMock.getDatasetsExcludedAlreadyRunning()).thenReturn(2);
     when(batchMock.getDatasetsExcludedNotIndexed()).thenReturn(4);

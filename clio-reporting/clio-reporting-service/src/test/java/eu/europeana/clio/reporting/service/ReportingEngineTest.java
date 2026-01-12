@@ -61,7 +61,7 @@ class ReportingEngineTest {
     when(streamResult.get()).thenReturn(Stream.of(Pair.of(run, link)));
 
     try (MockedConstruction<LinkDao> ignored = mockConstruction(LinkDao.class,
-        (mock, ctx) -> when(mock.getBrokenLinksInLatestCompletedRuns()).thenReturn(streamResult))) {
+        (mock, context) -> when(mock.getBrokenLinksInLatestCompletedRuns()).thenReturn(streamResult))) {
 
       ReportingEngine engine = new ReportingEngine(config);
       StringWriter sw = new StringWriter();
@@ -85,7 +85,7 @@ class ReportingEngineTest {
     when(batchWithCounters.getBatchId()).thenReturn(123L);
 
     try (MockedConstruction<BatchDao> batchCtor = mockConstruction(BatchDao.class,
-        (mock, ctx) -> when(mock.getLatestBatches(1)).thenReturn(List.of(batchWithCounters)));
+        (mock, context) -> when(mock.getLatestBatches(1)).thenReturn(List.of(batchWithCounters)));
         MockedConstruction<ReportDao> reportCtor = mockConstruction(ReportDao.class)) {
 
       ReportingEngine engine = new ReportingEngine(config);
@@ -105,9 +105,9 @@ class ReportingEngineTest {
     List<Report> reports = List.of(mock(Report.class));
 
     try (MockedConstruction<BatchDao> batchCtor = mockConstruction(BatchDao.class,
-        (mock, ctx) -> when(mock.getLatestBatches(5)).thenReturn(batches));
+        (mock, context) -> when(mock.getLatestBatches(5)).thenReturn(batches));
         MockedConstruction<ReportDao> reportCtor = mockConstruction(ReportDao.class,
-            (mock, ctx) -> {
+            (mock, context) -> {
               when(mock.getLatestReports(10)).thenReturn(reports);
               when(mock.getAllReportDetails()).thenReturn(reports);
               when(mock.getReport(7L)).thenReturn(reports.getFirst());

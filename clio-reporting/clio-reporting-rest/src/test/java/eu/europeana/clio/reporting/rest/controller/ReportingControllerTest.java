@@ -124,9 +124,9 @@ class ReportingControllerTest {
   void getBatches_whenGetLatestBatches_returnsOK() throws Exception {
     BatchWithCounters batchMock = mock(BatchWithCounters.class);
     Instant batchTimestamp = Instant.now();
-    String expectedTimestamp = batchTimestamp.atZone(ZoneId.systemDefault())
+    String expectedTimestamp = normalizeDate(batchTimestamp.atZone(ZoneId.systemDefault())
                                              .toOffsetDateTime()
-                                             .toString();
+                                             .toString());
     batchTimestamp = Instant.parse(expectedTimestamp);
     when(batchMock.getBatchId()).thenReturn(123L);
     when(batchMock.getDatasetsExcludedAlreadyRunning()).thenReturn(2);
@@ -202,5 +202,9 @@ class ReportingControllerTest {
     int length = mvcResult.getResponse().getContentAsByteArray().length;
     assertEquals(expected.length, length);
     assertArrayEquals(expected, mvcResult.getResponse().getContentAsByteArray());
+  }
+
+  String normalizeDate(String s) {
+    return s.replaceFirst("(\\.\\d{8})0(\\+\\d{2}:\\d{2})$", "$1$2");
   }
 }

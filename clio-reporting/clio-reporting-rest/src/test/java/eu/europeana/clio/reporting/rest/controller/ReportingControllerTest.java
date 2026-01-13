@@ -47,12 +47,13 @@ class ReportingControllerTest {
 
   @Test
   void availableReports_returnsList() throws Exception {
+    // Given
     Report report = mock(Report.class);
     when(report.getCreationTime()).thenReturn(1L);
     when(report.getBatchId()).thenReturn(42L);
     when(report.getReportId()).thenReturn(1L);
     when(reportingEngine.getAllReportDetails()).thenReturn(List.of(report));
-
+    // When / Then
     mockMvc.perform(get("/" + ReportingController.AVAILABLE_REPORTS_ENDPOINT_PATH))
            .andExpect(status().isOk())
            .andExpect(content().contentTypeCompatibleWith("application/json"))
@@ -64,6 +65,7 @@ class ReportingControllerTest {
 
   @Test
   void availableReports_whenEmpty_returnsEmptyList() throws Exception {
+    // Given / When
     when(reportingEngine.getAllReportDetails()).thenReturn(Collections.emptyList());
     mockMvc.perform(get("/" + ReportingController.AVAILABLE_REPORTS_ENDPOINT_PATH))
            .andExpect(status().isOk())
@@ -73,13 +75,14 @@ class ReportingControllerTest {
 
   @Test
   void getReportByBatchId_returnsReportBytes_andHeaders() throws Exception {
+    // Given
     long batchId = 25L;
     Report report = mock(Report.class);
     String content = "column1,column2\nvalue1,value2\n";
     when(reportingEngine.getReportByBatchId(batchId)).thenReturn(report);
     when(report.getReportString()).thenReturn(content);
     when(report.getBatchId()).thenReturn(batchId);
-
+    // When / Then
     mockMvc.perform(get("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)
                .param(ReportingController.BATCH_ID_ENDPOINT_PARAMETER,
                    String.valueOf(batchId)))
@@ -90,9 +93,10 @@ class ReportingControllerTest {
 
   @Test
   void getReportByBatchId_whenNull_throwsReportNotFoundException() throws PersistenceException {
+    // Given
     long batchId = 999L;
     when(reportingEngine.getReportByBatchId(batchId)).thenReturn(null);
-
+    // When / Then
     ReportNotFoundException notFoundException = assertThrows(ReportNotFoundException.class,
         () -> controller.getReportByBatchId(batchId));
     assertNull(notFoundException.getMessage());
@@ -100,12 +104,13 @@ class ReportingControllerTest {
 
   @Test
   void getLatestReport_returnsReportBytes_andHeaders() throws Exception {
+    // Given
     Report latestReport = mock(Report.class);
     String content = "column1,column2\nvalue1,value2\n";
     when(reportingEngine.getLatestReports(1)).thenReturn(List.of(latestReport));
     when(latestReport.getReportString()).thenReturn(content);
     when(latestReport.getBatchId()).thenReturn(77L);
-
+    // When / Then
     mockMvc.perform(get("/" + LATEST_REPORT_ENDPOINT_PATH))
            .andExpect(status().isOk())
            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
@@ -114,7 +119,9 @@ class ReportingControllerTest {
 
   @Test
   void getLatestReport_whenNoReports_throwsReportNotFoundException() throws PersistenceException {
+    // Given
     when(reportingEngine.getLatestReports(1)).thenReturn(Collections.emptyList());
+    // When / Then
     ReportNotFoundException notFoundException = assertThrows(ReportNotFoundException.class,
         () -> controller.getLatestReport());
     assertNull(notFoundException.getMessage());
@@ -122,6 +129,7 @@ class ReportingControllerTest {
 
   @Test
   void getBatches_whenGetLatestBatches_returnsOK() throws Exception {
+    // Given
     BatchWithCounters batchMock = mock(BatchWithCounters.class);
     Instant batchTimestamp = Instant.now();
     String expectedTimestamp = normalizeDate(batchTimestamp.atZone(ZoneId.systemDefault())
@@ -138,6 +146,7 @@ class ReportingControllerTest {
     when(batchMock.getLastUpdateTimeInSolr()).thenReturn(batchTimestamp);
     when(batchMock.getLastUpdateTimeInMetisCore()).thenReturn(batchTimestamp);
     when(reportingEngine.getLatestBatches(5)).thenReturn(List.of(batchMock));
+    // When / Then
     mockMvc.perform(get("/" + BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
            .andExpect(status().isOk())
            .andExpect(content().contentTypeCompatibleWith("application/json"))
@@ -153,18 +162,21 @@ class ReportingControllerTest {
 
   @Test
   void getBatches_badRequest_whenMaxResultsLessThanOne() throws Exception {
+    // When / Then
     mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "0"))
            .andExpect(status().isBadRequest());
   }
 
   @Test
   void getBatches_returnsOk_forEmptyAndNonEmpty() throws Exception {
-    // first: empty list -> still OK
+    // Given
     when(reportingEngine.getLatestBatches(5)).thenReturn(Collections.emptyList());
-    mockMvc.perform(get("/batches").param("maxResults", "5"))
+    // When
+    mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
            .andExpect(status().isOk())
            .andExpect(content().contentTypeCompatibleWith("application/json"));
 
+    // Given
     BatchWithCounters batchMock = mock(BatchWithCounters.class);
     when(batchMock.getBatchId()).thenReturn(123L);
     when(batchMock.getLastUpdateTimeInMetisCore()).thenReturn(Instant.now());
@@ -173,32 +185,30 @@ class ReportingControllerTest {
     when(batchMock.getDatasetsProcessed()).thenReturn(42);
     reportingEngine.getLatestBatches(3);
     when(reportingEngine.getLatestBatches(3)).thenReturn(Collections.singletonList(batchMock));
-
-    mockMvc.perform(get("/batches").param("maxResults", "3"))
+    // When / Then
+    mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "3"))
            .andExpect(status().isOk())
            .andExpect(content().contentTypeCompatibleWith("application/json"));
   }
 
   @Test
   void getHttpEntity_setsContentLength_andDispositionFilename() throws Exception {
-    // exercise getHttpEntity via getReportByBatchId path to verify headers correlating to report bytes
+    // Given
     long batchId = 555L;
     Report r = mock(Report.class);
-    String content = "a,b,c\n1,2,3\n";
+    String content = "column1,column2,column3\nvalue1,value2,value3\n";
     when(reportingEngine.getReportByBatchId(batchId)).thenReturn(r);
     when(r.getReportString()).thenReturn(content);
     when(r.getBatchId()).thenReturn(batchId);
-
     byte[] expected = content.getBytes();
-
+    // When
     var mvcResult = mockMvc.perform(get("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)
                                .param(ReportingController.BATCH_ID_ENDPOINT_PARAMETER, String.valueOf(batchId)))
                            .andExpect(status().isOk())
                            .andReturn();
-
-    String cd = mvcResult.getResponse().getHeader(HttpHeaders.CONTENT_DISPOSITION);
-    // ensure content-disposition present and content length correct
-    assertNotNull(cd);
+    // Then
+    String contentDispositionHeader = mvcResult.getResponse().getHeader(HttpHeaders.CONTENT_DISPOSITION);
+    assertNotNull(contentDispositionHeader);
     int length = mvcResult.getResponse().getContentAsByteArray().length;
     assertEquals(expected.length, length);
     assertArrayEquals(expected, mvcResult.getResponse().getContentAsByteArray());

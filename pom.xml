@@ -39,14 +39,12 @@
     <!--External-->
     <version.hibernate.core>6.4.4.Final</version.hibernate.core>
     <version.postgresql>42.7.7</version.postgresql>
-    <version.spring.boot>3.2.3</version.spring.boot>
-    <version.spring>6.1.4</version.spring>
+    <version.spring.boot>4.0.1</version.spring.boot>
     <version.springdoc-openapi-starter-webmvc-ui>2.3.0</version.springdoc-openapi-starter-webmvc-ui>
     <version.elastic.apm>1.48.1</version.elastic.apm>
+    <version.commons-lang3>3.18.0</version.commons-lang3>
     <version.slf4j>2.0.12</version.slf4j>
-    <version.log4j>2.23.0</version.log4j>
-    <version.junit>5.10.2</version.junit>
-    <version.jackson>2.16.1</version.jackson>
+    <version.opencsv>5.0</version.opencsv>
   </properties>
 
   <dependencies>
@@ -65,18 +63,6 @@
         <version>${version.spring.boot}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${version.junit}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <scope>test</scope>
-        <version>${version.junit}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

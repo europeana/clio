@@ -1,16 +1,15 @@
 package eu.europeana.clio.common.persistence.dao;
 
+import static java.lang.String.format;
+
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import org.hibernate.SessionFactory;
-
 import java.time.Instant;
-
-import static java.lang.String.format;
+import org.hibernate.SessionFactory;
 
 /**
  * Data access object for runs (a checking iteration for a given dataset).
@@ -39,16 +38,18 @@ public class RunDao {
    */
   public long createRunStartingNow(String datasetId, long batchId) throws PersistenceException {
     return hibernateSessionUtils.performInTransaction(session -> {
-      final DatasetRow datasetRow = session.get(DatasetRow.class, datasetId);
+      final DatasetRow datasetRow = session.find(DatasetRow.class, datasetId);
       if (datasetRow == null) {
         throw new PersistenceException(format("Cannot create run: dataset with ID %s does not exist.", datasetId));
       }
-      final BatchRow batchRow = session.get(BatchRow.class, batchId);
+      final BatchRow batchRow = session.find(BatchRow.class, batchId);
       if (batchRow == null) {
         throw new PersistenceException(format("Cannot create run: batch with ID %s does not exist.", batchId));
       }
       final RunRow newRun = new RunRow(Instant.now(), datasetRow, batchRow);
-      return (Long) session.save(newRun);
+      session.persist(newRun);
+      session.flush();
+      return newRun.getRunId();
     });
   }
 

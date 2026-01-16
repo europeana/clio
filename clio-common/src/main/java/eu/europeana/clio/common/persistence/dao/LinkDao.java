@@ -67,7 +67,7 @@ public class LinkDao {
 
     // Create and save the link
     return hibernateSessionUtils.performInTransaction(session -> {
-      final RunRow runRow = session.get(RunRow.class, runId);
+      final RunRow runRow = session.find(RunRow.class, runId);
       if (runRow == null) {
         throw new PersistenceException(
                 "Cannot create link: run with ID " + runId + " does not exist.");
@@ -75,7 +75,10 @@ public class LinkDao {
       final LinkRow newLink = new LinkRow(runRow, recordId, recordLastIndexTime, recordEdmType,
               recordContentTier, recordMetadataTier, persistentLinkType, linkUrl,
               computeServer(linkUrl));
-      return (Long) session.save(newLink);
+
+      session.persist(newLink);
+      session.flush();
+      return newLink.getLinkId();
     });
   }
 

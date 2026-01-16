@@ -32,12 +32,11 @@
     <version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 
     <!--Internal-->
-    <version.metis-common>17-SNAPSHOT</version.metis-common>
-    <version.metis>13-SNAPSHOT</version.metis>
-    <version.metis-core>16-SNAPSHOT</version.metis-core>
+    <version.metis-common>19-SNAPSHOT</version.metis-common>
+    <version.metis>17-SNAPSHOT</version.metis>
+    <version.metis-core>17-SNAPSHOT</version.metis-core>
 
     <!--External-->
-    <version.hibernate.core>6.4.4.Final</version.hibernate.core>
     <version.postgresql>42.7.7</version.postgresql>
     <version.spring.boot>4.0.1</version.spring.boot>
     <version.springdoc-openapi-starter-webmvc-ui>2.3.0</version.springdoc-openapi-starter-webmvc-ui>

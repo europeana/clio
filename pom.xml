@@ -32,23 +32,21 @@
     <version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 
     <!--Internal-->
-    <version.metis-common>17-SNAPSHOT</version.metis-common>
-    <version.metis>13-SNAPSHOT</version.metis>
-    <version.metis-core>16-SNAPSHOT</version.metis-core>
+    <version.metis-common>19-SNAPSHOT</version.metis-common>
+    <version.metis>17-SNAPSHOT</version.metis>
+    <version.metis-core>17-SNAPSHOT</version.metis-core>
 
     <!--External-->
-    <version.hibernate.core>6.4.4.Final</version.hibernate.core>
     <version.postgresql>42.7.7</version.postgresql>
-    <version.spring.boot>3.2.3</version.spring.boot>
-    <version.spring>6.1.4</version.spring>
-    <version.springdoc-openapi-starter-webmvc-ui>2.3.0</version.springdoc-openapi-starter-webmvc-ui>
+    <version.spring.boot>4.0.1</version.spring.boot>
+    <version.springdoc-openapi-starter-webmvc-ui>2.8.14</version.springdoc-openapi-starter-webmvc-ui>
     <version.elastic.apm>1.48.1</version.elastic.apm>
+    <version.commons-lang3>3.18.0</version.commons-lang3>
     <version.slf4j>2.0.12</version.slf4j>
-    <version.log4j>2.23.0</version.log4j>
-    <version.junit>5.10.2</version.junit>
+    <version.opencsv>5.0</version.opencsv>
+    <version.junit>6.0.2</version.junit>
     <version.mockito.core>5.17.0</version.mockito.core>
     <version.json.path>2.9.0</version.json.path>
-    <version.jackson>2.16.1</version.jackson>
   </properties>
 
   <dependencies>

@@ -1,16 +1,15 @@
 package eu.europeana.clio.common.persistence.dao;
 
+import static java.lang.String.format;
+
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.ReportRow;
-import org.hibernate.SessionFactory;
-
 import java.time.Instant;
 import java.util.List;
-
-import static java.lang.String.format;
+import org.hibernate.SessionFactory;
 
 /**
  * Data access class for accessing reports.
@@ -39,12 +38,14 @@ public class ReportDao {
      */
     public long saveReport(String report, long batchId) throws PersistenceException {
         return hibernateSessionUtils.performInTransaction(session -> {
-            final BatchRow batchRow = session.get(BatchRow.class, batchId);
+            final BatchRow batchRow = session.find(BatchRow.class, batchId);
             if (batchRow == null) {
                 throw new PersistenceException(format("Cannot create run: batch with ID %s does not exist.", batchId));
             }
             final ReportRow reportRow = new ReportRow(Instant.now(), report, batchRow);
-            return (Long) session.save(reportRow);
+            session.persist(reportRow);
+            session.flush();
+            return reportRow.getReportId();
         });
     }
 

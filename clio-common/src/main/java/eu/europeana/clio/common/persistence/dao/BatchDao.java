@@ -1,19 +1,18 @@
 package eu.europeana.clio.common.persistence.dao;
 
+import static java.lang.String.format;
+
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.lang.String.format;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 /**
  * Data access object for runs (a checking iteration for a given dataset).
@@ -47,7 +46,9 @@ public class BatchDao {
         return hibernateSessionUtils.performInTransaction(session -> {
             final BatchRow newBatch = new BatchRow(Instant.now(), lastUpdateTimeInSolr,
                     lastUpdateTimeInMetisCore);
-            return (Long) session.save(newBatch);
+          session.persist(newBatch);
+          session.flush();
+          return newBatch.getBatchId();
         });
     }
 
@@ -67,7 +68,7 @@ public class BatchDao {
                                     int datasetsExcludedNotIndexed, int datasetsExcludedWithoutLinks)
             throws PersistenceException {
         hibernateSessionUtils.performInTransaction(session -> {
-            final BatchRow batchRow = session.get(BatchRow.class, batchId);
+            final BatchRow batchRow = session.find(BatchRow.class, batchId);
             if (batchRow == null) {
                 throw new PersistenceException(format("Cannot set counters: batch with ID %s does not exist.", batchId));
             }

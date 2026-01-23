@@ -24,12 +24,14 @@ import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.service.ReportingEngine;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class ReportingControllerTest {
@@ -131,7 +133,7 @@ class ReportingControllerTest {
   void getBatches_whenGetLatestBatches_returnsOK() throws Exception {
     // Given
     BatchWithCounters batchMock = mock(BatchWithCounters.class);
-    Instant batchTimestamp = Instant.now();
+    Instant batchTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     String expectedTimestamp = normalizeDate(batchTimestamp.atZone(ZoneId.systemDefault())
                                              .toOffsetDateTime()
                                              .toString());
@@ -157,7 +159,8 @@ class ReportingControllerTest {
            .andExpect(jsonPath("$[0].datasetsExcludedNotIndexed").value(4))
            .andExpect(jsonPath("$[0].datasetsExcludedWithoutLinks").value(6))
            .andExpect(jsonPath("$[0].datasetsProcessed").value(42))
-           .andExpect(jsonPath("$[0].datasetsPending").value(8));
+           .andExpect(jsonPath("$[0].datasetsPending").value(8))
+           .andDo(MockMvcResultHandlers.print());
   }
 
   @Test

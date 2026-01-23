@@ -44,7 +44,6 @@
     <version.commons-lang3>3.18.0</version.commons-lang3>
     <version.slf4j>2.0.12</version.slf4j>
     <version.opencsv>5.0</version.opencsv>
-    <version.json.path>2.9.0</version.json.path>
   </properties>
 
   <dependencies>

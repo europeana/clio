@@ -44,8 +44,6 @@
     <version.commons-lang3>3.18.0</version.commons-lang3>
     <version.slf4j>2.0.12</version.slf4j>
     <version.opencsv>5.0</version.opencsv>
-    <version.junit>6.0.2</version.junit>
-    <version.mockito.core>5.17.0</version.mockito.core>
     <version.json.path>2.9.0</version.json.path>
   </properties>
 
@@ -65,24 +63,6 @@
         <version>${version.spring.boot}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${version.junit}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <scope>test</scope>
-        <version>${version.junit}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>${version.mockito.core}</version>
-        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

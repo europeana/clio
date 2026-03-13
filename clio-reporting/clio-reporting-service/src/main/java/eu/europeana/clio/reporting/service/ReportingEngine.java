@@ -4,6 +4,7 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
+import eu.europeana.clio.common.model.ClioFilters;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.model.Run;
@@ -11,6 +12,8 @@ import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
+import eu.europeana.clio.common.persistence.dao.RunDao;
+import eu.europeana.clio.common.model.CheckDTO;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -21,8 +24,10 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +71,13 @@ public final class ReportingEngine {
      */
     public String generateReport() throws ClioException {
         StringWriter stringWriter = new StringWriter();
-        generateReport(stringWriter);
+        generateReport(stringWriter, null);
+        return stringWriter.toString();
+    }
+
+    public String generateReport(ClioFilters filters) throws ClioException {
+        StringWriter stringWriter = new StringWriter();
+        generateReport(stringWriter, filters);
         return stringWriter.toString();
     }
 
@@ -76,12 +87,12 @@ public final class ReportingEngine {
      * @param writer The destination/output writer.
      * @throws ClioException In case of a problem with accessing or saving the required data.
      */
-    public void generateReport(Writer writer) throws ClioException {
+    public void generateReport(Writer writer, ClioFilters filters) throws ClioException {
 
         final long startTime = System.nanoTime();
         // Write the report.
-        try (final StreamResult<Pair<Run, Link>> brokenLinks = new LinkDao(reportingEngineConfiguration.sessionFactory())
-                .getBrokenLinksInLatestCompletedRuns();
+        try (final StreamResult<Pair<Run, Link>> brokenLinks = filters==null? new LinkDao(reportingEngineConfiguration.sessionFactory())
+                .getBrokenLinksInLatestCompletedRuns(): new LinkDao(reportingEngineConfiguration.sessionFactory()).getLinksWithRunsForFilters(filters);
              final CSVWriter csvWriter = new CSVWriter(writer)) {
 
             // Write header
@@ -140,6 +151,11 @@ public final class ReportingEngine {
                 .format(instant);
     }
 
+    /**
+     * Gets report file name suggestion.
+     *
+     * @return the report file name suggestion
+     */
     public static String getReportFileNameSuggestion() {
         return String.format("%s_%s.%s", CLIO_REPORT_PREFIX, DATE_TIME_FORMATTER.format(Instant.now()), CLIO_REPORT_SUFFIX);
     }
@@ -195,6 +211,28 @@ public final class ReportingEngine {
      * @throws PersistenceException if there was an error while getting the report
      */
     public Report getReportByBatchId(Long batchId) throws PersistenceException {
-        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getReport(batchId);
+        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getReportByBatchId(batchId);
+    }
+
+    /**
+     * Get a report by its id.
+     *
+     * @param reportId the report id
+     * @return the report
+     * @throws PersistenceException if there was an error while getting the report
+     */
+    public Report getReportByReportId(Long reportId) throws PersistenceException {
+        return new ReportDao(reportingEngineConfiguration.sessionFactory()).getReportByReportId(reportId);
+    }
+
+    /**
+     * Gets check.
+     *
+     * @param clioFilters the clio filters
+     * @return the check
+     * @throws PersistenceException the persistence exception
+     */
+    public List<CheckDTO> getCheck(ClioFilters clioFilters) throws PersistenceException {
+        return new RunDao(reportingEngineConfiguration.sessionFactory()).getRuns(clioFilters);
     }
 }

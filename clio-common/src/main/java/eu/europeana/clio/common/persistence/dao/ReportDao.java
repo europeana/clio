@@ -21,8 +21,8 @@ public class ReportDao {
     /**
      * Constructor.
      *
-     * @param sessionFactory The connection to the Clio persistence. Should be connected. This
-     *                       object does not close the connection.
+     * @param sessionFactory The connection to the Clio persistence. Should be connected. This                       object does not
+     * close the connection.
      */
     public ReportDao(SessionFactory sessionFactory) {
         this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
@@ -31,7 +31,7 @@ public class ReportDao {
     /**
      * Save a report after last batch.
      *
-     * @param report  The report to persist
+     * @param report The report to persist
      * @param batchId The ID of the batch after which the report is relevant
      * @return The ID of the newly created report.
      * @throws PersistenceException In case there was a persistence problem.
@@ -65,6 +65,7 @@ public class ReportDao {
 
     /**
      * Get all report details.
+     *
      * @return the list of report details
      * @throws PersistenceException in case of a persistence exception
      */
@@ -82,11 +83,25 @@ public class ReportDao {
      * @return the report
      * @throws PersistenceException if there was an error while getting the report
      */
-    public Report getReport(Long batchId) throws PersistenceException {
+    public Report getReportByBatchId(Long batchId) throws PersistenceException {
         return hibernateSessionUtils.performInSession(session ->
                 session.createNamedQuery(ReportRow.GET_REPORT_BY_BATCH_ID_QUERY, ReportRow.class)
                         .setParameter(ReportRow.BATCH_ID_PARAMETER, batchId)
                         .getResultList().stream().map(ReportDao::convert).findFirst().orElse(null));
+    }
+
+    /**
+     * Gets report by report id.
+     *
+     * @param reportId the report id
+     * @return the report by report id
+     * @throws PersistenceException the persistence exception
+     */
+    public Report getReportByReportId(Long reportId) throws PersistenceException {
+        return hibernateSessionUtils.performInSession(session ->
+            session.createNamedQuery(ReportRow.GET_REPORT_BY_REPORT_ID_QUERY, ReportRow.class)
+                   .setParameter(ReportRow.REPORT_ID_PARAMETER, reportId)
+                   .getResultList().stream().map(ReportDao::convert).findFirst().orElse(null));
     }
 
     private static Report convert(ReportRow reportRow) {

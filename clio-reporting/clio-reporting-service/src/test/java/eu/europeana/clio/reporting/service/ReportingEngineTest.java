@@ -113,7 +113,7 @@ class ReportingEngineTest {
             (mock, context) -> {
               when(mock.getLatestReports(10)).thenReturn(reports);
               when(mock.getAllReportDetails()).thenReturn(reports);
-              when(mock.getReport(7L)).thenReturn(reports.getFirst());
+              when(mock.getReportByBatchId(7L)).thenReturn(reports.getFirst());
             })) {
 
       ReportingEngine engine = new ReportingEngine(config);

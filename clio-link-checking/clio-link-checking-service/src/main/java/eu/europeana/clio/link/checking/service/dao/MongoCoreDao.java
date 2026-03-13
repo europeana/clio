@@ -80,9 +80,9 @@ public class MongoCoreDao {
         final PluginWithExecutionId<ExecutablePlugin> latestSuccessfulExecutableIndex = workflowExecutionDao
                 .getLatestSuccessfulExecutablePlugin(datasetId, Set.of(ExecutablePluginType.PUBLISH),
                         false);
-        final int datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
+        final long datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
                 .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getExecutionProgress)
-                .map(progress -> progress.getProcessedRecords() - progress.getErrors()).orElse(-1);
+                .map(progress -> progress.getProcessedRecords() - progress.getErrors()).orElse(-1L);
 
         // Convert to the dataset object we're interested in.
         final Instant lastIndexTime = Optional.ofNullable(latestSuccessfulExecutableIndex)

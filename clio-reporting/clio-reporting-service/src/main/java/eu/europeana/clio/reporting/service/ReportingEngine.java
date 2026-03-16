@@ -4,7 +4,8 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.ClioFilters;
+import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.model.Run;
@@ -13,7 +14,6 @@ import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
-import eu.europeana.clio.common.model.CheckDTO;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -24,10 +24,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +73,7 @@ public final class ReportingEngine {
         return stringWriter.toString();
     }
 
-    public String generateReport(ClioFilters filters) throws ClioException {
+    public String generateReport(FieldFilters filters) throws ClioException {
         StringWriter stringWriter = new StringWriter();
         generateReport(stringWriter, filters);
         return stringWriter.toString();
@@ -87,7 +85,7 @@ public final class ReportingEngine {
      * @param writer The destination/output writer.
      * @throws ClioException In case of a problem with accessing or saving the required data.
      */
-    public void generateReport(Writer writer, ClioFilters filters) throws ClioException {
+    public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
 
         final long startTime = System.nanoTime();
         // Write the report.
@@ -232,7 +230,7 @@ public final class ReportingEngine {
      * @return the check
      * @throws PersistenceException the persistence exception
      */
-    public List<CheckDTO> getCheck(ClioFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).getRuns(clioFilters);
+    public List<CheckRecord> getCheckRuns(FieldFilters clioFilters) throws PersistenceException {
+        return new RunDao(reportingEngineConfiguration.sessionFactory()).getCheckRuns(clioFilters);
     }
 }

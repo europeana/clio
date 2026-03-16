@@ -1,7 +1,7 @@
 package eu.europeana.clio.reporting.rest.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.europeana.clio.common.model.ClioFilters;
+import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,6 +20,6 @@ import tools.jackson.databind.annotation.JsonSerialize;
 public class ClioFilteringRequest {
 
   @JsonProperty(FieldNames.FILTERS)
-  private ClioFilters filters;
+  private FieldFilters filters;
 
 }

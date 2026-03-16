@@ -35,12 +35,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The controller (web endpoint) that provides functionality related to the link checking report.
  */
-@Controller
+@RestController
 @Tags(@Tag(name = ReportingController.CONTROLLER_TAG_NAME,
     description = "Controller providing access to link checking results and history."))
 public class ReportingController {
@@ -228,27 +229,15 @@ public class ReportingController {
    */
   @PostMapping(value = CHECKS_ENDPOINT_PATH, consumes = {APPLICATION_JSON}, produces = {APPLICATION_JSON})
   @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
   @Operation(summary = "Returns a complete filtered of Clio reports")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<ClioFilteringResponse> getChecks(
+  public ClioFilteringResponse getChecks(
       @Parameter(description = "The filters to be applied", required = true) @RequestBody ClioFilteringRequest request)
       throws ClioException {
     try {
-      var info = this.reportingEngine.getCheck(request.getFilters())
-         .stream()
-         .map( check -> new CheckRecord(
-             check.getRunId(),
-             check.getStartingTime(),
-             check.getDataset().getDatasetId(),
-             check.getDataset().getName(),
-             check.getDataset().getSize(),
-             check.getDataset().getLastIndexTime(),
-             check.getDataset().getProvider(),
-             check.getDataset().getDataProvider(),
-             check.getPercentLinksInOperation()))
-         .toList();
-      ClioFilteringResponse response = new ClioFilteringResponse(info, request.getFilters());
-      return new ResponseEntity<>(response, HttpStatus.OK);
+      List<CheckRecord> checkRecords = this.reportingEngine.getCheckRuns(request.getFilters());
+      return new ClioFilteringResponse(checkRecords, request.getFilters());
 
     } catch (Exception e) {
       throw new ClioException("Error while applying filters.", e);

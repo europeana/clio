@@ -1,7 +1,7 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.ClioFilters;
+import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
@@ -175,7 +175,7 @@ public class LinkDao {
    * @return the links with runs for filters
    * @throws PersistenceException the persistence exception
    */
-  public StreamResult<Pair<Run, Link>> getLinksWithRunsForFilters(ClioFilters filters) throws PersistenceException {
+  public StreamResult<Pair<Run, Link>> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
       CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
@@ -200,6 +200,12 @@ public class LinkDao {
         ParameterExpression<Set> dataProvidersParameter = criteriaBuilder.parameter(Set.class, "dataProviders");
         predicates.add(dataset.get("dataProvider").in(dataProvidersParameter));
         parametersMap.put(dataProvidersParameter, filters.getDataProvider());
+      }
+
+      if (!(filters.getDatasetId() == null || filters.getDatasetId().isEmpty())) {
+        ParameterExpression<Set> datasetIdParameter = criteriaBuilder.parameter(Set.class, "datasetIds");
+        predicates.add(dataset.get("datasetId").in(datasetIdParameter));
+        parametersMap.put(datasetIdParameter, filters.getDatasetId());
       }
 
       if (!(filters.getDatasetName() == null || filters.getDatasetName().isEmpty())) {

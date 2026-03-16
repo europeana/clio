@@ -42,7 +42,7 @@ class ReportingEngineTest {
     Dataset dataset = mock(Dataset.class);
     when(run.getDataset()).thenReturn(dataset);
     when(dataset.getDatasetId()).thenReturn("Dataset1");
-    when(dataset.getSize()).thenReturn(42);
+    when(dataset.getSize()).thenReturn(42L);
     when(dataset.getProvider()).thenReturn("provider");
     when(dataset.getDataProvider()).thenReturn("dataProvider");
 
@@ -67,7 +67,7 @@ class ReportingEngineTest {
       ReportingEngine engine = new ReportingEngine(config);
       StringWriter sw = new StringWriter();
       // When
-      engine.generateReport(sw);
+      engine.generateReport(sw, null);
       String out = sw.toString();
       // Then
       assertTrue(out.contains("Dataset ID"), "CSV header must be present");

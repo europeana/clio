@@ -3,8 +3,8 @@ package eu.europeana.clio.common.persistence.dao;
 import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.CheckDTO;
-import eu.europeana.clio.common.model.ClioFilters;
+import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
@@ -86,7 +86,7 @@ public class RunDao {
                            .isEmpty());
   }
 
-  public List<CheckDTO> getRuns(ClioFilters filters) throws PersistenceException {
+  public List<CheckRecord> getCheckRuns(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
       CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
@@ -112,6 +112,12 @@ public class RunDao {
         ParameterExpression<Set> dataProvidersParameter = criteriaBuilder.parameter(Set.class, "dataProviders");
         predicates.add(dataset.get("dataProvider").in(dataProvidersParameter));
         parametersMap.put(dataProvidersParameter, filters.getDataProvider());
+      }
+
+      if (!(filters.getDatasetId() == null || filters.getDatasetId().isEmpty())) {
+        ParameterExpression<Set> datasetIdParameter = criteriaBuilder.parameter(Set.class, "datasetIds");
+        predicates.add(dataset.get("datasetId").in(datasetIdParameter));
+        parametersMap.put(datasetIdParameter, filters.getDatasetId());
       }
 
       if (!(filters.getDatasetName() == null || filters.getDatasetName().isEmpty())) {
@@ -176,18 +182,27 @@ public class RunDao {
 
       return query
           .getResultStream()
-          .map(tuple -> new CheckDTO((long) tuple.get(0),
-              DatasetDao.convert((DatasetRow) tuple.get(1)),
-              Instant.ofEpochMilli((long) tuple.get("startingTime")),
-              (long) tuple.get("errorsLinks"),
-              (long) tuple.get("totalLinks")))
-          .filter(checkDTO -> (filters.getPercentLinksInOperationFrom() != null
-              && checkDTO.getPercentLinksInOperation() >= filters.getPercentLinksInOperationFrom())
-              && (filters.getPercentLinksInOperationTo() != null
-              && checkDTO.getPercentLinksInOperation() <= filters.getPercentLinksInOperationTo()))
-          .toList();
+          .filter(tuple ->
+              (filters.getPercentLinksInOperationFrom() == null)
+                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
+                  >= filters.getPercentLinksInOperationFrom()
+                  && (filters.getPercentLinksInOperationTo() == null)
+                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
+                  <= filters.getPercentLinksInOperationTo())
+          .map(tuple -> {
+            DatasetRow datasetRow = tuple.get(1, DatasetRow.class);
+            var percentResult = (int) ((long) tuple.get("errorsLinks") /  ((long) tuple.get("totalLinks")) *100);
+            return new CheckRecord((long) tuple.get(0),
+                Instant.ofEpochMilli((long) tuple.get("startingTime")),
+                datasetRow.getDatasetId(),
+                datasetRow.getName(),
+                datasetRow.getSize(),
+                datasetRow.getLastIndexTime(),
+                datasetRow.getProvider(),
+                datasetRow.getDataProvider(),
+                percentResult);
+          }).toList();
     });
-
   }
 
   static Run convert(RunRow row) {

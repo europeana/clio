@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Date;
 import java.util.Set;
 import lombok.Getter;
@@ -18,7 +19,7 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @NoArgsConstructor
 @Getter
 @Setter
-public class ClioFilters {
+public class FieldFilters {
 
   /**
    * The provider filter is a set of strings, which means that they can be used to filter by multiple values at the same time.
@@ -61,6 +62,7 @@ public class ClioFilters {
    * the filtering will return all the records that have a date between "2026-01-01" and "2026-12-31".
    */
   @JsonProperty(FieldNames.DATE_FROM)
+  @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
   @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
   private Date dateFrom;
   /**
@@ -69,6 +71,7 @@ public class ClioFilters {
    * the filtering will return all the records that have a date between "2026-01-01" and "2026-12-31".
    */
   @JsonProperty(FieldNames.DATE_TO)
+  @Schema(pattern = "yyyy-MM-dd", example = "2026-12-31")
   @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
   private Date dateTo;
   /**
@@ -102,15 +105,17 @@ public class ClioFilters {
    * @param percentLinksInOperationTo the percent links in operation to
    */
   @JsonCreator
-  public ClioFilters(
+  public FieldFilters(
       @JsonProperty(FieldNames.PROVIDER) Set<String> provider,
       @JsonProperty(FieldNames.DATA_PROVIDER) Set<String> dataProvider,
       @JsonProperty(FieldNames.DATASET_ID) Set<String> datasetId,
       @JsonProperty(FieldNames.DATASET_NAME) Set<String> datasetName,
       @JsonProperty(FieldNames.EXCLUDED_CHECK_IDS) Set<Long> excludedCheckIds,
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+      @Schema(pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_FROM) Date dateFrom,
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+      @Schema(pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_TO) Date dateTo,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_FROM) Integer percentLinksInOperationFrom,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO) Integer percentLinksInOperationTo) {

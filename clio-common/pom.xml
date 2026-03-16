@@ -24,6 +24,11 @@
             <artifactId>spring-boot-starter-jackson</artifactId>
         </dependency>
         <dependency>
+        <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${version.springdoc-openapi-starter-webmvc-ui}</version>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>${version.postgresql}</version>

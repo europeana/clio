@@ -11,5 +11,21 @@ public final class FieldNames {
   public static final String DATE_TO = "dateTo";
   public static final String PERCENT_LINKS_IN_OPERATION_FROM = "percentLinksInOperationFrom";
   public static final String PERCENT_LINKS_IN_OPERATION_TO = "percentLinksInOperationTo";
+
+  public static final String DATASET_NAME_DB = "name";
+  public static final String DATASET_ID_DB = "datasetId";
+  public static final String RUN_ID_DB = "runId";
+  public static final String RECORD_ID_DB = "recordId";
+  public static final String LINK_TYPE_DB = "linkType";
+  public static final String LINK_URL_DB = "linkUrl";
+  public static final String TOTAL_LINKS_DB = "totalLinks";
+  public static final String ERROR_LINKS_DB = "errorsLinks";
+  public static final String STARTING_TIME_DB = "startingTime";
+  public static final String ENDING_TIME_DB = "endingTime";
+  public static final String BATCH_ID_DB = "batchId";
+  public static final String LINK_ID_DB = "linkId";
+  public static final String EXCLUDED_CHECK_ID_DB = "excludedCheckIds";
+  public static final String ERROR_MESSAGE_DB = "error";
+
 }
 

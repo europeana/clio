@@ -1,4 +1,4 @@
-package eu.europeana.clio.reporting.rest.model;
+package eu.europeana.clio.reporting.rest.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -17,7 +17,7 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ClioFilteringRequest {
+public class FilteringRequest {
 
   @JsonProperty(FieldNames.FILTERS)
   private FieldFilters filters;

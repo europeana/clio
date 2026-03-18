@@ -1,4 +1,4 @@
-package eu.europeana.clio.reporting.rest.model;
+package eu.europeana.clio.reporting.rest.api.response;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -19,11 +19,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ClioFilteringResponse {
+public class FilteringResponse {
 
   private List<CheckRecord> results;
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private FieldFilters filteringOptions;
 
 }
-

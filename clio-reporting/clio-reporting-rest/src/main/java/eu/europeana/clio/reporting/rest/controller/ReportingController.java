@@ -1,13 +1,16 @@
 package eu.europeana.clio.reporting.rest.controller;
 
+import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
+import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.sanitizeFieldFilters;
+
 import eu.europeana.clio.common.exception.ClioException;
-import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.Report;
-import eu.europeana.clio.reporting.rest.controller.advice.ErrorResponse;
 import eu.europeana.clio.common.model.CheckRecord;
-import eu.europeana.clio.reporting.rest.model.ClioFilteringRequest;
-import eu.europeana.clio.reporting.rest.model.ClioFilteringResponse;
+import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.Report;
+import eu.europeana.clio.reporting.rest.api.request.FilteringRequest;
+import eu.europeana.clio.reporting.rest.api.response.FilteringResponse;
+import eu.europeana.clio.reporting.rest.controller.advice.ErrorResponse;
 import eu.europeana.clio.reporting.rest.view.ReportDetailsView;
 import eu.europeana.clio.reporting.service.ReportingEngine;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,22 +21,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
+import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -46,17 +46,47 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
     description = "Controller providing access to link checking results and history."))
 public class ReportingController {
 
+  /**
+   * The constant CONTROLLER_TAG_NAME.
+   */
   public static final String CONTROLLER_TAG_NAME = "ReportingController";
-  public static final String AVAILABLE_REPORTS_ENDPOINT_PATH = "available-reports";
-  public static final String REPORT_BY_BATCH_ID_ENDPOINT_PATH = "report-by-batch-id";
-  public static final String LATEST_REPORT_ENDPOINT_PATH = "latest-report";
-  public static final String BATCHES_ENDPOINT_PATH = "batches";
+  /**
+   * The constant AVAILABLE_REPORTS_ENDPOINT_PATH.
+   */
+  public static final String AVAILABLE_REPORTS_ENDPOINT_PATH = "/available-reports";
+  /**
+   * The constant REPORT_BY_BATCH_ID_ENDPOINT_PATH.
+   */
+  public static final String REPORT_BY_BATCH_ID_ENDPOINT_PATH = "/report-by-batch-id";
+  /**
+   * The constant LATEST_REPORT_ENDPOINT_PATH.
+   */
+  public static final String LATEST_REPORT_ENDPOINT_PATH = "/latest-report";
+  /**
+   * The constant BATCHES_ENDPOINT_PATH.
+   */
+  public static final String BATCHES_ENDPOINT_PATH = "/batches";
+  /**
+   * The constant BATCH_ID_ENDPOINT_PARAMETER.
+   */
   public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
+  /**
+   * The constant REPORT_ID_ENDPOINT_PARAMETER.
+   */
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
-  public static final String APPLICATION_JSON = "application/json";
+  /**
+   * The constant REPORTS_ENDPOINT_PATH.
+   */
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
+  /**
+   * The constant CHECKS_ENDPOINT_PATH.
+   */
   public static final String CHECKS_ENDPOINT_PATH = "/checks";
-  public static final String DOWNLOAD_CLIO_REPORT = "/download";
+  /**
+   * The constant DOWNLOADS_CLIO_REPORT.
+   */
+  public static final String DOWNLOADS_CLIO_REPORT = "/downloads";
+
 
   private final ReportingEngine reportingEngine;
 
@@ -75,7 +105,6 @@ public class ReportingController {
    *
    * @return the report details
    * @throws ClioException if an error occurred
-   * @throws PersistenceException if there was an error while getting the report details
    */
   @GetMapping(value = AVAILABLE_REPORTS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "Get all available report details")
@@ -93,7 +122,7 @@ public class ReportingController {
         report -> {
           Instant instant = Instant.ofEpochMilli(report.getCreationTime());
           final String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                                                        .path("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)
+                                                        .path(REPORT_BY_BATCH_ID_ENDPOINT_PATH)
                                                         .queryParam(BATCH_ID_ENDPOINT_PARAMETER, report.getBatchId())
                                                         .toUriString();
           return new ReportDetailsView(report.getReportId(), report.getBatchId(), instant, url);
@@ -108,15 +137,12 @@ public class ReportingController {
    * @param batchId the batch id
    * @return the report
    * @throws ClioException if an error occurred
-   * @throws ReportNotFoundException if the report was not found
-   * @throws PersistenceException if there was an error while getting the report
    */
   @GetMapping(value = REPORT_BY_BATCH_ID_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @ResponseBody
   @Operation(summary = "Get a report by creation timestamp")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
+          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
       @ApiResponse(responseCode = "404", description = "Report not found",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE)),
@@ -126,8 +152,12 @@ public class ReportingController {
   })
   public HttpEntity<byte[]> getReportByBatchId(@RequestParam(value = BATCH_ID_ENDPOINT_PARAMETER) Long batchId)
       throws ClioException {
-    Report report = reportingEngine.getReportByBatchId(batchId);
-    return getHttpEntity(report);
+    final Report report = reportingEngine.getReportByBatchId(batchId);
+    if (report == null) {
+      throw new ReportNotFoundException(String.format("Report with batch id %s not found.", batchId));
+    }
+    final byte[] reportContent = report.getReportString().getBytes(StandardCharsets.UTF_8);
+    return getHttpEntity(reportContent);
   }
 
   /**
@@ -136,15 +166,12 @@ public class ReportingController {
    * @param reportId the report id
    * @return the report
    * @throws ClioException if an error occurred
-   * @throws ReportNotFoundException if the report was not found
-   * @throws PersistenceException if there was an error while getting the report
    */
   @GetMapping(value = REPORTS_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @ResponseBody
   @Operation(summary = "Get a report by report id")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
+          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
       @ApiResponse(responseCode = "404", description = "Report not found",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE)),
@@ -154,8 +181,12 @@ public class ReportingController {
   })
   public HttpEntity<byte[]> getReportById(@RequestParam(value = REPORT_ID_ENDPOINT_PARAMETER) Long reportId)
       throws ClioException {
-    Report report = reportingEngine.getReportByReportId(reportId);
-    return getHttpEntity(report);
+    final Report report = reportingEngine.getReportByReportId(reportId);
+    if (report == null) {
+      throw new ReportNotFoundException(String.format("Report with report id %s not found.", reportId));
+    }
+    final byte[] reportContent = report.getReportString().getBytes(StandardCharsets.UTF_8);
+    return getHttpEntity(reportContent);
   }
 
   /**
@@ -165,16 +196,13 @@ public class ReportingController {
    *
    * @return The link checking report as a byte array (UTF-8 encoded).
    * @throws ClioException if an error occurred
-   * @throws ReportNotFoundException if the report was not found
-   * @throws PersistenceException if there was an error while getting the report
    */
   @GetMapping(value = LATEST_REPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @ResponseBody
-  @Operation(summary = "Get full report with the the latest link checking results.",
+  @Operation(summary = "Get full report with the latest link checking results.",
       description = "The links in the report may be part of multiple batches.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
+          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
       @ApiResponse(responseCode = "404", description = "Report not found",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE)),
@@ -184,7 +212,11 @@ public class ReportingController {
   })
   public HttpEntity<byte[]> getLatestReport() throws ClioException {
     final Report report = reportingEngine.getLatestReports(1).stream().findFirst().orElse(null);
-    return getHttpEntity(report);
+    if (report == null) {
+      throw new ReportNotFoundException("Latest report not found.");
+    }
+    final byte[] reportContent = report.getReportString().getBytes(StandardCharsets.UTF_8);
+    return getHttpEntity(reportContent);
   }
 
   /**
@@ -193,10 +225,8 @@ public class ReportingController {
    * @param maxResults the maximum number of results to return
    * @return the most recent batches
    * @throws ClioException if an error occurred
-   * @throws PersistenceException if there was an error while getting the batches
    */
   @GetMapping(value = BATCHES_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-  @ResponseBody
   @Operation(summary = "Get a historic overview of the most recent link checking batches.",
       description = "The batches are returned in reverse chronological order.")
   @ApiResponses(value = {
@@ -214,43 +244,52 @@ public class ReportingController {
     if (maxResults < 1) {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
-    final List<BatchesRequestResult> result = this.reportingEngine.getLatestBatches(maxResults)
-                                                                  .stream().map(BatchesRequestResult::new).toList();
+    final List<BatchesRequestResult> result = this.reportingEngine
+        .getLatestBatches(maxResults)
+        .stream()
+        .map(BatchesRequestResult::new)
+        .toList();
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
 
   /**
-   *  Get the result of the given {@link ClioFilteringRequest}.
+   * Get the result of the given {@link FilteringRequest}.
    *
    * @param request the request
    * @return the checks
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = CHECKS_ENDPOINT_PATH, consumes = {APPLICATION_JSON}, produces = {APPLICATION_JSON})
+  @PostMapping(value = CHECKS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
-  @ResponseBody
-  @Operation(summary = "Returns a complete filtered of Clio reports")
+  @Operation(summary = "Returns a complete filtered view of Clio checks")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ClioFilteringResponse getChecks(
-      @Parameter(description = "The filters to be applied", required = true) @RequestBody ClioFilteringRequest request)
+  public ResponseEntity<FilteringResponse> getChecks(
+      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilteringRequest request)
       throws ClioException {
-    try {
-      List<CheckRecord> checkRecords = this.reportingEngine.getCheckRuns(request.getFilters());
-      return new ClioFilteringResponse(checkRecords, request.getFilters());
-
-    } catch (Exception e) {
-      throw new ClioException("Error while applying filters.", e);
+    if (request.getFilters() == null) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
+    // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final List<CheckRecord> checkRecords = this.reportingEngine.getCheckRuns(sanitizedFilters);
+
+    return new ResponseEntity<>( new FilteringResponse(checkRecords, sanitizedFilters), HttpStatus.OK);
   }
 
-  @PostMapping(value = DOWNLOAD_CLIO_REPORT, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @ResponseBody
+  /**
+   * Download report response entity.
+   *
+   * @param request the request
+   * @return the response entity
+   * @throws ClioException the clio exception
+   */
+  @PostMapping(value = DOWNLOADS_CLIO_REPORT, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
   @Operation(summary = "Get filtered report with link checking results.",
       description = "The links in the report may be part of multiple batches.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv, " + MediaType.APPLICATION_JSON_VALUE)}),
+          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
       @ApiResponse(responseCode = "404", description = "Report not found",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE)),
@@ -258,32 +297,18 @@ public class ReportingController {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
-  public HttpEntity<byte[]> downloadReport(
-      @Parameter(description = "The filters to be applied", required = true) @RequestBody ClioFilteringRequest request)
+  public ResponseEntity<byte[]> downloadReport(
+      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilteringRequest request)
       throws ClioException {
-    try {
-      byte[] reportBytes = reportingEngine.generateReport(request.getFilters()).getBytes(StandardCharsets.UTF_8);
-      final HttpHeaders headers = new HttpHeaders();
-      headers.setContentDisposition(
-          ContentDisposition.builder("inline").filename(ReportingEngine.getReportFileNameSuggestion()).build());
-      headers.setContentLength(reportBytes.length);
-      return new HttpEntity<>(reportBytes, headers);
-
-    } catch (Exception e) {
-      throw new ClioException("Error while applying filters.", e);
+    if (request == null || request.getFilters() == null) {
+      return ResponseEntity.badRequest().build();
     }
-  }
-
-  private HttpEntity<byte[]> getHttpEntity(Report report) throws ReportNotFoundException {
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final String report = reportingEngine.generateReport(sanitizedFilters);
     if (report == null) {
-      throw new ReportNotFoundException();
-    } else {
-      byte[] reportBytes = report.getReportString().getBytes(StandardCharsets.UTF_8);
-      final HttpHeaders headers = new HttpHeaders();
-      headers.setContentDisposition(
-          ContentDisposition.builder("inline").filename(ReportingEngine.getReportFileNameSuggestion()).build());
-      headers.setContentLength(reportBytes.length);
-      return new HttpEntity<>(reportBytes, headers);
+      throw new ReportNotFoundException("Report not found.");
     }
+    final byte[] reportBytes = report.getBytes(StandardCharsets.UTF_8);
+    return getHttpEntity(reportBytes);
   }
 }

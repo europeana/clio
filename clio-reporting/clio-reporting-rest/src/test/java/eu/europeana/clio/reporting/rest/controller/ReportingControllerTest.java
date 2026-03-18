@@ -1,14 +1,16 @@
 package eu.europeana.clio.reporting.rest.controller;
 
+import static eu.europeana.clio.reporting.rest.controller.ReportingController.AVAILABLE_REPORTS_ENDPOINT_PATH;
 import static eu.europeana.clio.reporting.rest.controller.ReportingController.BATCHES_ENDPOINT_PATH;
+import static eu.europeana.clio.reporting.rest.controller.ReportingController.BATCH_ID_ENDPOINT_PARAMETER;
 import static eu.europeana.clio.reporting.rest.controller.ReportingController.LATEST_REPORT_ENDPOINT_PATH;
 import static eu.europeana.clio.reporting.rest.controller.ReportingController.REPORT_BY_BATCH_ID_ENDPOINT_PATH;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,8 +22,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
+import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
+import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
+import eu.europeana.clio.reporting.rest.api.request.FilteringRequest;
+import eu.europeana.clio.reporting.rest.api.response.FilteringResponse;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -29,7 +36,10 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -56,22 +66,22 @@ class ReportingControllerTest {
     when(report.getReportId()).thenReturn(1L);
     when(reportingEngine.getAllReportDetails()).thenReturn(List.of(report));
     // When / Then
-    mockMvc.perform(get("/" + ReportingController.AVAILABLE_REPORTS_ENDPOINT_PATH))
+    mockMvc.perform(get(AVAILABLE_REPORTS_ENDPOINT_PATH))
            .andExpect(status().isOk())
-           .andExpect(content().contentTypeCompatibleWith("application/json"))
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON_VALUE))
            .andExpect(jsonPath("$[0].reportId").value(1))
            .andExpect(jsonPath("$[0].batchId").value(42))
            .andExpect(jsonPath("$[0].url").value(
-               containsString("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)));
+               containsString(REPORT_BY_BATCH_ID_ENDPOINT_PATH)));
   }
 
   @Test
   void availableReports_whenEmpty_returnsEmptyList() throws Exception {
     // Given / When
     when(reportingEngine.getAllReportDetails()).thenReturn(Collections.emptyList());
-    mockMvc.perform(get("/" + ReportingController.AVAILABLE_REPORTS_ENDPOINT_PATH))
+    mockMvc.perform(get(AVAILABLE_REPORTS_ENDPOINT_PATH))
            .andExpect(status().isOk())
-           .andExpect(content().contentTypeCompatibleWith("application/json"))
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON_VALUE))
            .andExpect(jsonPath("$").isEmpty());
   }
 
@@ -85,8 +95,8 @@ class ReportingControllerTest {
     when(report.getReportString()).thenReturn(content);
     when(report.getBatchId()).thenReturn(batchId);
     // When / Then
-    mockMvc.perform(get("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)
-               .param(ReportingController.BATCH_ID_ENDPOINT_PARAMETER,
+    mockMvc.perform(get(REPORT_BY_BATCH_ID_ENDPOINT_PATH)
+               .param(BATCH_ID_ENDPOINT_PARAMETER,
                    String.valueOf(batchId)))
            .andExpect(status().isOk())
            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
@@ -101,7 +111,7 @@ class ReportingControllerTest {
     // When / Then
     ReportNotFoundException notFoundException = assertThrows(ReportNotFoundException.class,
         () -> controller.getReportByBatchId(batchId));
-    assertNull(notFoundException.getMessage());
+    assertNotNull(notFoundException.getMessage());
   }
 
   @Test
@@ -113,7 +123,7 @@ class ReportingControllerTest {
     when(latestReport.getReportString()).thenReturn(content);
     when(latestReport.getBatchId()).thenReturn(77L);
     // When / Then
-    mockMvc.perform(get("/" + LATEST_REPORT_ENDPOINT_PATH))
+    mockMvc.perform(get(LATEST_REPORT_ENDPOINT_PATH))
            .andExpect(status().isOk())
            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("inline")))
            .andExpect(content().bytes(content.getBytes()));
@@ -126,7 +136,7 @@ class ReportingControllerTest {
     // When / Then
     ReportNotFoundException notFoundException = assertThrows(ReportNotFoundException.class,
         () -> controller.getLatestReport());
-    assertNull(notFoundException.getMessage());
+    assertNotNull(notFoundException.getMessage());
   }
 
   @Test
@@ -149,9 +159,9 @@ class ReportingControllerTest {
     when(batchMock.getLastUpdateTimeInMetisCore()).thenReturn(batchTimestamp);
     when(reportingEngine.getLatestBatches(5)).thenReturn(List.of(batchMock));
     // When / Then
-    mockMvc.perform(get("/" + BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
+    mockMvc.perform(get(BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
            .andExpect(status().isOk())
-           .andExpect(content().contentTypeCompatibleWith("application/json"))
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON_VALUE))
            .andExpect(jsonPath("$[0].creationTime").value(expectedTimestamp))
            .andExpect(jsonPath("$[0].lastUpdateTimeInSolr").value(expectedTimestamp))
            .andExpect(jsonPath("$[0].lastUpdateTimeInMetisCore").value(expectedTimestamp))
@@ -166,7 +176,7 @@ class ReportingControllerTest {
   @Test
   void getBatches_badRequest_whenMaxResultsLessThanOne() throws Exception {
     // When / Then
-    mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "0"))
+    mockMvc.perform(get(BATCHES_ENDPOINT_PATH).param("maxResults", "0"))
            .andExpect(status().isBadRequest());
   }
 
@@ -175,9 +185,9 @@ class ReportingControllerTest {
     // Given
     when(reportingEngine.getLatestBatches(5)).thenReturn(Collections.emptyList());
     // When
-    mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
+    mockMvc.perform(get(BATCHES_ENDPOINT_PATH).param("maxResults", "5"))
            .andExpect(status().isOk())
-           .andExpect(content().contentTypeCompatibleWith("application/json"));
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON_VALUE));
 
     // Given
     BatchWithCounters batchMock = mock(BatchWithCounters.class);
@@ -189,9 +199,9 @@ class ReportingControllerTest {
     reportingEngine.getLatestBatches(3);
     when(reportingEngine.getLatestBatches(3)).thenReturn(Collections.singletonList(batchMock));
     // When / Then
-    mockMvc.perform(get("/"+BATCHES_ENDPOINT_PATH).param("maxResults", "3"))
+    mockMvc.perform(get(BATCHES_ENDPOINT_PATH).param("maxResults", "3"))
            .andExpect(status().isOk())
-           .andExpect(content().contentTypeCompatibleWith("application/json"));
+           .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON_VALUE));
   }
 
   @Test
@@ -205,8 +215,8 @@ class ReportingControllerTest {
     when(r.getBatchId()).thenReturn(batchId);
     byte[] expected = content.getBytes();
     // When
-    var mvcResult = mockMvc.perform(get("/" + REPORT_BY_BATCH_ID_ENDPOINT_PATH)
-                               .param(ReportingController.BATCH_ID_ENDPOINT_PARAMETER, String.valueOf(batchId)))
+    var mvcResult = mockMvc.perform(get(REPORT_BY_BATCH_ID_ENDPOINT_PATH)
+                               .param(BATCH_ID_ENDPOINT_PARAMETER, String.valueOf(batchId)))
                            .andExpect(status().isOk())
                            .andReturn();
     // Then
@@ -215,6 +225,86 @@ class ReportingControllerTest {
     int length = mvcResult.getResponse().getContentAsByteArray().length;
     assertEquals(expected.length, length);
     assertArrayEquals(expected, mvcResult.getResponse().getContentAsByteArray());
+  }
+
+  @Test
+  void getReportById_returnsReportBytes_andHeaders() throws Exception {
+    // Given
+    long reportId = 11L;
+    Report report = mock(Report.class);
+    String content = "a,b\n1,2\n";
+    when(reportingEngine.getReportByReportId(reportId)).thenReturn(report);
+    when(report.getReportString()).thenReturn(content);
+    when(report.getReportId()).thenReturn(reportId);
+
+    // When
+    HttpEntity<byte[]> entity = controller.getReportById(reportId);
+
+    // Then
+    assertArrayEquals(content.getBytes(), entity.getBody());
+    assertNotNull(entity.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+    assertEquals(content.getBytes().length, entity.getHeaders().getContentLength());
+  }
+
+  @Test
+  void getReportById_whenNull_throwsReportNotFoundException() throws Exception {
+    // Given
+    long reportId = 12L;
+    when(reportingEngine.getReportByReportId(reportId)).thenReturn(null);
+
+    // When / Then
+    assertThrows(ReportNotFoundException.class, () -> controller.getReportById(reportId));
+  }
+
+  @Test
+  void getChecks_returnsFilteringResponse() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    FilteringRequest request = new FilteringRequest(filters);
+    CheckRecord checkRecord = mock(CheckRecord.class);
+    when(reportingEngine.getCheckRuns(filters)).thenReturn(List.of(checkRecord));
+
+    // When
+    var responseEntity = controller.getChecks(request);
+
+    // Then
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    FilteringResponse response = responseEntity.getBody();
+    assertNotNull(response);
+    assertEquals(1, response.getResults().size());
+    // Verify that a sanitized FieldFilters object is returned (not the original mock)
+    assertNotNull(response.getFilteringOptions());
+    // The returned filters are a new sanitized copy, not the original mock
+  }
+
+  @Test
+  void downloadReport_returnsBytes_andHeaders() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    FilteringRequest request = new FilteringRequest(filters);
+    String csv = "x,y\n1,2\n";
+    when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
+
+    // When
+    HttpEntity<byte[]> entity = controller.downloadReport(request);
+
+    // Then
+    assertArrayEquals(csv.getBytes(), entity.getBody());
+    assertEquals(ReportingEngine.getReportFileNameSuggestion(), entity.getHeaders().getContentDisposition().getFilename());
+    assertEquals(csv.getBytes().length, entity.getHeaders().getContentLength());
+  }
+
+  @Test
+  void downloadReport_whenEngineThrows_throwsClioException() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    FilteringRequest request = new FilteringRequest(filters);
+    ClioException expectedException = new ClioException("boom");
+    when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
+
+    // When / Then
+    ClioException actualException = assertThrows(ClioException.class, () -> controller.downloadReport(request));
+    assertEquals(expectedException, actualException);
   }
 
   String normalizeDate(String s) {

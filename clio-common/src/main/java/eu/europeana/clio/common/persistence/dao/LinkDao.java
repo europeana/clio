@@ -1,11 +1,19 @@
 package eu.europeana.clio.common.persistence.dao;
 
+import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameter;
+import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterDateRange;
+import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterExcludedIds;
+import static eu.europeana.clio.common.persistence.dao.RunDao.buildCheckRunsQueryParts;
+import static eu.europeana.clio.common.persistence.dao.RunDao.percentLinksInOperation;
+
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
+import eu.europeana.clio.common.persistence.dao.RunDao.QueryParts;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -17,25 +25,20 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.time.Duration;
+import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 
 /**
  * Data access object for links (to be checked once as part of a run).
  */
+@Slf4j
 public class LinkDao {
 
   private final HibernateSessionUtils hibernateSessionUtils;
@@ -52,9 +55,13 @@ public class LinkDao {
 
   private static String computeServer(String url) {
     try {
-      final URL convertedUrl = new URL(url);
-      return convertedUrl.getProtocol() + "://" + convertedUrl.getAuthority() + "/";
-    } catch (MalformedURLException e) {
+      final URI uri = URI.create(url);
+      if (uri.getScheme() == null || uri.getAuthority() == null) {
+        return null;
+      }
+      return uri.getScheme() + "://" + uri.getAuthority() + "/";
+    } catch (IllegalArgumentException e) {
+      log.error("Error while computing server for URL {}: {}", url, e.getMessage());
       return null;
     }
   }
@@ -77,23 +84,16 @@ public class LinkDao {
   /**
    * Create (i.e. persist) a link that is not yet checked by Clio.
    *
-   * @param runId The ID of the run to which to add this link.
-   * @param recordId The Europeana record ID in which this link is present.
-   * @param recordLastIndexTime The last time this record was indexed.
-   * @param recordEdmType The edm:type of the record.
-   * @param recordContentTier The content tier of the record.
-   * @param recordMetadataTier The metadata tier of the record.
-   * @param linkUrl The actual link.
-   * @param linkType The type of the link reference in the record.
+   * @param uncheckedLinkData the data of the link to create.
+   * This includes the run to which this link belongs,
+   * the record in which this link is present, and the link URL and type.
    * @return The ID of the link.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public long createUncheckedLink(long runId, String recordId, Instant recordLastIndexTime,
-      String recordEdmType, String recordContentTier, String recordMetadataTier, String linkUrl,
-      eu.europeana.clio.common.model.LinkType linkType) throws PersistenceException {
+  public long createUncheckedLink(UncheckedLinkData uncheckedLinkData) throws PersistenceException {
 
     // Compute the link type.
-    final LinkType persistentLinkType = switch (linkType) {
+    final LinkType persistentLinkType = switch (uncheckedLinkData.linkType()) {
       case IS_SHOWN_AT -> LinkType.IS_SHOWN_AT;
       case IS_SHOWN_BY -> LinkType.IS_SHOWN_BY;
       default -> throw new IllegalStateException();
@@ -101,14 +101,14 @@ public class LinkDao {
 
     // Create and save the link
     return hibernateSessionUtils.performInTransaction(session -> {
-      final RunRow runRow = session.find(RunRow.class, runId);
+      final RunRow runRow = session.find(RunRow.class, uncheckedLinkData.runId());
       if (runRow == null) {
         throw new PersistenceException(
-            "Cannot create link: run with ID " + runId + " does not exist.");
+            "Cannot create link: run with ID " + uncheckedLinkData.runId() + " does not exist.");
       }
-      final LinkRow newLink = new LinkRow(runRow, recordId, recordLastIndexTime, recordEdmType,
-          recordContentTier, recordMetadataTier, persistentLinkType, linkUrl,
-          computeServer(linkUrl));
+      final LinkRow newLink = new LinkRow(runRow, uncheckedLinkData.recordId(), uncheckedLinkData.recordLastIndexTime(),
+          uncheckedLinkData.recordEdmType(), uncheckedLinkData.recordContentTier(), uncheckedLinkData.recordMetadataTier(),
+          persistentLinkType, uncheckedLinkData.linkUrl(), computeServer(uncheckedLinkData.linkUrl()));
 
       session.persist(newLink);
       session.flush();
@@ -159,12 +159,12 @@ public class LinkDao {
    * link URL.
    * @throws PersistenceException In case there was a persistence problem.
    */
-  public StreamResult<Pair<Run, Link>> getBrokenLinksInLatestCompletedRuns()
+  public StreamResult<RunWithLink> getBrokenLinksInLatestCompletedRuns()
       throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> session
         .createNamedQuery(LinkRow.GET_BROKEN_LINKS_IN_LATEST_COMPLETED_RUNS, LinkRow.class)
         .getResultStream()
-        .map(link -> new ImmutablePair<>(RunDao.convert(link.getRun()), convert(link)))
+        .map(link -> new RunWithLink(RunDao.convert(link.getRun()), convert(link)))
     );
   }
 
@@ -175,82 +175,42 @@ public class LinkDao {
    * @return the links with runs for filters
    * @throws PersistenceException the persistence exception
    */
-  public StreamResult<Pair<Run, Link>> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
+  public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
-
-      Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-      // joins
-      Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
-      Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
-      Join<RunRow, BatchRow> batch = run.join("batch", JoinType.INNER);
-
-      List<Predicate> predicates = new ArrayList<>();
-      HashMap<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder);
+      CriteriaQuery<Tuple> criteriaQuery = parts.criteriaQuery();
+      Root<LinkRow> link = parts.link();
+      Join<LinkRow, RunRow> run = parts.run();
+      Join<RunRow, DatasetRow> dataset = parts.dataset();
+      Join<RunRow, BatchRow> batch = parts.batch();
+      List<Predicate> predicates = parts.predicates();
+      Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
 
       // predicates
-      if (!(filters.getProvider() == null || filters.getProvider().isEmpty())) {
-        ParameterExpression<Set> providersParameter = criteriaBuilder.parameter(Set.class, "providers");
-        predicates.add(dataset.get("provider").in(providersParameter));
-        parametersMap.put(providersParameter, filters.getProvider());
-      }
+      addPredicateAndParameter(filters.getProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.PROVIDER);
+      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATA_PROVIDER);
+      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_ID);
+      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_NAME_DB);
+      addPredicateAndParameterExcludedIds(filters.getExcludedCheckIds(), criteriaBuilder, predicates, run, parametersMap);
+      addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
 
-      if (!(filters.getDataProvider() == null || filters.getDataProvider().isEmpty())) {
-        ParameterExpression<Set> dataProvidersParameter = criteriaBuilder.parameter(Set.class, "dataProviders");
-        predicates.add(dataset.get("dataProvider").in(dataProvidersParameter));
-        parametersMap.put(dataProvidersParameter, filters.getDataProvider());
-      }
-
-      if (!(filters.getDatasetId() == null || filters.getDatasetId().isEmpty())) {
-        ParameterExpression<Set> datasetIdParameter = criteriaBuilder.parameter(Set.class, "datasetIds");
-        predicates.add(dataset.get("datasetId").in(datasetIdParameter));
-        parametersMap.put(datasetIdParameter, filters.getDatasetId());
-      }
-
-      if (!(filters.getDatasetName() == null || filters.getDatasetName().isEmpty())) {
-        ParameterExpression<Set> datasetNameParameter = criteriaBuilder.parameter(Set.class, "datasetName");
-        predicates.add(dataset.get("name").in(datasetNameParameter));
-        parametersMap.put(datasetNameParameter, filters.getDatasetName());
-      }
-
-      if (!(filters.getExcludedCheckIds() == null || filters.getExcludedCheckIds().isEmpty())) {
-        ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, "excludedCheckIds");
-        predicates.add(criteriaBuilder.not(run.get("runId").in(excludeCheckIdsParameter)));
-        parametersMap.put(excludeCheckIdsParameter, filters.getExcludedCheckIds());
-      }
-
-      if (filters.getDateFrom() != null) {
-        ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, "startingTime");
-        predicates.add(criteriaBuilder.greaterThanOrEqualTo(run.get("startingTime"), dateFromParameter));
-        parametersMap.put(dateFromParameter, filters.getDateFrom().toInstant().toEpochMilli());
-      }
-
-      if (filters.getDateTo() != null) {
-        ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, "endTime");
-        predicates.add(criteriaBuilder.lessThanOrEqualTo(run.get("startingTime"), dateToParameter));
-        Duration addEndOfDay = Duration.ofHours(23)
-                                       .plusMinutes(59)
-                                       .plusSeconds(59);
-        parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(addEndOfDay).toEpochMilli());
-      }
-
-      // OR combination
+      // AND combination
       Predicate whereClause = criteriaBuilder.and(predicates);
 
       // aggregations
-      Expression<Long> errorsLinks = criteriaBuilder.count(link.get("error"));
-      Expression<Long> totalLinks = criteriaBuilder.count(run.get("runId"));
-      Expression<Long> startingTime = criteriaBuilder.min(run.get("startingTime"));
+      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
+      Expression<Long> totalLinks = criteriaBuilder.count(run.get(FieldNames.RUN_ID_DB));
+      Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
 
       // select
       criteriaQuery.select(criteriaBuilder.tuple(
           link,
           run,
           dataset,
-          startingTime.alias("startingTime"),
-          errorsLinks.alias("errorsLinks"),
-          totalLinks.alias("totalLinks")
+          startingTime.alias(FieldNames.STARTING_TIME_DB),
+          errorsLinks.alias(FieldNames.ERROR_LINKS_DB),
+          totalLinks.alias(FieldNames.TOTAL_LINKS_DB)
       ));
 
       // where
@@ -259,18 +219,18 @@ public class LinkDao {
       // order by
       // ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC
       criteriaQuery.orderBy(
-          criteriaBuilder.asc(dataset.get("datasetId")),
-          criteriaBuilder.asc(link.get("recordId")),
-          criteriaBuilder.asc(link.get("linkType")),
-          criteriaBuilder.asc(link.get("linkUrl"))
+          criteriaBuilder.asc(dataset.get(FieldNames.DATASET_ID_DB)),
+          criteriaBuilder.asc(link.get(FieldNames.RECORD_ID_DB)),
+          criteriaBuilder.asc(link.get(FieldNames.LINK_TYPE_DB)),
+          criteriaBuilder.asc(link.get(FieldNames.LINK_URL_DB))
       );
 
       // group by
       criteriaQuery.groupBy(
-          batch.get("batchId"),
-          dataset.get("datasetId"),
-          link.get("linkId"),
-          run.get("runId")
+          batch.get(FieldNames.BATCH_ID_DB),
+          dataset.get(FieldNames.DATASET_ID_DB),
+          link.get(FieldNames.LINK_ID_DB),
+          run.get(FieldNames.RUN_ID_DB)
       );
 
       // create query
@@ -281,18 +241,38 @@ public class LinkDao {
 
       return query
           .getResultStream()
-          .filter(tuple ->
-              (filters.getPercentLinksInOperationFrom() == null)
-                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
-                  >= filters.getPercentLinksInOperationFrom()
-                  && (filters.getPercentLinksInOperationTo() == null)
-                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
-                  <= filters.getPercentLinksInOperationTo())
-          .map(tuple -> new ImmutablePair<>(RunDao.convert((RunRow) tuple.get(1)), convert((LinkRow) tuple.get(0))));
+          .filter(tuple -> percentLinksInOperation(filters, tuple))
+          .map(tuple -> new RunWithLink(RunDao.convert((RunRow) tuple.get(1)), convert((LinkRow) tuple.get(0))));
     });
   }
 
-  public record LinkWithRun(Link link, Run run) {
+  /**
+   * The type Unchecked link data.
+   *
+   * @param runId The ID of the run to which to add this link.
+   * @param recordId The Europeana record ID in which this link is present.
+   * @param recordLastIndexTime The last time this record was indexed.
+   * @param recordEdmType The edm:type of the record.
+   * @param recordContentTier The content tier of the record.
+   * @param recordMetadataTier The metadata tier of the record.
+   * @param linkUrl The actual link.
+   * @param linkType The type of the link reference in the record.
+   */
+  public record UncheckedLinkData(long runId,
+                                  String recordId,
+                                  Instant recordLastIndexTime,
+                                  String recordEdmType,
+                                  String recordContentTier,
+                                  String recordMetadataTier,
+                                  String linkUrl,
+                                  eu.europeana.clio.common.model.LinkType linkType) {
+
+  }
+
+  /**
+   * The type Run with link.
+   */
+  public record RunWithLink(Run run, Link link) {
 
   }
 }

@@ -5,6 +5,7 @@ import static java.lang.String.format;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.CheckRecord;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
@@ -24,8 +25,10 @@ import jakarta.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.hibernate.SessionFactory;
 
@@ -86,82 +89,48 @@ public class RunDao {
                            .isEmpty());
   }
 
+  /**
+   * Gets check runs.
+   *
+   * @param filters the filters
+   * @return the check runs
+   * @throws PersistenceException the persistence exception
+   */
   public List<CheckRecord> getCheckRuns(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
-
-      Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-
-      // joins
-      Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
-      Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
-      Join<RunRow, BatchRow> batch = run.join("batch", JoinType.INNER);
-
-      List<Predicate> predicates = new ArrayList<>();
-      HashMap<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder);
+      CriteriaQuery<Tuple> criteriaQuery = parts.criteriaQuery();
+      Root<LinkRow> link = parts.link();
+      Join<LinkRow, RunRow> run = parts.run();
+      Join<RunRow, DatasetRow> dataset = parts.dataset();
+      Join<RunRow, BatchRow> batch = parts.batch();
+      List<Predicate> predicates = parts.predicates();
+      Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
 
       // predicates
-      if (!(filters.getProvider() == null || filters.getProvider().isEmpty())) {
-        ParameterExpression<Set> providersParameter = criteriaBuilder.parameter(Set.class, "providers");
-        predicates.add(dataset.get("provider").in(providersParameter));
-        parametersMap.put(providersParameter, filters.getProvider());
-      }
+      addPredicateAndParameter(filters.getProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.PROVIDER);
+      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATA_PROVIDER);
+      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_ID);
+      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_NAME_DB);
+      addPredicateAndParameterExcludedIds(filters.getExcludedCheckIds(), criteriaBuilder, predicates, run, parametersMap);
+      addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
 
-      if (!(filters.getDataProvider() == null || filters.getDataProvider().isEmpty())) {
-        ParameterExpression<Set> dataProvidersParameter = criteriaBuilder.parameter(Set.class, "dataProviders");
-        predicates.add(dataset.get("dataProvider").in(dataProvidersParameter));
-        parametersMap.put(dataProvidersParameter, filters.getDataProvider());
-      }
-
-      if (!(filters.getDatasetId() == null || filters.getDatasetId().isEmpty())) {
-        ParameterExpression<Set> datasetIdParameter = criteriaBuilder.parameter(Set.class, "datasetIds");
-        predicates.add(dataset.get("datasetId").in(datasetIdParameter));
-        parametersMap.put(datasetIdParameter, filters.getDatasetId());
-      }
-
-      if (!(filters.getDatasetName() == null || filters.getDatasetName().isEmpty())) {
-        ParameterExpression<Set> datasetNameParameter = criteriaBuilder.parameter(Set.class, "datasetName");
-        predicates.add(dataset.get("name").in(datasetNameParameter));
-        parametersMap.put(datasetNameParameter, filters.getDatasetName());
-      }
-
-      if (!(filters.getExcludedCheckIds() == null || filters.getExcludedCheckIds().isEmpty())) {
-        ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, "excludedCheckIds");
-        predicates.add(criteriaBuilder.not(run.get("runId").in(excludeCheckIdsParameter)));
-        parametersMap.put(excludeCheckIdsParameter, filters.getExcludedCheckIds());
-      }
-
-      if (filters.getDateFrom() != null) {
-        ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, "startingTime");
-        predicates.add(criteriaBuilder.greaterThanOrEqualTo(run.get("startingTime"), dateFromParameter));
-        parametersMap.put(dateFromParameter, filters.getDateFrom().toInstant().toEpochMilli());
-      }
-
-      if (filters.getDateTo() != null) {
-        ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, "endTime");
-        predicates.add(criteriaBuilder.lessThanOrEqualTo(run.get("startingTime"), dateToParameter));
-        Duration addEndOfDay = Duration.ofHours(23)
-                                       .plusMinutes(59)
-                                       .plusSeconds(59);
-        parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(addEndOfDay).toEpochMilli());
-      }
-
-      // OR combination
+      // AND combination
       Predicate whereClause = criteriaBuilder.and(predicates);
 
       // aggregations
-      Expression<Long> errorsLinks = criteriaBuilder.count(link.get("error"));
-      Expression<Long> totalLinks = criteriaBuilder.count(run.get("runId"));
-      Expression<Long> startingTime = criteriaBuilder.min(run.get("startingTime"));
+      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
+      Expression<Long> totalLinks = criteriaBuilder.count(run.get(FieldNames.RUN_ID_DB));
+      Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
 
       // select
       criteriaQuery.select(criteriaBuilder.tuple(
-          run.get("runId"),
+          run.get(FieldNames.RUN_ID_DB),
           dataset,
-          startingTime.alias("startingTime"),
-          errorsLinks.alias("errorsLinks"),
-          totalLinks.alias("totalLinks")
+          startingTime.alias(FieldNames.STARTING_TIME_DB),
+          errorsLinks.alias(FieldNames.ERROR_LINKS_DB),
+          totalLinks.alias(FieldNames.TOTAL_LINKS_DB)
       ));
 
       // where
@@ -169,9 +138,9 @@ public class RunDao {
 
       // group by
       criteriaQuery.groupBy(
-          batch.get("batchId"),
-          dataset.get("datasetId"),
-          run.get("runId")
+          batch.get(FieldNames.BATCH_ID_DB),
+          dataset.get(FieldNames.DATASET_ID_DB),
+          run.get(FieldNames.RUN_ID_DB)
       );
 
       // create query
@@ -182,22 +151,16 @@ public class RunDao {
 
       return query
           .getResultStream()
-          .filter(tuple ->
-              (filters.getPercentLinksInOperationFrom() == null)
-                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
-                  >= filters.getPercentLinksInOperationFrom()
-                  && (filters.getPercentLinksInOperationTo() == null)
-                  || ((long) tuple.get("errorsLinks") * 100 / (long) tuple.get("totalLinks"))
-                  <= filters.getPercentLinksInOperationTo())
+          .filter(tuple -> percentLinksInOperation(filters, tuple))
           .map(tuple -> {
             DatasetRow datasetRow = tuple.get(1, DatasetRow.class);
-            var percentResult = (int) ((long) tuple.get("errorsLinks") /  ((long) tuple.get("totalLinks")) *100);
+            var percentResult = (int) ((long) tuple.get(FieldNames.ERROR_LINKS_DB) /  ((long) tuple.get(FieldNames.TOTAL_LINKS_DB)) * 100);
             return new CheckRecord((long) tuple.get(0),
-                Instant.ofEpochMilli((long) tuple.get("startingTime")),
+                new Date((long) tuple.get(FieldNames.STARTING_TIME_DB)),
                 datasetRow.getDatasetId(),
                 datasetRow.getName(),
                 datasetRow.getSize(),
-                datasetRow.getLastIndexTime(),
+                new Date(datasetRow.getLastIndexTime().toEpochMilli()),
                 datasetRow.getProvider(),
                 datasetRow.getDataProvider(),
                 percentResult);
@@ -205,8 +168,123 @@ public class RunDao {
     });
   }
 
+  /**
+   * Add predicate and parameter date range.
+   *
+   * @param filters the filters
+   * @param criteriaBuilder the criteria builder
+   * @param predicates the predicates
+   * @param run the run
+   * @param parametersMap the parameters map
+   */
+  public static void addPredicateAndParameterDateRange(FieldFilters filters, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
+      Join<LinkRow, RunRow> run, Map<ParameterExpression<?>, Object> parametersMap) {
+    if (filters.getDateFrom() != null) {
+      ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB);
+      predicates.add(criteriaBuilder.greaterThanOrEqualTo(run.get(FieldNames.STARTING_TIME_DB), dateFromParameter));
+      parametersMap.put(dateFromParameter, filters.getDateFrom().toInstant().toEpochMilli());
+    }
+
+    if (filters.getDateTo() != null) {
+      ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB);
+      predicates.add(criteriaBuilder.lessThanOrEqualTo(run.get(FieldNames.STARTING_TIME_DB), dateToParameter));
+      Duration addEndOfDay = Duration.ofHours(23)
+                                     .plusMinutes(59)
+                                     .plusSeconds(59);
+      parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(addEndOfDay).toEpochMilli());
+    }
+  }
+
+  /**
+   * Add predicate and parameter excluded ids.
+   *
+   * @param fieldValue the field value
+   * @param criteriaBuilder the criteria builder
+   * @param predicates the predicates
+   * @param run the run
+   * @param parametersMap the parameters map
+   */
+  public static void addPredicateAndParameterExcludedIds(Set<Long> fieldValue, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
+      Join<LinkRow, RunRow> run, Map<ParameterExpression<?>, Object> parametersMap) {
+    if (!(fieldValue == null || fieldValue.isEmpty())) {
+      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_IDS);
+      predicates.add(criteriaBuilder.not(run.get(FieldNames.RUN_ID_DB).in(excludeCheckIdsParameter)));
+      parametersMap.put(excludeCheckIdsParameter, fieldValue);
+    }
+  }
+
+  /**
+   * Percent links in operation boolean.
+   *
+   * @param filters the filters
+   * @param tuple the tuple
+   * @return the boolean
+   */
+  public static boolean percentLinksInOperation(FieldFilters filters, Tuple tuple) {
+    return ((filters.getPercentLinksInOperationFrom() == null)
+        || ((long) tuple.get(FieldNames.ERROR_LINKS_DB) * 100 / (long) tuple.get(FieldNames.TOTAL_LINKS_DB))
+        >= filters.getPercentLinksInOperationFrom())
+        && ((filters.getPercentLinksInOperationTo() == null)
+        || ((long) tuple.get(FieldNames.ERROR_LINKS_DB) * 100 / (long) tuple.get(FieldNames.TOTAL_LINKS_DB))
+        <= filters.getPercentLinksInOperationTo());
+  }
+
+  /**
+   * Add predicate and parameter.
+   *
+   * @param fieldValue the field value
+   * @param criteriaBuilder the criteria builder
+   * @param predicates the predicates
+   * @param dataset the dataset
+   * @param parametersMap the parameters map
+   * @param fieldName the field name
+   */
+  public static void addPredicateAndParameter(Set<String> fieldValue, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
+      Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap, String fieldName) {
+    if (!(fieldValue == null || fieldValue.isEmpty())) {
+      ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, fieldName+"Parameter");
+      predicates.add(dataset.get(fieldName).in(parameter));
+      parametersMap.put(parameter, fieldValue);
+    }
+  }
+
+  /**
+   * Helper holder for parts used in criteria building.
+   */
+  public record QueryParts(CriteriaQuery<Tuple> criteriaQuery,
+                                   Root<LinkRow> link,
+                                   Join<LinkRow, RunRow> run,
+                                   Join<RunRow, DatasetRow> dataset,
+                                   Join<RunRow, BatchRow> batch,
+                                   List<Predicate> predicates,
+                                   Map<ParameterExpression<?>, Object> parametersMap) {}
+
+  /**
+   * Build check runs query parts
+   * This method builds the common parts of the criteria query for fetching check runs,
+   * including the root, joins, and initial structures for predicates and parameters.
+   *
+   * @param criteriaBuilder the criteria builder
+   * @return the query parts
+   */
+  public static QueryParts buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder) {
+    CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createTupleQuery();
+    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
+    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
+    Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
+    Join<RunRow, BatchRow> batch = run.join("batch", JoinType.INNER);
+    List<Predicate> predicates = new ArrayList<>();
+    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+    return new QueryParts(criteriaQuery, link, run, dataset, batch, predicates, parametersMap);
+  }
+
+  /**
+   * Convert run.
+   *
+   * @param row the row
+   * @return the run
+   */
   static Run convert(RunRow row) {
     return new Run(row.getRunId(), row.getStartingTime(), DatasetDao.convert(row.getDataset()));
   }
-
 }

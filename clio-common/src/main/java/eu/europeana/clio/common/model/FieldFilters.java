@@ -111,11 +111,11 @@ public class FieldFilters {
       @JsonProperty(FieldNames.DATASET_ID) Set<String> datasetId,
       @JsonProperty(FieldNames.DATASET_NAME) Set<String> datasetName,
       @JsonProperty(FieldNames.EXCLUDED_CHECK_IDS) Set<Long> excludedCheckIds,
-      @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @Schema(pattern = "yyyy-MM-dd")
+      @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_FROM) Date dateFrom,
-      @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @Schema(pattern = "yyyy-MM-dd")
+      @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_TO) Date dateTo,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_FROM) Integer percentLinksInOperationFrom,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO) Integer percentLinksInOperationTo) {

@@ -12,6 +12,7 @@ import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
+import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.common.persistence.dao.RunDao;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
@@ -73,6 +74,13 @@ public final class ReportingEngine {
         return stringWriter.toString();
     }
 
+    /**
+     * Generate report string.
+     *
+     * @param filters the filters
+     * @return the string
+     * @throws ClioException the clio exception
+     */
     public String generateReport(FieldFilters filters) throws ClioException {
         StringWriter stringWriter = new StringWriter();
         generateReport(stringWriter, filters);
@@ -80,16 +88,17 @@ public final class ReportingEngine {
     }
 
     /**
-     * Generates a report and saves it to the output file.
+     *  Generates a report and saves it to the output file.
      *
-     * @param writer The destination/output writer.
+     *  @param writer The destination/output writer.
+     * @param filters the filters
      * @throws ClioException In case of a problem with accessing or saving the required data.
      */
     public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
 
         final long startTime = System.nanoTime();
         // Write the report.
-        try (final StreamResult<Pair<Run, Link>> brokenLinks = filters==null? new LinkDao(reportingEngineConfiguration.sessionFactory())
+        try (final StreamResult<RunWithLink> brokenLinks = filters==null? new LinkDao(reportingEngineConfiguration.sessionFactory())
                 .getBrokenLinksInLatestCompletedRuns(): new LinkDao(reportingEngineConfiguration.sessionFactory()).getLinksWithRunsForFilters(filters);
              final CSVWriter csvWriter = new CSVWriter(writer)) {
 
@@ -112,28 +121,28 @@ public final class ReportingEngine {
                     "Error"
             });
 
-            // Create link stream ... see https://github.com/spotbugs/spotbugs/issues/756
-            @SuppressWarnings("findbugs:RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE") final Stream<Pair<Run, Link>> linkStream = brokenLinks.get();
+            // Create link stream ...
+           final Stream<RunWithLink> linkStream = brokenLinks.get();
 
             // Write records
-            linkStream.forEach(link -> csvWriter.writeNext(new String[]{
-                    link.getLeft().getDataset().getDatasetId(),
-                    String.format(reportingEngineConfiguration.clioConfigurationProperties().datasetReportLinkTemplate(),
-                            link.getLeft().getDataset().getDatasetId()),
-                    Optional.ofNullable(link.getLeft().getDataset().getSize())
-                            .map(Object::toString).orElse(null),
-                    link.getLeft().getDataset().getProvider(),
-                    link.getLeft().getDataset().getDataProvider(),
-                    link.getRight().getRecordId(),
-                    convert(link.getRight().getRecordLastIndexTime()),
-                    link.getRight().getRecordEdmType(),
-                    link.getRight().getRecordContentTier(),
-                    link.getRight().getRecordMetadataTier(),
-                    link.getRight().getLinkType().getHumanReadableName(),
-                    link.getRight().getLinkUrl(),
-                    link.getRight().getServer(),
-                    convert(link.getRight().getCheckingTime()),
-                    link.getRight().getError()
+            linkStream.forEach(item -> csvWriter.writeNext(new String[]{
+                    sanitizeCsvField(item.run().getDataset().getDatasetId()),
+                    sanitizeCsvField(String.format(reportingEngineConfiguration.clioConfigurationProperties().datasetReportLinkTemplate(),
+                            item.run().getDataset().getDatasetId())),
+                    sanitizeCsvField(Optional.ofNullable(item.run().getDataset().getSize())
+                            .map(Object::toString).orElse(null)),
+                    sanitizeCsvField(item.run().getDataset().getProvider()),
+                    sanitizeCsvField(item.run().getDataset().getDataProvider()),
+                    sanitizeCsvField(item.link().getRecordId()),
+                    sanitizeCsvField(convert(item.link().getRecordLastIndexTime())),
+                    sanitizeCsvField(item.link().getRecordEdmType()),
+                    sanitizeCsvField(item.link().getRecordContentTier()),
+                    sanitizeCsvField(item.link().getRecordMetadataTier()),
+                    sanitizeCsvField(item.link().getLinkType().getHumanReadableName()),
+                    sanitizeCsvField(item.link().getLinkUrl()),
+                    sanitizeCsvField(item.link().getServer()),
+                    sanitizeCsvField(convert(item.link().getCheckingTime())),
+                    sanitizeCsvField(item.link().getError())
             }));
         } catch (IOException e) {
             throw new ClioException("Error occurred while compiling the report.", e);
@@ -233,4 +242,21 @@ public final class ReportingEngine {
     public List<CheckRecord> getCheckRuns(FieldFilters clioFilters) throws PersistenceException {
         return new RunDao(reportingEngineConfiguration.sessionFactory()).getCheckRuns(clioFilters);
     }
+
+    /**
+     * Sanitizes a CSV field to mitigate CSV injection attacks.
+     * If the value starts with any of the characters =, +, -, @ it will be prefixed with a single quote (').
+     * Null values are preserved.
+     */
+    private static String sanitizeCsvField(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        char first = value.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@') {
+            return "'" + value;
+        }
+        return value;
+    }
+
 }

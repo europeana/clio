@@ -262,7 +262,7 @@ class ReportingControllerTest {
     FieldFilters filters = mock(FieldFilters.class);
     FilteringRequest request = new FilteringRequest(filters);
     CheckRecord checkRecord = mock(CheckRecord.class);
-    when(reportingEngine.getCheckRuns(filters)).thenReturn(List.of(checkRecord));
+    when(reportingEngine.getCheckRuns(any(FieldFilters.class))).thenReturn(List.of(checkRecord));
 
     // When
     var responseEntity = controller.getChecks(request);

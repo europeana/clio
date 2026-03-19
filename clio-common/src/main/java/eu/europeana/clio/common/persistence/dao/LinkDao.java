@@ -271,6 +271,9 @@ public class LinkDao {
 
   /**
    * The type Run with link.
+   *
+   * @param run The run to which the link belongs.
+   * @param link The link.
    */
   public record RunWithLink(Run run, Link link) {
 

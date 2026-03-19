@@ -23,6 +23,7 @@ import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.LinkDao.UncheckedLinkData;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.List;
 import org.hibernate.Session;
@@ -61,7 +62,7 @@ class LinkDaoTest {
           doAnswer(inv -> {
             LinkRow linkRow = inv.getArgument(0);
             try {
-              java.lang.reflect.Field field = LinkRow.class.getDeclaredField("linkId");
+              Field field = LinkRow.class.getDeclaredField("linkId");
               field.setAccessible(true);
               field.setLong(linkRow, 99L);
             } catch (Exception e) {
@@ -101,7 +102,7 @@ class LinkDaoTest {
           doAnswer(inv -> {
             LinkRow linkRow = inv.getArgument(0);
             try {
-              java.lang.reflect.Field field = LinkRow.class.getDeclaredField("linkId");
+              Field field = LinkRow.class.getDeclaredField("linkId");
               field.setAccessible(true);
               field.setLong(linkRow, 88L);
             } catch (Exception e) {
@@ -166,7 +167,7 @@ class LinkDaoTest {
             LinkRow linkRow = inv.getArgument(0);
             assertEquals("https://example.com/", linkRow.getServer());
             try {
-              java.lang.reflect.Field field = LinkRow.class.getDeclaredField("linkId");
+              Field field = LinkRow.class.getDeclaredField("linkId");
               field.setAccessible(true);
               field.setLong(linkRow, 77L);
             } catch (Exception e) {
@@ -207,7 +208,7 @@ class LinkDaoTest {
             LinkRow linkRow = inv.getArgument(0);
             assertNull(linkRow.getServer());
             try {
-              java.lang.reflect.Field field = LinkRow.class.getDeclaredField("linkId");
+              Field field = LinkRow.class.getDeclaredField("linkId");
               field.setAccessible(true);
               field.setLong(linkRow, 66L);
             } catch (Exception e) {

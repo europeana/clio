@@ -17,6 +17,7 @@ import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.ReportRow;
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.List;
 import org.hibernate.Session;
@@ -77,7 +78,7 @@ class ReportDaoTest {
                 Object argument = invocationOnMock.getArgument(0);
                 if (argument instanceof ReportRow reportRow) {
                   try {
-                    java.lang.reflect.Field field = ReportRow.class.getDeclaredField("reportId");
+                    Field field = ReportRow.class.getDeclaredField("reportId");
                     field.setAccessible(true);
                     field.setLong(reportRow, 321L);
                   } catch (Exception e) {

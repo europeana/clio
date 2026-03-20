@@ -34,19 +34,19 @@ import java.util.Set;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RunDaoTest {
 
-  @Mock
-  private SessionFactory sessionFactory;
-
   @Test
   void constructor_initializesHibernateSessionUtils() {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    // When
     RunDao runDao = new RunDao(sessionFactory);
+    // Then
     assertNotNull(runDao);
   }
 
@@ -54,11 +54,7 @@ class RunDaoTest {
   void percentLinksInOperation_returnsTrueWhenNullFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(0);
-    filters.setPercentLinksInOperationTo(50);
     Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
 
     // When
     boolean result = RunDao.percentLinksInOperation(filters, tuple);

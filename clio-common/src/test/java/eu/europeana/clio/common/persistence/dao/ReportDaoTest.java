@@ -37,7 +37,7 @@ class ReportDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     // When
     ReportDao reportDao = new ReportDao(sessionFactory);
-    // Then/
+    // Then
     assertNotNull(reportDao);
   }
 

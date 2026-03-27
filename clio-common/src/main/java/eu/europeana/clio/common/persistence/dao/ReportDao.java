@@ -21,7 +21,7 @@ public class ReportDao {
     /**
      * Constructor.
      *
-     * @param sessionFactory The connection to the Clio persistence. Should be connected. This                       object does not
+     * @param sessionFactory The connection to the Clio persistence. Should be connected. This object does not
      * close the connection.
      */
     public ReportDao(SessionFactory sessionFactory) {

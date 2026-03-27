@@ -8,8 +8,8 @@ import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.CheckRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
-import eu.europeana.clio.reporting.rest.api.request.FilteringRequest;
-import eu.europeana.clio.reporting.rest.api.response.FilteringResponse;
+import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
+import eu.europeana.clio.reporting.rest.api.response.FilterResponse;
 import eu.europeana.clio.reporting.rest.controller.advice.ErrorResponse;
 import eu.europeana.clio.reporting.rest.view.ReportDetailsView;
 import eu.europeana.clio.reporting.service.ReportingEngine;
@@ -46,47 +46,16 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
     description = "Controller providing access to link checking results and history."))
 public class ReportingController {
 
-  /**
-   * The constant CONTROLLER_TAG_NAME.
-   */
   public static final String CONTROLLER_TAG_NAME = "ReportingController";
-  /**
-   * The constant AVAILABLE_REPORTS_ENDPOINT_PATH.
-   */
   public static final String AVAILABLE_REPORTS_ENDPOINT_PATH = "/available-reports";
-  /**
-   * The constant REPORT_BY_BATCH_ID_ENDPOINT_PATH.
-   */
   public static final String REPORT_BY_BATCH_ID_ENDPOINT_PATH = "/report-by-batch-id";
-  /**
-   * The constant LATEST_REPORT_ENDPOINT_PATH.
-   */
   public static final String LATEST_REPORT_ENDPOINT_PATH = "/latest-report";
-  /**
-   * The constant BATCHES_ENDPOINT_PATH.
-   */
   public static final String BATCHES_ENDPOINT_PATH = "/batches";
-  /**
-   * The constant BATCH_ID_ENDPOINT_PARAMETER.
-   */
   public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
-  /**
-   * The constant REPORT_ID_ENDPOINT_PARAMETER.
-   */
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
-  /**
-   * The constant REPORTS_ENDPOINT_PATH.
-   */
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
-  /**
-   * The constant CHECKS_ENDPOINT_PATH.
-   */
   public static final String CHECKS_ENDPOINT_PATH = "/checks";
-  /**
-   * The constant DOWNLOADS_CLIO_REPORT.
-   */
   public static final String DOWNLOADS_CLIO_REPORT = "/downloads";
-
 
   private final ReportingEngine reportingEngine;
 
@@ -254,7 +223,7 @@ public class ReportingController {
 
 
   /**
-   * Get the result of the given {@link FilteringRequest}.
+   * Get the result of the given {@link FilterRequest}.
    *
    * @param request the request
    * @return the checks
@@ -264,17 +233,17 @@ public class ReportingController {
   @ResponseStatus(HttpStatus.OK)
   @Operation(summary = "Returns a complete filtered view of Clio checks")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<FilteringResponse> getChecks(
-      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilteringRequest request)
+  public ResponseEntity<FilterResponse> getChecks(
+      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request.getFilters() == null) {
+    if (request.getFilterOptions() == null) {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
     final List<CheckRecord> checkRecords = this.reportingEngine.getCheckRuns(sanitizedFilters);
 
-    return new ResponseEntity<>( new FilteringResponse(checkRecords, sanitizedFilters), HttpStatus.OK);
+    return new ResponseEntity<>( new FilterResponse(checkRecords, sanitizedFilters), HttpStatus.OK);
   }
 
   /**
@@ -298,12 +267,12 @@ public class ReportingController {
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
   public ResponseEntity<byte[]> downloadReport(
-      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilteringRequest request)
+      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request == null || request.getFilters() == null) {
+    if (request == null || request.getFilterOptions() == null) {
       return ResponseEntity.badRequest().build();
     }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
     final String report = reportingEngine.generateReport(sanitizedFilters);
     if (report == null) {
       throw new ReportNotFoundException("Report not found.");

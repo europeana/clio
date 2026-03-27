@@ -17,9 +17,9 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @AllArgsConstructor
 @Getter
 @Setter
-public class FilteringRequest {
+public class FilterRequest {
 
   @JsonProperty(FieldNames.FILTERS)
-  private FieldFilters filters;
+  private FieldFilters filterOptions;
 
 }

@@ -2,9 +2,11 @@ package eu.europeana.clio.reporting.rest.api.response;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import eu.europeana.clio.common.model.CheckRecord;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.FieldNames;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,10 +21,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class FilteringResponse {
+public class FilterResponse {
 
   private List<CheckRecord> results;
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private FieldFilters filteringOptions;
+  @JsonProperty(FieldNames.FILTERS)
+  private FieldFilters filterOptions;
 
 }

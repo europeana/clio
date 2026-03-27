@@ -1,7 +1,6 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
@@ -9,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import eu.europeana.clio.common.model.CheckRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -16,7 +16,6 @@ import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
@@ -48,149 +47,6 @@ class RunDaoTest {
     RunDao runDao = new RunDao(sessionFactory);
     // Then
     assertNotNull(runDao);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueWhenNullFilters() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    Tuple tuple = mock(Tuple.class);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueWhenWithinRange() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(40);
-    filters.setPercentLinksInOperationTo(60);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsFalseWhenBelowMinimum() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(60);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertFalse(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsFalseWhenAboveMaximum() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationTo(40);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertFalse(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueWhenAtMinimumBoundary() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(50);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueWhenAtMaximumBoundary() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationTo(50);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsFalseWhenBelowMinimumAndAboveMaximum() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(60);
-    filters.setPercentLinksInOperationTo(40);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(50L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertFalse(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueOnlyFromFilterSet() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationFrom(30);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(75L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void percentLinksInOperation_returnsTrueOnlyToFilterSet() {
-    // Given
-    FieldFilters filters = new FieldFilters();
-    filters.setPercentLinksInOperationTo(80);
-    Tuple tuple = mock(Tuple.class);
-    when(tuple.get(FieldNames.ERROR_LINKS_DB)).thenReturn(75L);
-    when(tuple.get(FieldNames.TOTAL_LINKS_DB)).thenReturn(100L);
-
-    // When
-    boolean result = RunDao.percentLinksInOperation(filters, tuple);
-
-    // Then
-    assertTrue(result);
   }
 
   @Test
@@ -311,7 +167,7 @@ class RunDaoTest {
     Set<Long> excludedIds = Set.of(1L, 2L, 3L);
 
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_IDS)).thenReturn(paramExpression);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID)).thenReturn(paramExpression);
 
     jakarta.persistence.criteria.Path<?> path = mock(jakarta.persistence.criteria.Path.class);
     doReturn(path).when(run).get(FieldNames.RUN_ID_DB);
@@ -425,8 +281,8 @@ class RunDaoTest {
   void buildCheckRunsQueryParts_buildsAllPartsSuccessfully() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<Tuple> criteriaQuery = mock(CriteriaQuery.class);
-    when(criteriaBuilder.createTupleQuery()).thenReturn(criteriaQuery);
+    CriteriaQuery<CheckRecord> criteriaQuery = mock(CriteriaQuery.class);
+    doReturn(criteriaQuery).when(criteriaBuilder).createQuery(CheckRecord.class);
 
     Root<LinkRow> link = mock(Root.class);
     doReturn(link).when(criteriaQuery).from(LinkRow.class);
@@ -441,7 +297,7 @@ class RunDaoTest {
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder);
+    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRecord.class);
 
     // Then
     assertNotNull(parts);
@@ -450,9 +306,9 @@ class RunDaoTest {
     assertNotNull(parts.run());
     assertNotNull(parts.dataset());
     assertNotNull(parts.batch());
-    assertNotNull(parts.predicates());
+    assertNotNull(parts.wherePredicates());
     assertNotNull(parts.parametersMap());
-    assertTrue(parts.predicates().isEmpty());
+    assertTrue(parts.wherePredicates().isEmpty());
     assertTrue(parts.parametersMap().isEmpty());
   }
 
@@ -460,8 +316,8 @@ class RunDaoTest {
   void buildCheckRunsQueryParts_hasEmptyPredicatesAndParameters() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<Tuple> criteriaQuery = mock(CriteriaQuery.class);
-    when(criteriaBuilder.createTupleQuery()).thenReturn(criteriaQuery);
+    CriteriaQuery<CheckRecord> criteriaQuery = mock(CriteriaQuery.class);
+    when(criteriaBuilder.createQuery(CheckRecord.class)).thenReturn(criteriaQuery);
 
     Root<LinkRow> link = mock(Root.class);
     doReturn(link).when(criteriaQuery).from(LinkRow.class);
@@ -476,10 +332,10 @@ class RunDaoTest {
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder);
+    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRecord.class);
 
     // Then
-    List<Predicate> predicates = parts.predicates();
+    List<Predicate> predicates = parts.wherePredicates();
     Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
 
     assertEquals(0, predicates.size());

@@ -3,8 +3,8 @@ package eu.europeana.clio.common.persistence.dao;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameter;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterDateRange;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterExcludedIds;
+import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicatePercentLinksInOperation;
 import static eu.europeana.clio.common.persistence.dao.RunDao.buildCheckRunsQueryParts;
-import static eu.europeana.clio.common.persistence.dao.RunDao.percentLinksInOperation;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -19,7 +19,6 @@ import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -178,43 +177,46 @@ public class LinkDao {
   public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder);
-      CriteriaQuery<Tuple> criteriaQuery = parts.criteriaQuery();
+      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder, RunWithLink.class);
+      CriteriaQuery criteriaQuery = parts.criteriaQuery();
       Root<LinkRow> link = parts.link();
       Join<LinkRow, RunRow> run = parts.run();
       Join<RunRow, DatasetRow> dataset = parts.dataset();
       Join<RunRow, BatchRow> batch = parts.batch();
-      List<Predicate> predicates = parts.predicates();
+      List<Predicate> predicates = parts.wherePredicates();
+      List<Predicate> havingPredicates = parts.havingPredicates();
       Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
 
-      // predicates
+      // aggregations
+      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
+      Expression<Long> totalLinks = criteriaBuilder.count(link.get("run").get(FieldNames.RUN_ID_DB));
+      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(100.0D,
+          criteriaBuilder.prod(
+              criteriaBuilder.quot(
+                  criteriaBuilder.toDouble(errorsLinks),
+                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
+              ),
+              100.0D
+          )).cast(Integer.class);
+
+      // wherePredicates
       addPredicateAndParameter(filters.getProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.PROVIDER);
       addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATA_PROVIDER);
       addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_ID);
       addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_NAME_DB);
-      addPredicateAndParameterExcludedIds(filters.getExcludedCheckIds(), criteriaBuilder, predicates, run, parametersMap);
+      addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder, predicates, run, parametersMap);
       addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
+      addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
 
       // AND combination
       Predicate whereClause = criteriaBuilder.and(predicates);
 
-      // aggregations
-      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-      Expression<Long> totalLinks = criteriaBuilder.count(run.get(FieldNames.RUN_ID_DB));
-      Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
-
       // select
-      criteriaQuery.select(criteriaBuilder.tuple(
-          link,
-          run,
-          dataset,
-          startingTime.alias(FieldNames.STARTING_TIME_DB),
-          errorsLinks.alias(FieldNames.ERROR_LINKS_DB),
-          totalLinks.alias(FieldNames.TOTAL_LINKS_DB)
-      ));
+      criteriaQuery.select(criteriaBuilder.construct(RunWithLink.class, run, link));
 
       // where
       criteriaQuery.where(whereClause);
+      criteriaQuery.having(havingPredicates);
 
       // order by
       // ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC
@@ -234,15 +236,14 @@ public class LinkDao {
       );
 
       // create query
-      TypedQuery<Tuple> query = session.createQuery(criteriaQuery);
+      TypedQuery<RunWithLink> query = session.createQuery(criteriaQuery);
 
       // set value to parameters
       parametersMap.forEach((key, value) -> query.setParameter(key.getName(), value));
 
-      return query
-          .getResultStream()
-          .filter(tuple -> percentLinksInOperation(filters, tuple))
-          .map(tuple -> new RunWithLink(RunDao.convert((RunRow) tuple.get(1)), convert((LinkRow) tuple.get(0))));
+      return query.setFirstResult(filters.getOffset())
+                  .setMaxResults(filters.getLimit())
+                  .getResultStream();
     });
   }
 
@@ -277,5 +278,14 @@ public class LinkDao {
    */
   public record RunWithLink(Run run, Link link) {
 
+    /**
+     * Instantiates a new Run with link.
+     *
+     * @param runRow the run row
+     * @param linkRow the link row
+     */
+    public RunWithLink (RunRow runRow, LinkRow linkRow) {
+      this(RunDao.convert(runRow), convert(linkRow));
+    }
   }
 }

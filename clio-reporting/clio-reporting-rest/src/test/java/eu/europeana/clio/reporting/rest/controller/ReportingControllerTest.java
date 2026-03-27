@@ -27,8 +27,8 @@ import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
-import eu.europeana.clio.reporting.rest.api.request.FilteringRequest;
-import eu.europeana.clio.reporting.rest.api.response.FilteringResponse;
+import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
+import eu.europeana.clio.reporting.rest.api.response.FilterResponse;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -260,7 +260,7 @@ class ReportingControllerTest {
   void getChecks_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilteringRequest request = new FilteringRequest(filters);
+    FilterRequest request = new FilterRequest(filters);
     CheckRecord checkRecord = mock(CheckRecord.class);
     when(reportingEngine.getCheckRuns(any(FieldFilters.class))).thenReturn(List.of(checkRecord));
 
@@ -269,11 +269,11 @@ class ReportingControllerTest {
 
     // Then
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    FilteringResponse response = responseEntity.getBody();
+    FilterResponse response = responseEntity.getBody();
     assertNotNull(response);
     assertEquals(1, response.getResults().size());
     // Verify that a sanitized FieldFilters object is returned (not the original mock)
-    assertNotNull(response.getFilteringOptions());
+    assertNotNull(response.getFilterOptions());
     // The returned filters are a new sanitized copy, not the original mock
   }
 
@@ -281,7 +281,7 @@ class ReportingControllerTest {
   void downloadReport_returnsBytes_andHeaders() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilteringRequest request = new FilteringRequest(filters);
+    FilterRequest request = new FilterRequest(filters);
     String csv = "x,y\n1,2\n";
     when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
 
@@ -298,7 +298,7 @@ class ReportingControllerTest {
   void downloadReport_whenEngineThrows_throwsClioException() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilteringRequest request = new FilteringRequest(filters);
+    FilterRequest request = new FilterRequest(filters);
     ClioException expectedException = new ClioException("boom");
     when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
 

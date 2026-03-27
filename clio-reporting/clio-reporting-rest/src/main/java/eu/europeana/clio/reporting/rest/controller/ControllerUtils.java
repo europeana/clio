@@ -3,23 +3,23 @@ package eu.europeana.clio.reporting.rest.controller;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.reporting.service.ReportingEngine;
 import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 /**
- * The type Controller utils.
+ * Utility class for controller-related helper methods, such as sanitizing user input to prevent XSS attacks. This class is not
+ * meant to be instantiated, and all methods are static.
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ControllerUtils {
 
-  /**
-   * Utility class for controller-related helper methods, such as sanitizing user input to prevent XSS attacks.
-   * This class is not meant to be instantiated, and all methods are static.
-   */
-  private ControllerUtils() {
-    // Private constructor to prevent instantiation
-  }
+  private static final int MIN_PAGE_LIMIT = 5;
+  private static final int MAX_PAGE_LIMIT = 100;
 
   /**
    * Gets http entity.
@@ -53,17 +53,19 @@ public final class ControllerUtils {
         sanitizeStringSet(filters.getDataProvider()),
         sanitizeStringSet(filters.getDatasetId()),
         sanitizeStringSet(filters.getDatasetName()),
-        filters.getExcludedCheckIds(),            // No sanitization needed for numbers
+        filters.getExcludedCheckId(),             // No sanitization needed for numbers
         filters.getDateFrom(),                    // No sanitization needed for dates
         filters.getDateTo(),                      // No sanitization needed for dates
-        filters.getPercentLinksInOperationFrom(), // No sanitization needed for integers
-        filters.getPercentLinksInOperationTo()    // No sanitization needed for integers
+        sanitizeNumber(filters.getPercentLinksInOperationFrom()),
+        sanitizeNumber(filters.getPercentLinksInOperationTo()),
+        sanitizeNumber(filters.getOffset()),
+        sanitizeLimit(filters.getLimit())
     );
   }
 
   /**
-   * Escape HTML/XML special characters in a set of strings.
-   * Returns null if the input set is null, empty set if the input is empty.
+   * Escape HTML/XML special characters in a set of strings. Returns null if the input set is null, empty set if the input is
+   * empty.
    *
    * @param stringSet the set of strings to sanitize
    * @return a new set with escaped strings
@@ -74,12 +76,49 @@ public final class ControllerUtils {
     }
     return stringSet.stream()
                     .map(ControllerUtils::escapeHtml)
-                    .collect(java.util.stream.Collectors.toSet());
+                    .collect(Collectors.toSet());
   }
 
   /**
-   * Escape HTML/XML special characters to prevent XSS injection.
-   * Replaces: < > " ' & with their HTML entity equivalents.
+   * Sanitize number integer.
+   *
+   * @param value the value
+   * @return the integer
+   */
+  private static Integer sanitizeNumber(Integer value) {
+    if (value == null) {
+      return 0;
+    }
+    if (value < 0) {
+      return 0;
+    }
+    return value;
+  }
+
+  /**
+   * Sanitize limit integer.
+   *
+   * @param value the value
+   * @return the integer
+   */
+  private static Integer sanitizeLimit(Integer value) {
+    if (value == null) {
+      return 0;
+    }
+    if (value < 0) {
+      return 0;
+    }
+    if (value < MIN_PAGE_LIMIT) {
+      return MIN_PAGE_LIMIT;
+    }
+    if (value > MAX_PAGE_LIMIT) {
+      return MAX_PAGE_LIMIT;
+    }
+    return value;
+  }
+
+  /**
+   * Escape HTML/XML special characters to prevent XSS injection. Replaces: < > " ' & with their HTML entity equivalents.
    *
    * @param input the string to escape
    * @return the escaped string

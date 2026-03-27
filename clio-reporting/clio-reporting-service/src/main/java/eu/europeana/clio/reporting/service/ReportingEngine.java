@@ -6,9 +6,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.model.CheckRecord;
 import eu.europeana.clio.common.model.FieldFilters;
-import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Report;
-import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
@@ -30,7 +28,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * This class provides core functionality for the reporting module of Clio.
@@ -97,11 +94,9 @@ public final class ReportingEngine {
     public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
 
         final long startTime = System.nanoTime();
-        // Write the report.
-        try (final StreamResult<RunWithLink> brokenLinks = filters==null? new LinkDao(reportingEngineConfiguration.sessionFactory())
-                .getBrokenLinksInLatestCompletedRuns(): new LinkDao(reportingEngineConfiguration.sessionFactory()).getLinksWithRunsForFilters(filters);
-             final CSVWriter csvWriter = new CSVWriter(writer)) {
-
+        // Write the report. We use a try-with-resources block to ensure that all resources are properly closed after use.
+        try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters);
+            final CSVWriter csvWriter = new CSVWriter(writer)) {
             // Write header
             csvWriter.writeNext(new String[]{
                     "Dataset ID",
@@ -126,23 +121,24 @@ public final class ReportingEngine {
 
             // Write records
             linkStream.forEach(item -> csvWriter.writeNext(new String[]{
-                    sanitizeCsvField(item.run().getDataset().getDatasetId()),
-                    sanitizeCsvField(String.format(reportingEngineConfiguration.clioConfigurationProperties().datasetReportLinkTemplate(),
-                            item.run().getDataset().getDatasetId())),
-                    sanitizeCsvField(Optional.ofNullable(item.run().getDataset().getSize())
-                            .map(Object::toString).orElse(null)),
-                    sanitizeCsvField(item.run().getDataset().getProvider()),
-                    sanitizeCsvField(item.run().getDataset().getDataProvider()),
-                    sanitizeCsvField(item.link().getRecordId()),
-                    sanitizeCsvField(convert(item.link().getRecordLastIndexTime())),
-                    sanitizeCsvField(item.link().getRecordEdmType()),
-                    sanitizeCsvField(item.link().getRecordContentTier()),
-                    sanitizeCsvField(item.link().getRecordMetadataTier()),
-                    sanitizeCsvField(item.link().getLinkType().getHumanReadableName()),
-                    sanitizeCsvField(item.link().getLinkUrl()),
-                    sanitizeCsvField(item.link().getServer()),
-                    sanitizeCsvField(convert(item.link().getCheckingTime())),
-                    sanitizeCsvField(item.link().getError())
+                sanitizeCsvField(item.run().getDataset().getDatasetId()),
+                sanitizeCsvField(String.format(reportingEngineConfiguration
+                        .clioConfigurationProperties().datasetReportLinkTemplate(),
+                    item.run().getDataset().getDatasetId())),
+                sanitizeCsvField(Optional.ofNullable(item.run().getDataset().getSize())
+                                         .map(Object::toString).orElse(null)),
+                sanitizeCsvField(item.run().getDataset().getProvider()),
+                sanitizeCsvField(item.run().getDataset().getDataProvider()),
+                sanitizeCsvField(item.link().getRecordId()),
+                sanitizeCsvField(convert(item.link().getRecordLastIndexTime())),
+                sanitizeCsvField(item.link().getRecordEdmType()),
+                sanitizeCsvField(item.link().getRecordContentTier()),
+                sanitizeCsvField(item.link().getRecordMetadataTier()),
+                sanitizeCsvField(item.link().getLinkType().getHumanReadableName()),
+                sanitizeCsvField(item.link().getLinkUrl()),
+                sanitizeCsvField(item.link().getServer()),
+                sanitizeCsvField(convert(item.link().getCheckingTime())),
+                sanitizeCsvField(item.link().getError())
             }));
         } catch (IOException e) {
             throw new ClioException("Error occurred while compiling the report.", e);
@@ -150,6 +146,11 @@ public final class ReportingEngine {
 
         final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();
         log.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
+    }
+
+    private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters) throws PersistenceException {
+        final LinkDao linkDao = new LinkDao(reportingEngineConfiguration.sessionFactory());
+        return filters == null ? linkDao.getBrokenLinksInLatestCompletedRuns() : linkDao.getLinksWithRunsForFilters(filters);
     }
 
     private static String convert(Instant instant) {
@@ -232,11 +233,13 @@ public final class ReportingEngine {
         return new ReportDao(reportingEngineConfiguration.sessionFactory()).getReportByReportId(reportId);
     }
 
+
     /**
-     * Gets check.
+     * Get check of runs of reports for the given filters by finding records processed
+     * by the Clio Link Checking Service.
      *
      * @param clioFilters the clio filters
-     * @return the check
+     * @return the check runs
      * @throws PersistenceException the persistence exception
      */
     public List<CheckRecord> getCheckRuns(FieldFilters clioFilters) throws PersistenceException {

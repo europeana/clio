@@ -31,8 +31,6 @@ public final class FieldNames {
   public static final String RECORD_ID_DB = "recordId";
   public static final String LINK_TYPE_DB = "linkType";
   public static final String LINK_URL_DB = "linkUrl";
-  public static final String TOTAL_LINKS_DB = "totalLinks";
-  public static final String ERROR_LINKS_DB = "errorsLinks";
   public static final String PERCENT_LINKS_IN_OPERATION_DB = "percentLinksInOperation";
   public static final String STARTING_TIME_DB = "startingTime";
   public static final String ENDING_TIME_DB = "endingTime";

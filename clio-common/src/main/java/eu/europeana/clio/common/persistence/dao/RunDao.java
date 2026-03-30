@@ -3,7 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.CheckRunRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -29,12 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.hibernate.SessionFactory;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Data access object for runs (a checking iteration for a given dataset).
  */
 public class RunDao {
 
+  public static final double HUNDRED = 100.0D;
   private final HibernateSessionUtils hibernateSessionUtils;
 
   /**
@@ -67,7 +69,7 @@ public class RunDao {
 
     if (filters.getDateTo() != null) {
       ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB);
-      predicates.add(criteriaBuilder.lessThanOrEqualTo(run.get(FieldNames.STARTING_TIME_DB), dateToParameter));
+      predicates.add(criteriaBuilder.lessThan(run.get(FieldNames.STARTING_TIME_DB), dateToParameter));
       parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(Duration.ofDays(1)).toEpochMilli());
     }
   }
@@ -84,7 +86,8 @@ public class RunDao {
   public static void addPredicateAndParameterExcludedIds(Set<Long> fieldValue, CriteriaBuilder criteriaBuilder,
       List<Predicate> predicates,
       Join<LinkRow, RunRow> run, Map<ParameterExpression<?>, Object> parametersMap) {
-    if (!(fieldValue == null || fieldValue.isEmpty())) {
+
+    if (!CollectionUtils.isEmpty(fieldValue)) {
       ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID);
       predicates.add(criteriaBuilder.not(run.get(FieldNames.RUN_ID_DB).in(excludeCheckIdsParameter)));
       parametersMap.put(excludeCheckIdsParameter, fieldValue);
@@ -105,14 +108,14 @@ public class RunDao {
       Expression<Integer> expressionPercentage, Map<ParameterExpression<?>, Object> parametersMap) {
     if (filters.getPercentLinksInOperationFrom() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB);
+          FieldNames.PERCENT_LINKS_IN_OPERATION_DB+"Min");
       predicates.add(criteriaBuilder.ge(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationFrom());
     }
     if (filters.getPercentLinksInOperationTo() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB);
-      predicates.add(criteriaBuilder.le(expressionPercentage, percentLinksInOperationParameter));
+          FieldNames.PERCENT_LINKS_IN_OPERATION_DB+"Max");
+      predicates.add(criteriaBuilder.lt(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationTo());
     }
   }
@@ -144,8 +147,8 @@ public class RunDao {
    * @param clazz the clazz
    * @return the query parts
    */
-  public static QueryParts buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder, Class<?> clazz) {
-    CriteriaQuery criteriaQuery = criteriaBuilder.createQuery(clazz);
+  public static<T> QueryParts<T> buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
     Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
     Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
@@ -153,7 +156,7 @@ public class RunDao {
     List<Predicate> wherePredicates = new ArrayList<>();
     List<Predicate> havingPredicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    return new QueryParts(criteriaQuery, link, run, dataset, batch, wherePredicates, havingPredicates, parametersMap);
+    return new QueryParts<>(criteriaQuery, link, run, dataset, batch, wherePredicates, havingPredicates, parametersMap);
   }
 
   /**
@@ -197,17 +200,17 @@ public class RunDao {
   }
 
   /**
-   * Gets check runs.
+   * Finds check runs.
    *
    * @param filters the filters
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public List<CheckRecord> getCheckRuns(FieldFilters filters) throws PersistenceException {
+  public List<CheckRunRecord> findCheckRuns(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder, CheckRecord.class);
-      CriteriaQuery criteriaQuery = parts.criteriaQuery();
+      QueryParts<CheckRunRecord> parts = buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
+      CriteriaQuery<CheckRunRecord> criteriaQuery = parts.criteriaQuery();
       Root<LinkRow> link = parts.link();
       Join<LinkRow, RunRow> run = parts.run();
       Join<RunRow, DatasetRow> dataset = parts.dataset();
@@ -220,13 +223,13 @@ public class RunDao {
       Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
       Expression<Long> totalLinks = criteriaBuilder.count(link.get("run").get(FieldNames.RUN_ID_DB));
       Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
-      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(100.0D,
+      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
           criteriaBuilder.prod(
               criteriaBuilder.quot(
                   criteriaBuilder.toDouble(errorsLinks),
                   criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
               ),
-              100.0D
+              HUNDRED
           )).cast(Integer.class);
 
       // wherePredicates
@@ -247,7 +250,7 @@ public class RunDao {
 
       // select
       criteriaQuery.select(criteriaBuilder.construct(
-          CheckRecord.class,
+          CheckRunRecord.class,
           run.get(FieldNames.RUN_ID_DB),
           startingTime.alias(FieldNames.STARTING_TIME_DB),
           dataset.get(FieldNames.DATASET_ID_DB),
@@ -272,7 +275,7 @@ public class RunDao {
 
       // create query
 
-      TypedQuery<CheckRecord> query = session.createQuery(criteriaQuery);
+      TypedQuery<CheckRunRecord> query = session.createQuery(criteriaQuery);
 
       // set value to parameters
       parametersMap.forEach((key, value) -> query.setParameter(key.getName(), value));
@@ -286,7 +289,7 @@ public class RunDao {
   /**
    * Helper holder for parts used in criteria building.
    */
-  public record QueryParts(CriteriaQuery<Class<?>> criteriaQuery,
+  public record QueryParts<T>(CriteriaQuery<T> criteriaQuery,
                            Root<LinkRow> link,
                            Join<LinkRow, RunRow> run,
                            Join<RunRow, DatasetRow> dataset,

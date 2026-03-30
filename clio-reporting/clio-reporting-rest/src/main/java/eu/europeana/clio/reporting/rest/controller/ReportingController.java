@@ -5,7 +5,7 @@ import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.saniti
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.CheckRunRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
@@ -55,7 +55,7 @@ public class ReportingController {
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
   public static final String CHECKS_ENDPOINT_PATH = "/checks";
-  public static final String DOWNLOADS_CLIO_REPORT = "/downloads";
+  public static final String EXPORT_CHECKS_ENDPOINT_PATH = "/export-checks";
 
   private final ReportingEngine reportingEngine;
 
@@ -233,7 +233,7 @@ public class ReportingController {
   @ResponseStatus(HttpStatus.OK)
   @Operation(summary = "Returns a complete filtered view of Clio checks")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<FilterResponse> getChecks(
+  public ResponseEntity<FilterResponse> findChecks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
     if (request.getFilterOptions() == null) {
@@ -241,19 +241,20 @@ public class ReportingController {
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
-    final List<CheckRecord> checkRecords = this.reportingEngine.getCheckRuns(sanitizedFilters);
+    final List<CheckRunRecord> checkRunRecords = this.reportingEngine.findCheckRuns(sanitizedFilters);
 
-    return new ResponseEntity<>( new FilterResponse(checkRecords, sanitizedFilters), HttpStatus.OK);
+    return new ResponseEntity<>( new FilterResponse(checkRunRecords, sanitizedFilters), HttpStatus.OK);
   }
 
+
   /**
-   * Download report response entity.
+   * Export the checks matching the given {@link FilterRequest} as a CSV file.
    *
    * @param request the request
    * @return the response entity
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = DOWNLOADS_CLIO_REPORT, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = EXPORT_CHECKS_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
   @Operation(summary = "Get filtered report with link checking results.",
       description = "The links in the report may be part of multiple batches.")
   @ApiResponses(value = {
@@ -266,7 +267,7 @@ public class ReportingController {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
-  public ResponseEntity<byte[]> downloadReport(
+  public ResponseEntity<byte[]> exportChecks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
     if (request == null || request.getFilterOptions() == null) {

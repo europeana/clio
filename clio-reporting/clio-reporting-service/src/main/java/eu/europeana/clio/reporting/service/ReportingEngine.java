@@ -4,7 +4,7 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.CheckRunRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -242,8 +242,8 @@ public final class ReportingEngine {
      * @return the check runs
      * @throws PersistenceException the persistence exception
      */
-    public List<CheckRecord> getCheckRuns(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).getCheckRuns(clioFilters);
+    public List<CheckRunRecord> findCheckRuns(FieldFilters clioFilters) throws PersistenceException {
+        return new RunDao(reportingEngineConfiguration.sessionFactory()).findCheckRuns(clioFilters);
     }
 
     /**

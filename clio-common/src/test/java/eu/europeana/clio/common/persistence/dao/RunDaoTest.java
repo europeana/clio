@@ -8,7 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.CheckRunRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -281,8 +281,8 @@ class RunDaoTest {
   void buildCheckRunsQueryParts_buildsAllPartsSuccessfully() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRecord> criteriaQuery = mock(CriteriaQuery.class);
-    doReturn(criteriaQuery).when(criteriaBuilder).createQuery(CheckRecord.class);
+    CriteriaQuery<CheckRunRecord> criteriaQuery = mock(CriteriaQuery.class);
+    doReturn(criteriaQuery).when(criteriaBuilder).createQuery(CheckRunRecord.class);
 
     Root<LinkRow> link = mock(Root.class);
     doReturn(link).when(criteriaQuery).from(LinkRow.class);
@@ -297,7 +297,7 @@ class RunDaoTest {
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRecord.class);
+    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
 
     // Then
     assertNotNull(parts);
@@ -316,8 +316,8 @@ class RunDaoTest {
   void buildCheckRunsQueryParts_hasEmptyPredicatesAndParameters() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRecord> criteriaQuery = mock(CriteriaQuery.class);
-    when(criteriaBuilder.createQuery(CheckRecord.class)).thenReturn(criteriaQuery);
+    CriteriaQuery<CheckRunRecord> criteriaQuery = mock(CriteriaQuery.class);
+    when(criteriaBuilder.createQuery(CheckRunRecord.class)).thenReturn(criteriaQuery);
 
     Root<LinkRow> link = mock(Root.class);
     doReturn(link).when(criteriaQuery).from(LinkRow.class);
@@ -332,7 +332,7 @@ class RunDaoTest {
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRecord.class);
+    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
 
     // Then
     List<Predicate> predicates = parts.wherePredicates();

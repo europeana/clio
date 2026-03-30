@@ -4,7 +4,7 @@ package eu.europeana.clio.reporting.rest.api.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import eu.europeana.clio.common.model.CheckRecord;
+import eu.europeana.clio.common.model.CheckRunRecord;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import java.util.List;
@@ -23,7 +23,7 @@ import lombok.Setter;
 @Setter
 public class FilterResponse {
 
-  private List<CheckRecord> results;
+  private List<CheckRunRecord> results;
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonProperty(FieldNames.FILTERS)
   private FieldFilters filterOptions;

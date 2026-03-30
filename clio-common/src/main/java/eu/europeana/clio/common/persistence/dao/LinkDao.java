@@ -1,5 +1,6 @@
 package eu.europeana.clio.common.persistence.dao;
 
+import static eu.europeana.clio.common.persistence.dao.RunDao.HUNDRED;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameter;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterDateRange;
 import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterExcludedIds;
@@ -177,8 +178,8 @@ public class LinkDao {
   public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      QueryParts parts = buildCheckRunsQueryParts(criteriaBuilder, RunWithLink.class);
-      CriteriaQuery criteriaQuery = parts.criteriaQuery();
+      QueryParts<RunWithLink> parts = buildCheckRunsQueryParts(criteriaBuilder, RunWithLink.class);
+      CriteriaQuery<RunWithLink> criteriaQuery = parts.criteriaQuery();
       Root<LinkRow> link = parts.link();
       Join<LinkRow, RunRow> run = parts.run();
       Join<RunRow, DatasetRow> dataset = parts.dataset();
@@ -189,14 +190,14 @@ public class LinkDao {
 
       // aggregations
       Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-      Expression<Long> totalLinks = criteriaBuilder.count(link.get("run").get(FieldNames.RUN_ID_DB));
-      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(100.0D,
+      Expression<Long> totalLinks = criteriaBuilder.count(link);
+      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
           criteriaBuilder.prod(
               criteriaBuilder.quot(
                   criteriaBuilder.toDouble(errorsLinks),
                   criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
               ),
-              100.0D
+              HUNDRED
           )).cast(Integer.class);
 
       // wherePredicates

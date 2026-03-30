@@ -84,9 +84,8 @@ public class LinkDao {
   /**
    * Create (i.e. persist) a link that is not yet checked by Clio.
    *
-   * @param uncheckedLinkData the data of the link to create.
-   * This includes the run to which this link belongs,
-   * the record in which this link is present, and the link URL and type.
+   * @param uncheckedLinkData the data of the link to create. This includes the run to which this link belongs, the record in
+   * which this link is present, and the link URL and type.
    * @return The ID of the link.
    * @throws PersistenceException In case there was a persistence problem.
    */
@@ -194,7 +193,7 @@ public class LinkDao {
       Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
           criteriaBuilder.prod(
               criteriaBuilder.quot(
-                  criteriaBuilder.toDouble(errorsLinks),
+                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
                   criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
               ),
               HUNDRED
@@ -202,9 +201,12 @@ public class LinkDao {
 
       // wherePredicates
       addPredicateAndParameter(filters.getProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.PROVIDER);
-      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATA_PROVIDER);
-      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_ID);
-      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.DATASET_NAME_DB);
+      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap,
+          FieldNames.DATA_PROVIDER);
+      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap,
+          FieldNames.DATASET_ID);
+      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap,
+          FieldNames.DATASET_NAME_DB);
       addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder, predicates, run, parametersMap);
       addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
       addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
@@ -285,7 +287,7 @@ public class LinkDao {
      * @param runRow the run row
      * @param linkRow the link row
      */
-    public RunWithLink (RunRow runRow, LinkRow linkRow) {
+    public RunWithLink(RunRow runRow, LinkRow linkRow) {
       this(RunDao.convert(runRow), convert(linkRow));
     }
   }

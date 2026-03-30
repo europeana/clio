@@ -108,13 +108,13 @@ public class RunDao {
       Expression<Integer> expressionPercentage, Map<ParameterExpression<?>, Object> parametersMap) {
     if (filters.getPercentLinksInOperationFrom() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB+"Min");
+          FieldNames.PERCENT_LINKS_IN_OPERATION_DB + "Min");
       predicates.add(criteriaBuilder.ge(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationFrom());
     }
     if (filters.getPercentLinksInOperationTo() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB+"Max");
+          FieldNames.PERCENT_LINKS_IN_OPERATION_DB + "Max");
       predicates.add(criteriaBuilder.lt(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationTo());
     }
@@ -147,7 +147,7 @@ public class RunDao {
    * @param clazz the clazz
    * @return the query parts
    */
-  public static<T> QueryParts<T> buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+  public static <T> QueryParts<T> buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
     Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
@@ -221,12 +221,12 @@ public class RunDao {
 
       // aggregations
       Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-      Expression<Long> totalLinks = criteriaBuilder.count(link.get("run").get(FieldNames.RUN_ID_DB));
+      Expression<Long> totalLinks = criteriaBuilder.count(link);
       Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
       Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
           criteriaBuilder.prod(
               criteriaBuilder.quot(
-                  criteriaBuilder.toDouble(errorsLinks),
+                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
                   criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
               ),
               HUNDRED
@@ -290,13 +290,13 @@ public class RunDao {
    * Helper holder for parts used in criteria building.
    */
   public record QueryParts<T>(CriteriaQuery<T> criteriaQuery,
-                           Root<LinkRow> link,
-                           Join<LinkRow, RunRow> run,
-                           Join<RunRow, DatasetRow> dataset,
-                           Join<RunRow, BatchRow> batch,
-                           List<Predicate> wherePredicates,
-                           List<Predicate> havingPredicates,
-                           Map<ParameterExpression<?>, Object> parametersMap) {
+                              Root<LinkRow> link,
+                              Join<LinkRow, RunRow> run,
+                              Join<RunRow, DatasetRow> dataset,
+                              Join<RunRow, BatchRow> batch,
+                              List<Predicate> wherePredicates,
+                              List<Predicate> havingPredicates,
+                              Map<ParameterExpression<?>, Object> parametersMap) {
 
   }
 

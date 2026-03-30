@@ -95,7 +95,7 @@ class RunDaoTest {
 
     jakarta.persistence.criteria.Path<Long> path = mock(jakarta.persistence.criteria.Path.class);
     doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
-    when(criteriaBuilder.lessThanOrEqualTo(path, paramExpression)).thenReturn(predicate);
+    when(criteriaBuilder.lessThan(path, paramExpression)).thenReturn(predicate);
 
     // When
     RunDao.addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
@@ -129,7 +129,7 @@ class RunDaoTest {
     jakarta.persistence.criteria.Path<Long> path = mock(jakarta.persistence.criteria.Path.class);
     doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
     when(criteriaBuilder.greaterThanOrEqualTo(path, fromParamExpression)).thenReturn(fromPredicate);
-    when(criteriaBuilder.lessThanOrEqualTo(path, toParamExpression)).thenReturn(toPredicate);
+    when(criteriaBuilder.lessThan(path, toParamExpression)).thenReturn(toPredicate);
 
     // When
     RunDao.addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);

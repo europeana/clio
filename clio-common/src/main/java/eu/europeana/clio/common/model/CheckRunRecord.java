@@ -12,14 +12,14 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize
 public record CheckRunRecord(Long id,
                              @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                          @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                          Date date,
+                             @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                             Date date,
                              String datasetId,
                              String datasetName,
                              Long datasetSize,
                              @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                          @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                          Date datasetLastIndex,
+                             @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                             Date datasetLastIndex,
                              String provider,
                              String dataProvider,
                              int percentLinksInOperation) {
@@ -40,6 +40,7 @@ public record CheckRunRecord(Long id,
   public CheckRunRecord(Long id, Long date,
       String datasetId, String datasetName, Long datasetSize, Long datasetLastIndex,
       String provider, String dataProvider, int percentLinksInOperation) {
-    this(id, new Date(date), datasetId, datasetName, datasetSize, new Date(datasetLastIndex), provider, dataProvider, percentLinksInOperation);
+    this(id, new Date(date), datasetId, datasetName, datasetSize, new Date(datasetLastIndex), provider, dataProvider,
+        percentLinksInOperation);
   }
 }

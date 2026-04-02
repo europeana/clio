@@ -1,11 +1,6 @@
 package eu.europeana.clio.common.persistence.dao;
 
-import static eu.europeana.clio.common.persistence.dao.RunDao.HUNDRED;
-import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameter;
-import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterDateRange;
-import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicateAndParameterExcludedIds;
-import static eu.europeana.clio.common.persistence.dao.RunDao.addPredicatePercentLinksInOperation;
-import static eu.europeana.clio.common.persistence.dao.RunDao.buildCheckRunsQueryParts;
+import static eu.europeana.clio.common.persistence.dao.RunDao.buildCommonCheckRunsQueryWithPredicates;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -14,24 +9,16 @@ import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
-import eu.europeana.clio.common.persistence.dao.RunDao.QueryParts;
-import eu.europeana.clio.common.persistence.model.BatchRow;
-import eu.europeana.clio.common.persistence.model.DatasetRow;
+import eu.europeana.clio.common.persistence.dao.RunDao.CommonCheckRunsQueryParts;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.ParameterExpression;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 
@@ -177,72 +164,38 @@ public class LinkDao {
   public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      QueryParts<RunWithLink> parts = buildCheckRunsQueryParts(criteriaBuilder, RunWithLink.class);
-      CriteriaQuery<RunWithLink> criteriaQuery = parts.criteriaQuery();
-      Root<LinkRow> link = parts.link();
-      Join<LinkRow, RunRow> run = parts.run();
-      Join<RunRow, DatasetRow> dataset = parts.dataset();
-      Join<RunRow, BatchRow> batch = parts.batch();
-      List<Predicate> predicates = parts.wherePredicates();
-      List<Predicate> havingPredicates = parts.havingPredicates();
-      Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
+      CommonCheckRunsQueryParts<RunWithLink> queryParts = buildCommonCheckRunsQueryWithPredicates(
+          criteriaBuilder, RunWithLink.class, filters);
 
-      // aggregations
-      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-      Expression<Long> totalLinks = criteriaBuilder.count(link);
-      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
-          criteriaBuilder.prod(
-              criteriaBuilder.quot(
-                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
-                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
-              ),
-              HUNDRED
-          )).cast(Integer.class);
-
-      // wherePredicates
-      addPredicateAndParameter(filters.getProvider(), criteriaBuilder, predicates, dataset, parametersMap, FieldNames.PROVIDER);
-      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, predicates, dataset, parametersMap,
-          FieldNames.DATA_PROVIDER);
-      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, predicates, dataset, parametersMap,
-          FieldNames.DATASET_ID);
-      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, predicates, dataset, parametersMap,
-          FieldNames.DATASET_NAME_DB);
-      addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder, predicates, run, parametersMap);
-      addPredicateAndParameterDateRange(filters, criteriaBuilder, predicates, run, parametersMap);
-      addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
-
-      // AND combination
-      Predicate whereClause = criteriaBuilder.and(predicates);
+      CriteriaQuery<RunWithLink> criteriaQuery = queryParts.criteriaQuery();
 
       // select
-      criteriaQuery.select(criteriaBuilder.construct(RunWithLink.class, run, link));
+      criteriaQuery.select(criteriaBuilder.construct(
+          RunWithLink.class, queryParts.run(), queryParts.link()));
 
-      // where
-      criteriaQuery.where(whereClause);
-      criteriaQuery.having(havingPredicates);
+      // where & having
+      criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
+      criteriaQuery.having(queryParts.havingPredicates());
 
-      // order by
-      // ORDER BY l.run.dataset.datasetId ASC, l.recordId ASC, l.linkType ASC, l.linkUrl ASC
+      // order by (specific to LinkDao)
       criteriaQuery.orderBy(
-          criteriaBuilder.asc(dataset.get(FieldNames.DATASET_ID_DB)),
-          criteriaBuilder.asc(link.get(FieldNames.RECORD_ID_DB)),
-          criteriaBuilder.asc(link.get(FieldNames.LINK_TYPE_DB)),
-          criteriaBuilder.asc(link.get(FieldNames.LINK_URL_DB))
+          criteriaBuilder.asc(queryParts.dataset().get(FieldNames.DATASET_ID_DB)),
+          criteriaBuilder.asc(queryParts.link().get(FieldNames.RECORD_ID_DB)),
+          criteriaBuilder.asc(queryParts.link().get(FieldNames.LINK_TYPE_DB)),
+          criteriaBuilder.asc(queryParts.link().get(FieldNames.LINK_URL_DB))
       );
 
       // group by
       criteriaQuery.groupBy(
-          batch.get(FieldNames.BATCH_ID_DB),
-          dataset.get(FieldNames.DATASET_ID_DB),
-          link.get(FieldNames.LINK_ID_DB),
-          run.get(FieldNames.RUN_ID_DB)
+          queryParts.batch().get(FieldNames.BATCH_ID_DB),
+          queryParts.dataset().get(FieldNames.DATASET_ID_DB),
+          queryParts.link().get(FieldNames.LINK_ID_DB),
+          queryParts.run().get(FieldNames.RUN_ID_DB)
       );
 
-      // create query
+      // execute query
       TypedQuery<RunWithLink> query = session.createQuery(criteriaQuery);
-
-      // set value to parameters
-      parametersMap.forEach((key, value) -> query.setParameter(key.getName(), value));
+      queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
 
       return query.setFirstResult(filters.getOffset())
                   .setMaxResults(filters.getLimit())

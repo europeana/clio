@@ -32,6 +32,8 @@ public final class FieldNames {
   public static final String LINK_TYPE_DB = "linkType";
   public static final String LINK_URL_DB = "linkUrl";
   public static final String PERCENT_LINKS_IN_OPERATION_DB = "percentLinksInOperation";
+  public static final String PERCENT_LINKS_IN_OPERATION_FROM_DB = "percentLinksInOperationFrom";
+  public static final String PERCENT_LINKS_IN_OPERATION_TO_DB = "percentLinksInOperationTo";
   public static final String STARTING_TIME_DB = "startingTime";
   public static final String ENDING_TIME_DB = "endingTime";
   public static final String BATCH_ID_DB = "batchId";

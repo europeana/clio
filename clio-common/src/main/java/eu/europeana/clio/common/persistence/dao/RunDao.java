@@ -108,13 +108,13 @@ public class RunDao {
       Expression<Integer> expressionPercentage, Map<ParameterExpression<?>, Object> parametersMap) {
     if (filters.getPercentLinksInOperationFrom() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB + "Min");
+          FieldNames.PERCENT_LINKS_IN_OPERATION_FROM_DB);
       predicates.add(criteriaBuilder.ge(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationFrom());
     }
     if (filters.getPercentLinksInOperationTo() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
-          FieldNames.PERCENT_LINKS_IN_OPERATION_DB + "Max");
+          FieldNames.PERCENT_LINKS_IN_OPERATION_TO_DB);
       predicates.add(criteriaBuilder.lt(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationTo());
     }
@@ -140,14 +140,17 @@ public class RunDao {
   }
 
   /**
-   * Build check runs query parts This method builds the common parts of the criteria query for fetching check runs, including the
-   * root, joins, and initial structures for wherePredicates and parameters.
+   * Builds common query parts for check runs queries with all predicates and aggregations. This method handles the construction
+   * of criteria query with all standard filters.
    *
    * @param criteriaBuilder the criteria builder
-   * @param clazz the clazz
-   * @return the query parts
+   * @param clazz the result class
+   * @param filters the field filters to apply
+   * @return common query parts with predicates already applied
    */
-  public static <T> QueryParts<T> buildCheckRunsQueryParts(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+  public static <T> CommonCheckRunsQueryParts<T> buildCommonCheckRunsQueryWithPredicates(
+      CriteriaBuilder criteriaBuilder, Class<T> clazz, FieldFilters filters) {
+    // Build base query parts
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
     Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
@@ -156,7 +159,48 @@ public class RunDao {
     List<Predicate> wherePredicates = new ArrayList<>();
     List<Predicate> havingPredicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    return new QueryParts<>(criteriaQuery, link, run, dataset, batch, wherePredicates, havingPredicates, parametersMap);
+
+    // Compute aggregations
+    Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
+    Expression<Long> totalLinks = criteriaBuilder.count(link);
+    Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
+        criteriaBuilder.prod(
+            criteriaBuilder.quot(
+                criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
+                criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
+            ),
+            HUNDRED
+        )).cast(Integer.class);
+
+    // Apply filters
+    addPredicateAndParameter(filters.getProvider(), criteriaBuilder, wherePredicates,
+        dataset, parametersMap, FieldNames.PROVIDER);
+    addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, wherePredicates,
+        dataset, parametersMap, FieldNames.DATA_PROVIDER);
+    addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, wherePredicates,
+        dataset, parametersMap, FieldNames.DATASET_ID);
+    addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates,
+        dataset, parametersMap, FieldNames.DATASET_NAME_DB);
+    addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder,
+        wherePredicates, run, parametersMap);
+    addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates,
+        run, parametersMap);
+    addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates,
+        percentLinksInOperation, parametersMap);
+
+    return new CommonCheckRunsQueryParts<>(
+        criteriaQuery,
+        link,
+        run,
+        dataset,
+        batch,
+        errorsLinks,
+        totalLinks,
+        percentLinksInOperation,
+        wherePredicates,
+        havingPredicates,
+        parametersMap
+    );
   }
 
   /**
@@ -209,76 +253,40 @@ public class RunDao {
   public List<CheckRunRecord> findCheckRuns(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      QueryParts<CheckRunRecord> parts = buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
-      CriteriaQuery<CheckRunRecord> criteriaQuery = parts.criteriaQuery();
-      Root<LinkRow> link = parts.link();
-      Join<LinkRow, RunRow> run = parts.run();
-      Join<RunRow, DatasetRow> dataset = parts.dataset();
-      Join<RunRow, BatchRow> batch = parts.batch();
-      List<Predicate> wherePredicates = parts.wherePredicates();
-      List<Predicate> havingPredicates = parts.havingPredicates();
-      Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
+      CommonCheckRunsQueryParts<CheckRunRecord> queryParts = buildCommonCheckRunsQueryWithPredicates(
+          criteriaBuilder, CheckRunRecord.class, filters);
 
-      // aggregations
-      Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-      Expression<Long> totalLinks = criteriaBuilder.count(link);
-      Expression<Long> startingTime = criteriaBuilder.min(run.get(FieldNames.STARTING_TIME_DB));
-      Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
-          criteriaBuilder.prod(
-              criteriaBuilder.quot(
-                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
-                  criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
-              ),
-              HUNDRED
-          )).cast(Integer.class);
-
-      // wherePredicates
-      addPredicateAndParameter(filters.getProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-          FieldNames.PROVIDER);
-      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-          FieldNames.DATA_PROVIDER);
-      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-          FieldNames.DATASET_ID);
-      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-          FieldNames.DATASET_NAME_DB);
-      addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder, wherePredicates, run, parametersMap);
-      addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates, run, parametersMap);
-      addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
-
-      // AND combination
-      Predicate whereClause = criteriaBuilder.and(wherePredicates);
+      CriteriaQuery<CheckRunRecord> criteriaQuery = queryParts.criteriaQuery();
+      Expression<Long> startingTime = criteriaBuilder.min(queryParts.run().get(FieldNames.STARTING_TIME_DB));
 
       // select
       criteriaQuery.select(criteriaBuilder.construct(
           CheckRunRecord.class,
-          run.get(FieldNames.RUN_ID_DB),
+          queryParts.run().get(FieldNames.RUN_ID_DB),
           startingTime.alias(FieldNames.STARTING_TIME_DB),
-          dataset.get(FieldNames.DATASET_ID_DB),
-          dataset.get(FieldNames.DATASET_NAME_DB),
-          dataset.get(FieldNames.DATASET_SIZE),
-          dataset.get(FieldNames.DATASET_LAST_INDEX),
-          dataset.get(FieldNames.PROVIDER),
-          dataset.get(FieldNames.DATA_PROVIDER),
-          percentLinksInOperation.alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
+          queryParts.dataset().get(FieldNames.DATASET_ID_DB),
+          queryParts.dataset().get(FieldNames.DATASET_NAME_DB),
+          queryParts.dataset().get(FieldNames.DATASET_SIZE),
+          queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX),
+          queryParts.dataset().get(FieldNames.PROVIDER),
+          queryParts.dataset().get(FieldNames.DATA_PROVIDER),
+          queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
       ));
 
-      // where
-      criteriaQuery.where(whereClause);
-      criteriaQuery.having(havingPredicates);
+      // where & having
+      criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
+      criteriaQuery.having(queryParts.havingPredicates());
 
       // group by
       criteriaQuery.groupBy(
-          batch.get(FieldNames.BATCH_ID_DB),
-          run.get(FieldNames.RUN_ID_DB),
-          dataset.get(FieldNames.DATASET_ID_DB)
+          queryParts.batch().get(FieldNames.BATCH_ID_DB),
+          queryParts.run().get(FieldNames.RUN_ID_DB),
+          queryParts.dataset().get(FieldNames.DATASET_ID_DB)
       );
 
-      // create query
-
+      // execute query
       TypedQuery<CheckRunRecord> query = session.createQuery(criteriaQuery);
-
-      // set value to parameters
-      parametersMap.forEach((key, value) -> query.setParameter(key.getName(), value));
+      queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
 
       return query.setFirstResult(filters.getOffset())
                   .setMaxResults(filters.getLimit())
@@ -287,7 +295,49 @@ public class RunDao {
   }
 
   /**
+   * Represents the common components of a check runs criteria query.
+   *
+   * @param <T> the type parameter e.g., a CheckRunRecord
+   * @param criteriaQuery the criteria query
+   * @param link the link
+   * @param run the run
+   * @param dataset the dataset
+   * @param batch the batch
+   * @param errorsLinks the errors links
+   * @param totalLinks the total links
+   * @param percentLinksInOperation the percent links in operation
+   * @param wherePredicates the where predicates
+   * @param havingPredicates the having predicates
+   * @param parametersMap the parameter map
+   */
+  public record CommonCheckRunsQueryParts<T>(
+      CriteriaQuery<T> criteriaQuery,
+      Root<LinkRow> link,
+      Join<LinkRow, RunRow> run,
+      Join<RunRow, DatasetRow> dataset,
+      Join<RunRow, BatchRow> batch,
+      Expression<Long> errorsLinks,
+      Expression<Long> totalLinks,
+      Expression<Integer> percentLinksInOperation,
+      List<Predicate> wherePredicates,
+      List<Predicate> havingPredicates,
+      Map<ParameterExpression<?>, Object> parametersMap
+  ) {
+
+  }
+
+  /**
    * Helper holder for parts used in criteria building.
+   *
+   * @param <T> the type parameter e.g., a CheckRunRecord
+   * @param criteriaQuery the criteria query
+   * @param link the link
+   * @param run the run
+   * @param dataset the dataset
+   * @param batch the batch
+   * @param wherePredicates the where predicates
+   * @param havingPredicates the having predicates
+   * @param parametersMap the parameter map
    */
   public record QueryParts<T>(CriteriaQuery<T> criteriaQuery,
                               Root<LinkRow> link,

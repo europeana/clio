@@ -3,7 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.CheckRunRecord;
+import eu.europeana.clio.common.model.CheckRun;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -162,7 +162,9 @@ public class RunDao {
 
     // Compute aggregations
     Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-    Expression<Long> totalLinks = criteriaBuilder.count(link);
+    Expression<Long> totalLinks = criteriaBuilder.<Long>selectCase()
+                                                 .when(criteriaBuilder.equal(criteriaBuilder.count(link),0L), 1L)
+                                                 .otherwise(criteriaBuilder.count(link));
     Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
         criteriaBuilder.prod(
             criteriaBuilder.quot(
@@ -250,18 +252,18 @@ public class RunDao {
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public List<CheckRunRecord> findCheckRuns(FieldFilters filters) throws PersistenceException {
+  public List<CheckRun> findCheckRuns(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonCheckRunsQueryParts<CheckRunRecord> queryParts = buildCommonCheckRunsQueryWithPredicates(
-          criteriaBuilder, CheckRunRecord.class, filters);
+      CommonCheckRunsQueryParts<CheckRun> queryParts = buildCommonCheckRunsQueryWithPredicates(
+          criteriaBuilder, CheckRun.class, filters);
 
-      CriteriaQuery<CheckRunRecord> criteriaQuery = queryParts.criteriaQuery();
+      CriteriaQuery<CheckRun> criteriaQuery = queryParts.criteriaQuery();
       Expression<Long> startingTime = criteriaBuilder.min(queryParts.run().get(FieldNames.STARTING_TIME_DB));
 
       // select
       criteriaQuery.select(criteriaBuilder.construct(
-          CheckRunRecord.class,
+          CheckRun.class,
           queryParts.run().get(FieldNames.RUN_ID_DB),
           startingTime.alias(FieldNames.STARTING_TIME_DB),
           queryParts.dataset().get(FieldNames.DATASET_ID_DB),
@@ -285,7 +287,7 @@ public class RunDao {
       );
 
       // execute query
-      TypedQuery<CheckRunRecord> query = session.createQuery(criteriaQuery);
+      TypedQuery<CheckRun> query = session.createQuery(criteriaQuery);
       queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
 
       return query.setFirstResult(filters.getOffset())

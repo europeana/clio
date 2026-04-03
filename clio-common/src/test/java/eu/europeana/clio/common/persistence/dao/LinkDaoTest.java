@@ -356,7 +356,6 @@ class LinkDaoTest {
     }
   }
 
-
   @Test
   void getLinksWithRunsForFilters_buildsQueryAndReturnsStream() throws PersistenceException {
     // Given

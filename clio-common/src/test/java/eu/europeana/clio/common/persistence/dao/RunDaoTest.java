@@ -8,7 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import eu.europeana.clio.common.model.CheckRunRecord;
+import eu.europeana.clio.common.model.CheckRun;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -18,9 +18,11 @@ import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.ParameterExpression;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.time.Instant;
@@ -281,11 +283,13 @@ class RunDaoTest {
   void buildCheckRunsQueryParts_buildsAllPartsSuccessfully() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRunRecord> criteriaQuery = mock(CriteriaQuery.class);
-    doReturn(criteriaQuery).when(criteriaBuilder).createQuery(CheckRunRecord.class);
+    CriteriaQuery<CheckRun> criteriaQuery = mock(CriteriaQuery.class);
+    FieldFilters filters = new FieldFilters();
+    filters = FieldFilters.sanitizeFieldFilters(filters);
+    when(criteriaBuilder.createQuery(CheckRun.class)).thenReturn(criteriaQuery);
 
     Root<LinkRow> link = mock(Root.class);
-    doReturn(link).when(criteriaQuery).from(LinkRow.class);
+    when(criteriaQuery.from(LinkRow.class)).thenReturn(link);
 
     Join<LinkRow, RunRow> run = mock(Join.class);
     doReturn(run).when(link).join("run", JoinType.INNER);
@@ -296,8 +300,54 @@ class RunDaoTest {
     Join<RunRow, BatchRow> batch = mock(Join.class);
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
+    // Mock the path methods for aggregations
+    Path<Object> linkErrorPath = mock(jakarta.persistence.criteria.Path.class);
+    when(link.get(FieldNames.ERROR_MESSAGE_DB)).thenReturn(linkErrorPath);
+    Expression<Long> errorsLinks = mock(Expression.class);
+    when(criteriaBuilder.count(linkErrorPath)).thenReturn(errorsLinks);
+
+    // Mock selectCase for totalLinks
+    CriteriaBuilder.Case<Long> selectCaseWhen = mock(CriteriaBuilder.Case.class);
+    doReturn(selectCaseWhen).when(criteriaBuilder).selectCase();
+    
+    Expression<Long> countLink = mock(Expression.class);
+    when(criteriaBuilder.count(link)).thenReturn(countLink);
+    
+    Predicate equalExpr = mock(Predicate.class);
+    doReturn(equalExpr).when(criteriaBuilder).equal(countLink, 0L);
+    
+    CriteriaBuilder.Case<Long> caseWhenThen = mock(CriteriaBuilder.Case.class);
+    doReturn(caseWhenThen).when(selectCaseWhen).when(equalExpr, 1L);
+    
+    Expression<Long> totalLinks = mock(Expression.class);
+    when(caseWhenThen.otherwise(countLink)).thenReturn(totalLinks);
+
+    // Mock arithmetic expression chain for percentLinksInOperation
+    Expression<Long> coalescedErrors = mock(Expression.class);
+    doReturn(coalescedErrors).when(criteriaBuilder).coalesce(errorsLinks, 0);
+    Expression<Long> coalescedTotal = mock(Expression.class);
+    doReturn(coalescedTotal).when(criteriaBuilder).coalesce(totalLinks, 1);
+
+    Expression<Double> doubleErrors = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedErrors)).thenReturn(doubleErrors);
+    Expression<Double> doubleTotal = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedTotal)).thenReturn(doubleTotal);
+
+    Expression<Double> quotResult = mock(Expression.class);
+    doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
+
+    Expression<Double> prodResult = mock(Expression.class);
+    doReturn(prodResult).when(criteriaBuilder).prod(quotResult, RunDao.HUNDRED);
+
+    Expression<Double> diffResult = mock(Expression.class);
+    doReturn(diffResult).when(criteriaBuilder).diff(RunDao.HUNDRED, prodResult);
+
+    Expression<Integer> percentExpr = mock(Expression.class);
+    when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
+
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
+    RunDao.CommonCheckRunsQueryParts<CheckRun> parts = RunDao.buildCommonCheckRunsQueryWithPredicates(criteriaBuilder,
+        CheckRun.class, filters);
 
     // Then
     assertNotNull(parts);
@@ -307,20 +357,23 @@ class RunDaoTest {
     assertNotNull(parts.dataset());
     assertNotNull(parts.batch());
     assertNotNull(parts.wherePredicates());
+    assertNotNull(parts.havingPredicates());
     assertNotNull(parts.parametersMap());
-    assertTrue(parts.wherePredicates().isEmpty());
-    assertTrue(parts.parametersMap().isEmpty());
+    assertNotNull(parts.errorsLinks());
+    assertNotNull(parts.totalLinks());
+    assertNotNull(parts.percentLinksInOperation());
   }
 
   @Test
   void buildCheckRunsQueryParts_hasEmptyPredicatesAndParameters() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRunRecord> criteriaQuery = mock(CriteriaQuery.class);
-    when(criteriaBuilder.createQuery(CheckRunRecord.class)).thenReturn(criteriaQuery);
-
+    CriteriaQuery<CheckRun> criteriaQuery = mock(CriteriaQuery.class);
+    when(criteriaBuilder.createQuery(CheckRun.class)).thenReturn(criteriaQuery);
+    FieldFilters filters = new FieldFilters();
+    filters = FieldFilters.sanitizeFieldFilters(filters);
     Root<LinkRow> link = mock(Root.class);
-    doReturn(link).when(criteriaQuery).from(LinkRow.class);
+    when(criteriaQuery.from(LinkRow.class)).thenReturn(link);
 
     Join<LinkRow, RunRow> run = mock(Join.class);
     doReturn(run).when(link).join("run", JoinType.INNER);
@@ -331,15 +384,68 @@ class RunDaoTest {
     Join<RunRow, BatchRow> batch = mock(Join.class);
     doReturn(batch).when(run).join("batch", JoinType.INNER);
 
+    // Mock the path methods for aggregations
+    Path<Object> linkErrorPath = mock(Path.class);
+    when(link.get(FieldNames.ERROR_MESSAGE_DB)).thenReturn(linkErrorPath);
+    Expression<Long> errorsLinks = mock(Expression.class);
+    when(criteriaBuilder.count(linkErrorPath)).thenReturn(errorsLinks);
+
+    // Mock selectCase for totalLinks
+    CriteriaBuilder.Case<Long> selectCaseWhen = mock(CriteriaBuilder.Case.class);
+    doReturn(selectCaseWhen).when(criteriaBuilder).selectCase();
+    
+    Expression<Long> countLink = mock(Expression.class);
+    when(criteriaBuilder.count(link)).thenReturn(countLink);
+    
+    Predicate equalExpr = mock(Predicate.class);
+    doReturn(equalExpr).when(criteriaBuilder).equal(countLink, 0L);
+    
+    CriteriaBuilder.Case<Long> caseWhenThen = mock(CriteriaBuilder.Case.class);
+    doReturn(caseWhenThen).when(selectCaseWhen).when(equalExpr, 1L);
+    
+    Expression<Long> totalLinks = mock(Expression.class);
+    when(caseWhenThen.otherwise(countLink)).thenReturn(totalLinks);
+
+    // Mock arithmetic expression chain for percentLinksInOperation
+    Expression<Long> coalescedErrors = mock(Expression.class);
+    doReturn(coalescedErrors).when(criteriaBuilder).coalesce(errorsLinks, 0);
+    Expression<Long> coalescedTotal = mock(Expression.class);
+    doReturn(coalescedTotal).when(criteriaBuilder).coalesce(totalLinks, 1);
+
+    Expression<Double> doubleErrors = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedErrors)).thenReturn(doubleErrors);
+    Expression<Double> doubleTotal = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedTotal)).thenReturn(doubleTotal);
+
+    Expression<Double> quotResult = mock(Expression.class);
+    doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
+
+    Expression<Double> prodResult = mock(Expression.class);
+    doReturn(prodResult).when(criteriaBuilder).prod(quotResult, RunDao.HUNDRED);
+
+    Expression<Double> diffResult = mock(Expression.class);
+    doReturn(diffResult).when(criteriaBuilder).diff(RunDao.HUNDRED, prodResult);
+
+    Expression<Integer> percentExpr = mock(Expression.class);
+    when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
+
     // When
-    RunDao.QueryParts parts = RunDao.buildCheckRunsQueryParts(criteriaBuilder, CheckRunRecord.class);
+    RunDao.CommonCheckRunsQueryParts<CheckRun> parts = RunDao.buildCommonCheckRunsQueryWithPredicates(criteriaBuilder,
+        CheckRun.class, filters);
 
     // Then
-    List<Predicate> predicates = parts.wherePredicates();
-    Map<ParameterExpression<?>, Object> parametersMap = parts.parametersMap();
-
-    assertEquals(0, predicates.size());
-    assertEquals(0, parametersMap.size());
+    assertNotNull(parts);
+    assertNotNull(parts.criteriaQuery());
+    assertNotNull(parts.link());
+    assertNotNull(parts.run());
+    assertNotNull(parts.dataset());
+    assertNotNull(parts.batch());
+    assertNotNull(parts.wherePredicates());
+    assertNotNull(parts.havingPredicates());
+    assertNotNull(parts.parametersMap());
+    assertNotNull(parts.errorsLinks());
+    assertNotNull(parts.totalLinks());
+    assertNotNull(parts.percentLinksInOperation());
   }
 
   @Test

@@ -327,33 +327,7 @@ public class RunDao {
       Expression<Integer> percentLinksInOperation,
       List<Predicate> wherePredicates,
       List<Predicate> havingPredicates,
-      Map<ParameterExpression<?>, Object> parametersMap
-  ) {
-
-  }
-
-  /**
-   * Helper holder for parts used in criteria building.
-   *
-   * @param <T> the type parameter e.g., a CheckRunRecord
-   * @param criteriaQuery the criteria query
-   * @param link the link
-   * @param run the run
-   * @param dataset the dataset
-   * @param batch the batch
-   * @param wherePredicates the where predicates
-   * @param havingPredicates the having predicates
-   * @param parametersMap the parameter map
-   */
-  public record QueryParts<T>(CriteriaQuery<T> criteriaQuery,
-                              Root<LinkRow> link,
-                              Join<LinkRow, RunRow> run,
-                              Join<RunRow, DatasetRow> dataset,
-                              Join<RunRow, BatchRow> batch,
-                              List<Predicate> wherePredicates,
-                              List<Predicate> havingPredicates,
-                              Map<ParameterExpression<?>, Object> parametersMap) {
-
+      Map<ParameterExpression<?>, Object> parametersMap) {
   }
 
   /**

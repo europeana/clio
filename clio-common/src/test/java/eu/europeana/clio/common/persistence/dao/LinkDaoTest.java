@@ -380,6 +380,120 @@ class LinkDaoTest {
   }
 
   @Test
+  void getLinksWithRunsForFilters_withZeroOffsetAndSmallLimit() throws PersistenceException {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    filters.setOffset(0);
+    filters.setLimit(10);
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> {
+          StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+          doReturn(streamResult).when(mock).performForStream(any());
+        })) {
+
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+
+      // Then
+      assertNotNull(result);
+    }
+  }
+
+  @Test
+  void getLinksWithRunsForFilters_withLargeOffsetAndLimit() throws PersistenceException {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    filters.setOffset(100);
+    filters.setLimit(50);
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> {
+          StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+          doReturn(streamResult).when(mock).performForStream(any());
+        })) {
+
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+
+      // Then
+      assertNotNull(result);
+    }
+  }
+
+  @Test
+  void getLinksWithRunsForFilters_callsPerformForStreamWithDatabaseAction() throws PersistenceException {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    filters.setOffset(5);
+    filters.setLimit(25);
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> {
+          StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+          doReturn(streamResult).when(mock).performForStream(any());
+        })) {
+
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+
+      // Then
+      assertNotNull(result);
+    }
+  }
+
+  @Test
+  void getLinksWithRunsForFilters_withDefaultFilters() throws PersistenceException {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    // FieldFilters default offset and limit are 0 and Integer.MAX_VALUE respectively
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> {
+          StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+          doReturn(streamResult).when(mock).performForStream(any());
+        })) {
+
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+
+      // Then
+      assertNotNull(result);
+    }
+  }
+
+  @Test
+  void getLinksWithRunsForFilters_withMaxOffset() throws PersistenceException {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    filters.setOffset(Integer.MAX_VALUE);
+    filters.setLimit(100);
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> {
+          StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+          doReturn(streamResult).when(mock).performForStream(any());
+        })) {
+
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+
+      // Then
+      assertNotNull(result);
+    }
+  }
+
+  @Test
   void uncheckedLinkDataRecord_createsInstanceCorrectly() {
     // Given
     Instant time = Instant.now();

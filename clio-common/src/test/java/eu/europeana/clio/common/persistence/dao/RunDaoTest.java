@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -332,7 +333,7 @@ class RunDaoTest {
 
     Expression<Double> quotResult = mock(Expression.class);
     doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
-    
+
     Expression<Double> quotResultCasted = mock(Expression.class);
     when(quotResult.as(Double.class)).thenReturn(quotResultCasted);
 
@@ -425,7 +426,7 @@ class RunDaoTest {
 
     Expression<Double> quotResult = mock(Expression.class);
     doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
-    
+
     Expression<Double> quotResultCasted = mock(Expression.class);
     when(quotResult.as(Double.class)).thenReturn(quotResultCasted);
 
@@ -479,7 +480,7 @@ class RunDaoTest {
     when(runRow.getDataset()).thenReturn(datasetRow);
 
     try (MockedStatic<DatasetDao> datasetDaoMock = mockStatic(DatasetDao.class)) {
-      var mockDataset = mock(eu.europeana.clio.common.model.Dataset.class);
+      var mockDataset = mock(Dataset.class);
       datasetDaoMock.when(() -> DatasetDao.convert(datasetRow)).thenReturn(mockDataset);
 
       // When
@@ -506,7 +507,7 @@ class RunDaoTest {
     when(runRow.getDataset()).thenReturn(datasetRow);
 
     try (MockedStatic<DatasetDao> datasetDaoMock = mockStatic(DatasetDao.class)) {
-      var mockDataset = mock(eu.europeana.clio.common.model.Dataset.class);
+      var mockDataset = mock(Dataset.class);
       datasetDaoMock.when(() -> DatasetDao.convert(datasetRow)).thenReturn(mockDataset);
 
       // When

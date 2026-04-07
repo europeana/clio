@@ -224,10 +224,7 @@ public class FieldFilters {
    * @return the integer
    */
   private static Integer sanitizeLimit(Integer value) {
-    if (value == null) {
-      return 0;
-    }
-    if (value < 0) {
+    if (value == null || value < 0) {
       return 0;
     }
     if (value < MIN_PAGE_LIMIT) {

@@ -21,6 +21,7 @@ import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.LinkDao.UncheckedLinkData;
+import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import java.lang.reflect.Field;
@@ -55,26 +56,26 @@ class LinkDaoTest {
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) ->
             when(mock.performInTransaction(any())).thenAnswer(invocation -> {
-          Session session = mock(Session.class);
-          RunRow run = mock(RunRow.class);
-          when(session.find(RunRow.class, 10L)).thenReturn(run);
+              Session session = mock(Session.class);
+              RunRow run = mock(RunRow.class);
+              when(session.find(RunRow.class, 10L)).thenReturn(run);
 
-          doAnswer(inv -> {
-            LinkRow linkRow = inv.getArgument(0);
-            try {
-              Field field = LinkRow.class.getDeclaredField("linkId");
-              field.setAccessible(true);
-              field.setLong(linkRow, 99L);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-            return null;
-          }).when(session).persist(any());
+              doAnswer(inv -> {
+                LinkRow linkRow = inv.getArgument(0);
+                try {
+                  Field field = LinkRow.class.getDeclaredField("linkId");
+                  field.setAccessible(true);
+                  field.setLong(linkRow, 99L);
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+                return null;
+              }).when(session).persist(any());
 
-          doNothing().when(session).flush();
+              doNothing().when(session).flush();
 
-          return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
-        }))) {
+              return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
+            }))) {
 
       UncheckedLinkData data = new UncheckedLinkData(
           10L, "recordId", Instant.ofEpochMilli(1000), "edmType", "contentTier", "metaTier",
@@ -148,7 +149,8 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      PersistenceException persistenceException = assertThrows(PersistenceException.class, () -> linkDao.createUncheckedLink(data));
+      PersistenceException persistenceException = assertThrows(PersistenceException.class,
+          () -> linkDao.createUncheckedLink(data));
       // Then
       assertEquals("Cannot create link: run with ID 999 does not exist.", persistenceException.getMessage());
     }
@@ -411,5 +413,204 @@ class LinkDaoTest {
     // Then
     assertEquals(run, runWithLink.run());
     assertEquals(link, runWithLink.link());
+  }
+
+  @Test
+  void runWithLinkRecord_createsInstanceFromRowsCorrectly() {
+    // Given
+    RunRow runRow = mock(RunRow.class);
+    when(runRow.getRunId()).thenReturn(1L);
+    when(runRow.getStartingTime()).thenReturn(Instant.now());
+
+    DatasetRow datasetRow = mock(DatasetRow.class);
+    when(datasetRow.getDatasetId()).thenReturn("testDatasetId");
+    when(runRow.getDataset()).thenReturn(datasetRow);
+
+    LinkRow linkRow = mock(LinkRow.class);
+    when(linkRow.getLinkId()).thenReturn(100L);
+    when(linkRow.getRecordId()).thenReturn("testRecord");
+    when(linkRow.getRecordLastIndexTime()).thenReturn(Instant.ofEpochMilli(5000));
+    when(linkRow.getRecordEdmType()).thenReturn("testType");
+    when(linkRow.getRecordContentTier()).thenReturn("testContentTier");
+    when(linkRow.getRecordMetadataTier()).thenReturn("testMetadataTier");
+    when(linkRow.getLinkType()).thenReturn(LinkRow.LinkType.IS_SHOWN_AT);
+    when(linkRow.getLinkUrl()).thenReturn("http://example.com");
+    when(linkRow.getServer()).thenReturn("http://example.com/");
+    when(linkRow.getError()).thenReturn(null);
+    when(linkRow.getCheckingTime()).thenReturn(Instant.ofEpochMilli(6000));
+
+    // When
+    RunWithLink runWithLink = new RunWithLink(runRow, linkRow);
+
+    // Then
+    assertNotNull(runWithLink);
+    assertNotNull(runWithLink.run());
+    assertNotNull(runWithLink.link());
+    assertEquals(1L, runWithLink.run().getRunId());
+    assertEquals("http://example.com", runWithLink.link().getLinkUrl());
+  }
+
+  @Test
+  void createUncheckedLink_computesServerWithSchemeButNoAuthority() throws PersistenceException {
+    // Given
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> when(mock.performInTransaction(any())).thenAnswer(invocation -> {
+          Session session = mock(Session.class);
+          RunRow run = mock(RunRow.class);
+          when(session.find(RunRow.class, 25L)).thenReturn(run);
+
+          doAnswer(inv -> {
+            LinkRow linkRow = inv.getArgument(0);
+            assertNull(linkRow.getServer());
+            try {
+              Field field = LinkRow.class.getDeclaredField("linkId");
+              field.setAccessible(true);
+              field.setLong(linkRow, 55L);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+            return null;
+          }).when(session).persist(any());
+
+          doNothing().when(session).flush();
+
+          return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
+        }))) {
+
+      UncheckedLinkData data = new UncheckedLinkData(
+          25L, "rec", Instant.now(), "type", "tier", "tier",
+          "://no-authority", eu.europeana.clio.common.model.LinkType.IS_SHOWN_AT
+      );
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      long id = linkDao.createUncheckedLink(data);
+
+      // Then
+      assertEquals(55L, id);
+    }
+  }
+
+  @Test
+  void createUncheckedLink_computesServerWithNoScheme() throws PersistenceException {
+    // Given
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> when(mock.performInTransaction(any())).thenAnswer(invocation -> {
+          Session session = mock(Session.class);
+          RunRow run = mock(RunRow.class);
+          when(session.find(RunRow.class, 35L)).thenReturn(run);
+
+          doAnswer(inv -> {
+            LinkRow linkRow = inv.getArgument(0);
+            assertNull(linkRow.getServer());
+            try {
+              Field field = LinkRow.class.getDeclaredField("linkId");
+              field.setAccessible(true);
+              field.setLong(linkRow, 44L);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+            return null;
+          }).when(session).persist(any());
+
+          doNothing().when(session).flush();
+
+          return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
+        }))) {
+
+      UncheckedLinkData data = new UncheckedLinkData(
+          35L, "rec", Instant.now(), "type", "tier", "tier",
+          "example.com/path", LinkType.IS_SHOWN_BY
+      );
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      long id = linkDao.createUncheckedLink(data);
+
+      // Then
+      assertEquals(44L, id);
+    }
+  }
+
+  @Test
+  void createUncheckedLink_withValidUrl_computesServerCorrectlyWithSchemeAndAuthority() throws PersistenceException {
+    // Given
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> when(mock.performInTransaction(any())).thenAnswer(invocation -> {
+          Session session = mock(Session.class);
+          RunRow run = mock(RunRow.class);
+          when(session.find(RunRow.class, 45L)).thenReturn(run);
+
+          doAnswer(inv -> {
+            LinkRow linkRow = inv.getArgument(0);
+            assertEquals("http://example.org:8080/", linkRow.getServer());
+            try {
+              Field field = LinkRow.class.getDeclaredField("linkId");
+              field.setAccessible(true);
+              field.setLong(linkRow, 33L);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+            return null;
+          }).when(session).persist(any());
+
+          doNothing().when(session).flush();
+
+          return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
+        }))) {
+
+      UncheckedLinkData data = new UncheckedLinkData(
+          45L, "recordId", Instant.now(), "type", "tier", "tier",
+          "http://example.org:8080/path/to/resource", LinkType.IS_SHOWN_AT
+      );
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      long id = linkDao.createUncheckedLink(data);
+
+      // Then
+      assertEquals(33L, id);
+    }
+  }
+
+  @Test
+  void computeServerPrivateMethod_handlesExceptionGracefully() throws PersistenceException {
+    // Given - testing through createUncheckedLink with a URL that will trigger the catch block
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, ctx) -> when(mock.performInTransaction(any())).thenAnswer(invocation -> {
+          Session session = mock(Session.class);
+          RunRow run = mock(RunRow.class);
+          when(session.find(RunRow.class, 50L)).thenReturn(run);
+
+          doAnswer(inv -> {
+            LinkRow linkRow = inv.getArgument(0);
+            // The server should be null due to exception in computeServer
+            assertNull(linkRow.getServer());
+            try {
+              Field field = LinkRow.class.getDeclaredField("linkId");
+              field.setAccessible(true);
+              field.setLong(linkRow, 22L);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+            return null;
+          }).when(session).persist(any());
+
+          doNothing().when(session).flush();
+
+          return ((HibernateSessionUtils.DatabaseAction<?>) invocation.getArgument(0)).perform(session);
+        }))) {
+
+      UncheckedLinkData data = new UncheckedLinkData(
+          50L, "rec", Instant.now(), "type", "tier", "tier",
+          "ht\ttp://invalid", LinkType.IS_SHOWN_AT);
+      LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
+
+      // When
+      long id = linkDao.createUncheckedLink(data);
+
+      // Then
+      assertEquals(22L, id);
+    }
   }
 }

@@ -161,16 +161,17 @@ public class RunDao {
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
 
     // Compute aggregations
-    Expression<Long> errorsLinks = criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB));
-    Expression<Long> totalLinks = criteriaBuilder.<Long>selectCase()
-                                                 .when(criteriaBuilder.equal(criteriaBuilder.count(link),0L), 1L)
-                                                 .otherwise(criteriaBuilder.count(link));
+    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)),0).as(Long.class);
+    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link),0).as(Long.class);
+
     Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
         criteriaBuilder.prod(
-            criteriaBuilder.quot(
-                criteriaBuilder.toDouble(criteriaBuilder.coalesce(errorsLinks, 0)),
-                criteriaBuilder.toDouble(criteriaBuilder.coalesce(totalLinks, 1))
-            ),
+            criteriaBuilder.<Double>selectCase()
+                               .when(criteriaBuilder.equal(totalLinks,0D), 0D)
+                               .otherwise(criteriaBuilder.quot(
+                                   criteriaBuilder.toDouble(errorsLinks),
+                                   criteriaBuilder.toDouble(totalLinks)
+                               ).as(Double.class)),
             HUNDRED
         )).cast(Integer.class);
 
@@ -278,6 +279,9 @@ public class RunDao {
       // where & having
       criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
       criteriaQuery.having(queryParts.havingPredicates());
+
+      // order by (specific to LinkDao)
+      criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
 
       // group by
       criteriaQuery.groupBy(

@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.CheckRunRecord;
+import eu.europeana.clio.common.model.CheckRun;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
@@ -261,7 +261,7 @@ class ReportingControllerTest {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     FilterRequest request = new FilterRequest(filters);
-    CheckRunRecord checkRunRecord = mock(CheckRunRecord.class);
+    CheckRun checkRunRecord = mock(CheckRun.class);
     when(reportingEngine.findCheckRuns(any(FieldFilters.class))).thenReturn(List.of(checkRunRecord));
 
     // When

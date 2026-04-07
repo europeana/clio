@@ -1,11 +1,12 @@
 package eu.europeana.clio.reporting.rest.controller;
 
+import static eu.europeana.clio.common.model.FieldFilters.sanitizeFieldFilters;
 import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
-import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.sanitizeFieldFilters;
+
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.CheckRunRecord;
+import eu.europeana.clio.common.model.CheckRun;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
@@ -241,7 +242,7 @@ public class ReportingController {
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
-    final List<CheckRunRecord> checkRunRecords = this.reportingEngine.findCheckRuns(sanitizedFilters);
+    final List<CheckRun> checkRunRecords = this.reportingEngine.findCheckRuns(sanitizedFilters);
 
     return new ResponseEntity<>( new FilterResponse(checkRunRecords, sanitizedFilters), HttpStatus.OK);
   }

@@ -12,14 +12,14 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize
 public record CheckRun(Long id,
                        @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                             @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                             Date date,
+                       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                       Date date,
                        String datasetId,
                        String datasetName,
                        Long datasetSize,
                        @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                             @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                             Date datasetLastIndex,
+                       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                       Date datasetLastIndex,
                        String provider,
                        String dataProvider,
                        int percentLinksInOperation) {

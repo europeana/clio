@@ -17,9 +17,6 @@ import org.springframework.http.ResponseEntity;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ControllerUtils {
-
-
-
   /**
    * Gets http entity.
    *
@@ -34,6 +31,4 @@ public final class ControllerUtils {
     headers.setContentType(MediaType.valueOf("text/csv"));
     return ResponseEntity.ok().headers(headers).body(reportBytes);
   }
-
-
 }

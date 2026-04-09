@@ -7,25 +7,25 @@ import java.util.Date;
 import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
- * Check Run Record that represents a single filtering result
+ * Run a summary record that represents a single filtering result
  */
 @JsonSerialize
-public record CheckRun(Long id,
-                       @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                       Date date,
-                       String datasetId,
-                       String datasetName,
-                       Long datasetSize,
-                       @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
-                       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                       Date datasetLastIndex,
-                       String provider,
-                       String dataProvider,
-                       int percentLinksInOperation) {
+public record RunSummary(Long id,
+                         @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
+                         @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                         Date date,
+                         String datasetId,
+                         String datasetName,
+                         Long datasetSize,
+                         @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
+                         @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
+                         Date datasetLastIndex,
+                         String provider,
+                         String dataProvider,
+                         int percentLinksInOperation) {
 
   /**
-   * Instantiates a new Check Run record.
+   * Instantiates a new run summary record.
    *
    * @param id the id
    * @param date the date
@@ -37,7 +37,7 @@ public record CheckRun(Long id,
    * @param dataProvider the data provider
    * @param percentLinksInOperation the percent links in operation
    */
-  public CheckRun(Long id, Long date,
+  public RunSummary(Long id, Long date,
       String datasetId, String datasetName, Long datasetSize, Long datasetLastIndex,
       String provider, String dataProvider, int percentLinksInOperation) {
     this(id, new Date(date), datasetId, datasetName, datasetSize, new Date(datasetLastIndex), provider, dataProvider,

@@ -3,7 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
@@ -127,7 +127,7 @@ public class RunDao {
    * @param criteriaBuilder the criteria builder
    * @param predicates the wherePredicates
    * @param dataset the dataset
-   * @param parametersMap the parameters map
+   * @param parametersMap the parameter's map
    * @param fieldName the field name
    */
   public static void addPredicateAndParameter(Set<String> fieldValue, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
@@ -141,14 +141,14 @@ public class RunDao {
 
   /**
    * Builds common query parts for check runs queries with all predicates and aggregations. This method handles the construction
-   * of criteria query with all standard filters.
+   * of a criteria query with all standard filters.
    *
    * @param criteriaBuilder the criteria builder
    * @param clazz the result class
    * @param filters the field filters to apply
    * @return common query parts with predicates already applied
    */
-  public static <T> CommonCheckRunsQueryParts<T> buildCommonCheckRunsQueryWithPredicates(
+  public static <T> CommonRunSummaryQueryParts<T> buildCommonRunSummaryQueryWithPredicates(
       CriteriaBuilder criteriaBuilder, Class<T> clazz, FieldFilters filters) {
     // Build base query parts
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
@@ -191,7 +191,7 @@ public class RunDao {
     addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates,
         percentLinksInOperation, parametersMap);
 
-    return new CommonCheckRunsQueryParts<>(
+    return new CommonRunSummaryQueryParts<>(
         criteriaQuery,
         link,
         run,
@@ -247,24 +247,24 @@ public class RunDao {
   }
 
   /**
-   * Finds check runs.
+   * Finds runs summary.
    *
    * @param filters the filters
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public List<CheckRun> findCheckRuns(FieldFilters filters) throws PersistenceException {
+  public List<RunSummary> findRunsSummary(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonCheckRunsQueryParts<CheckRun> queryParts = buildCommonCheckRunsQueryWithPredicates(
-          criteriaBuilder, CheckRun.class, filters);
+      CommonRunSummaryQueryParts<RunSummary> queryParts = buildCommonRunSummaryQueryWithPredicates(
+          criteriaBuilder, RunSummary.class, filters);
 
-      CriteriaQuery<CheckRun> criteriaQuery = queryParts.criteriaQuery();
+      CriteriaQuery<RunSummary> criteriaQuery = queryParts.criteriaQuery();
       Expression<Long> startingTime = criteriaBuilder.min(queryParts.run().get(FieldNames.STARTING_TIME_DB));
 
       // select
       criteriaQuery.select(criteriaBuilder.construct(
-          CheckRun.class,
+          RunSummary.class,
           queryParts.run().get(FieldNames.RUN_ID_DB),
           startingTime.alias(FieldNames.STARTING_TIME_DB),
           queryParts.dataset().get(FieldNames.DATASET_ID_DB),
@@ -291,7 +291,7 @@ public class RunDao {
       );
 
       // execute query
-      TypedQuery<CheckRun> query = session.createQuery(criteriaQuery);
+      TypedQuery<RunSummary> query = session.createQuery(criteriaQuery);
       queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
 
       return query.setFirstResult(filters.getOffset())
@@ -301,22 +301,22 @@ public class RunDao {
   }
 
   /**
-   * Represents the common components of a check runs criteria query.
+   * Represents the common components of a run summary criteria query.
    *
-   * @param <T> the type parameter e.g., a CheckRunRecord
+   * @param <T> the type parameter e.g., a RunSummary
    * @param criteriaQuery the criteria query
    * @param link the link
    * @param run the run
    * @param dataset the dataset
    * @param batch the batch
-   * @param errorsLinks the errors links
+   * @param errorsLinks the error's link
    * @param totalLinks the total links
    * @param percentLinksInOperation the percent links in operation
    * @param wherePredicates the where predicates
    * @param havingPredicates the having predicates
    * @param parametersMap the parameter map
    */
-  public record CommonCheckRunsQueryParts<T>(
+  public record CommonRunSummaryQueryParts<T>(
       CriteriaQuery<T> criteriaQuery,
       Root<LinkRow> link,
       Join<LinkRow, RunRow> run,

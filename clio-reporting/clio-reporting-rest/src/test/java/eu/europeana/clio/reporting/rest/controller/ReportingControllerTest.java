@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
@@ -257,15 +257,15 @@ class ReportingControllerTest {
   }
 
   @Test
-  void findChecks_returnsFilteringResponse() throws Exception {
+  void findRunsSummary_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     FilterRequest request = new FilterRequest(filters);
-    CheckRun checkRunRecord = mock(CheckRun.class);
-    when(reportingEngine.findCheckRuns(any(FieldFilters.class))).thenReturn(List.of(checkRunRecord));
+    RunSummary runSummary = mock(RunSummary.class);
+    when(reportingEngine.findRunsSummary(any(FieldFilters.class))).thenReturn(List.of(runSummary));
 
     // When
-    var responseEntity = controller.findChecks(request);
+    var responseEntity = controller.findRunsSummary(request);
 
     // Then
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -278,7 +278,7 @@ class ReportingControllerTest {
   }
 
   @Test
-  void exportChecks_returnsBytes_andHeaders() throws Exception {
+  void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     FilterRequest request = new FilterRequest(filters);
@@ -286,7 +286,7 @@ class ReportingControllerTest {
     when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
 
     // When
-    HttpEntity<byte[]> entity = controller.exportChecks(request);
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
 
     // Then
     assertArrayEquals(csv.getBytes(), entity.getBody());
@@ -295,7 +295,7 @@ class ReportingControllerTest {
   }
 
   @Test
-  void exportChecks_whenEngineThrows_throwsClioException() throws Exception {
+  void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     FilterRequest request = new FilterRequest(filters);
@@ -303,7 +303,7 @@ class ReportingControllerTest {
     when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
 
     // When / Then
-    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportChecks(request));
+    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
     assertEquals(expectedException, actualException);
   }
 

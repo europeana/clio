@@ -4,7 +4,7 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -235,15 +235,15 @@ public final class ReportingEngine {
 
 
     /**
-     * Get check of runs of reports for the given filters by finding records processed
+     * Get a summary of runs for the given filters by finding records processed
      * by the Clio Link Checking Service.
      *
      * @param clioFilters the clio filters
-     * @return the check runs
+     * @return the run summary
      * @throws PersistenceException the persistence exception
      */
-    public List<CheckRun> findCheckRuns(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).findCheckRuns(clioFilters);
+    public List<RunSummary> findRunsSummary(FieldFilters clioFilters) throws PersistenceException {
+        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummary(clioFilters);
     }
 
     /**

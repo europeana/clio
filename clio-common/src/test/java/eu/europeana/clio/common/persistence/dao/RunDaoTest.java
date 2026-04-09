@@ -8,11 +8,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
+import eu.europeana.clio.common.persistence.dao.RunDao.CommonRunSummaryQueryParts;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -281,13 +282,13 @@ class RunDaoTest {
   }
 
   @Test
-  void buildCheckRunsQueryParts_buildsAllPartsSuccessfully() {
+  void buildRunSummaryQueryParts_buildsAllPartsSuccessfully() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRun> criteriaQuery = mock(CriteriaQuery.class);
+    CriteriaQuery<RunSummary> criteriaQuery = mock(CriteriaQuery.class);
     FieldFilters filters = new FieldFilters();
     filters = FieldFilters.sanitizeFieldFilters(filters);
-    when(criteriaBuilder.createQuery(CheckRun.class)).thenReturn(criteriaQuery);
+    when(criteriaBuilder.createQuery(RunSummary.class)).thenReturn(criteriaQuery);
 
     Root<LinkRow> link = mock(Root.class);
     when(criteriaQuery.from(LinkRow.class)).thenReturn(link);
@@ -356,8 +357,8 @@ class RunDaoTest {
     when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
 
     // When
-    RunDao.CommonCheckRunsQueryParts<CheckRun> parts = RunDao.buildCommonCheckRunsQueryWithPredicates(criteriaBuilder,
-        CheckRun.class, filters);
+    CommonRunSummaryQueryParts<RunSummary> parts = RunDao.buildCommonRunSummaryQueryWithPredicates(criteriaBuilder,
+        RunSummary.class, filters);
 
     // Then
     assertNotNull(parts);
@@ -375,11 +376,11 @@ class RunDaoTest {
   }
 
   @Test
-  void buildCheckRunsQueryParts_hasEmptyPredicatesAndParameter() {
+  void buildRunSummaryQueryParts_hasEmptyPredicatesAndParameter() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
-    CriteriaQuery<CheckRun> criteriaQuery = mock(CriteriaQuery.class);
-    when(criteriaBuilder.createQuery(CheckRun.class)).thenReturn(criteriaQuery);
+    CriteriaQuery<RunSummary> criteriaQuery = mock(CriteriaQuery.class);
+    when(criteriaBuilder.createQuery(RunSummary.class)).thenReturn(criteriaQuery);
     FieldFilters filters = new FieldFilters();
     filters = FieldFilters.sanitizeFieldFilters(filters);
     Root<LinkRow> link = mock(Root.class);
@@ -449,8 +450,8 @@ class RunDaoTest {
     when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
 
     // When
-    RunDao.CommonCheckRunsQueryParts<CheckRun> parts = RunDao.buildCommonCheckRunsQueryWithPredicates(criteriaBuilder,
-        CheckRun.class, filters);
+    CommonRunSummaryQueryParts<RunSummary> parts = RunDao.buildCommonRunSummaryQueryWithPredicates(criteriaBuilder,
+        RunSummary.class, filters);
 
     // Then
     assertNotNull(parts);

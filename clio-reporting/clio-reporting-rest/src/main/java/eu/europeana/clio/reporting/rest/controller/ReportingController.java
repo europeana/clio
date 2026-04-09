@@ -6,7 +6,7 @@ import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHtt
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.CheckRun;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
@@ -55,8 +55,8 @@ public class ReportingController {
   public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
-  public static final String CHECKS_ENDPOINT_PATH = "/checks";
-  public static final String EXPORT_CHECKS_ENDPOINT_PATH = "/export-checks";
+  public static final String RUNS_SUMMARY_ENDPOINT_PATH = "/runs/summary";
+  public static final String RUNS_LINKS_EXPORT_ENDPOINT_PATH = "/runs/links/export";
 
   private final ReportingEngine reportingEngine;
 
@@ -224,17 +224,17 @@ public class ReportingController {
 
 
   /**
-   * Get the result of the given {@link FilterRequest}.
+   * Get the run summary of the given {@link FilterRequest}.
    *
    * @param request the request
    * @return the checks
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = CHECKS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = RUNS_SUMMARY_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
   @Operation(summary = "Returns a complete filtered view of Clio checks")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<FilterResponse> findChecks(
+  public ResponseEntity<FilterResponse> findRunsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
     if (request.getFilterOptions() == null) {
@@ -242,20 +242,20 @@ public class ReportingController {
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
-    final List<CheckRun> checkRunRecords = this.reportingEngine.findCheckRuns(sanitizedFilters);
+    final List<RunSummary> runSummaries = this.reportingEngine.findRunsSummary(sanitizedFilters);
 
-    return new ResponseEntity<>( new FilterResponse(checkRunRecords, sanitizedFilters), HttpStatus.OK);
+    return new ResponseEntity<>( new FilterResponse(runSummaries, sanitizedFilters), HttpStatus.OK);
   }
 
 
   /**
-   * Export the checks matching the given {@link FilterRequest} as a CSV file.
+   * Export the runs links matching the given {@link FilterRequest} as a CSV file.
    *
    * @param request the request
    * @return the response entity
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = EXPORT_CHECKS_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = RUNS_LINKS_EXPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
   @Operation(summary = "Get filtered report with link checking results.",
       description = "The links in the report may be part of multiple batches.")
   @ApiResponses(value = {
@@ -268,7 +268,7 @@ public class ReportingController {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
-  public ResponseEntity<byte[]> exportChecks(
+  public ResponseEntity<byte[]> exportRunsLinks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
     if (request == null || request.getFilterOptions() == null) {

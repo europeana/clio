@@ -40,7 +40,7 @@ class ReportingRunnerTest {
     try (MockedStatic<ReportingEngine> staticMock = mockStatic(ReportingEngine.class);
         MockedConstruction<ReportingEngine> mockedReporting = mockConstruction(ReportingEngine.class,
             (mock, context) -> {
-              doNothing().when(mock).generateReport(any(BufferedWriter.class));
+              doNothing().when(mock).generateReport(any(BufferedWriter.class),any());
             })) {
 
       // When
@@ -51,7 +51,7 @@ class ReportingRunnerTest {
       // Then - check exactly one constructed instance each
       assertEquals(1, mockedReporting.constructed().size());
       ReportingEngine reportingMock = mockedReporting.constructed().getFirst();
-      verify(reportingMock, times(1)).generateReport(any(BufferedWriter.class));
+      verify(reportingMock, times(1)).generateReport(any(BufferedWriter.class), any());
       assertTrue(Files.exists(reportFile));
     }
   }
@@ -69,7 +69,7 @@ class ReportingRunnerTest {
         MockedConstruction<ReportingEngine> mockedReporting = mockConstruction(ReportingEngine.class,
             (mock, context) -> {
               doThrow(testException).when(mock)
-                                    .generateReport(any(BufferedWriter.class));
+                                    .generateReport(any(BufferedWriter.class), any());
             })) {
 
       // When

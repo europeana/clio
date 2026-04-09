@@ -17,13 +17,13 @@ import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
+import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
 import java.io.StringWriter;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 
@@ -36,13 +36,13 @@ class ReportingEngineTest {
     ClioConfigurationProperties clioConfig = mock(ClioConfigurationProperties.class);
     when(config.clioConfigurationProperties()).thenReturn(clioConfig);
     when(config.clioConfigurationProperties().datasetReportLinkTemplate()).thenReturn("http://example.com/datasets/%s");
-    StreamResult<Pair<Run, Link>> streamResult = mock(StreamResult.class);
+    StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
 
     Run run = mock(Run.class);
     Dataset dataset = mock(Dataset.class);
     when(run.getDataset()).thenReturn(dataset);
     when(dataset.getDatasetId()).thenReturn("Dataset1");
-    when(dataset.getSize()).thenReturn(42);
+    when(dataset.getSize()).thenReturn(42L);
     when(dataset.getProvider()).thenReturn("provider");
     when(dataset.getDataProvider()).thenReturn("dataProvider");
 
@@ -59,7 +59,7 @@ class ReportingEngineTest {
     when(link.getServer()).thenReturn("server1");
     when(link.getCheckingTime()).thenReturn(Instant.ofEpochMilli(2000));
     when(link.getError()).thenReturn("404");
-    when(streamResult.get()).thenReturn(Stream.of(Pair.of(run, link)));
+    when(streamResult.get()).thenReturn(Stream.of(new RunWithLink(run, link)));
 
     try (MockedConstruction<LinkDao> ignored = mockConstruction(LinkDao.class,
         (mock, context) -> when(mock.getBrokenLinksInLatestCompletedRuns()).thenReturn(streamResult))) {
@@ -67,7 +67,7 @@ class ReportingEngineTest {
       ReportingEngine engine = new ReportingEngine(config);
       StringWriter sw = new StringWriter();
       // When
-      engine.generateReport(sw);
+      engine.generateReport(sw, null);
       String out = sw.toString();
       // Then
       assertTrue(out.contains("Dataset ID"), "CSV header must be present");
@@ -113,7 +113,7 @@ class ReportingEngineTest {
             (mock, context) -> {
               when(mock.getLatestReports(10)).thenReturn(reports);
               when(mock.getAllReportDetails()).thenReturn(reports);
-              when(mock.getReport(7L)).thenReturn(reports.getFirst());
+              when(mock.getReportByBatchId(7L)).thenReturn(reports.getFirst());
             })) {
 
       ReportingEngine engine = new ReportingEngine(config);

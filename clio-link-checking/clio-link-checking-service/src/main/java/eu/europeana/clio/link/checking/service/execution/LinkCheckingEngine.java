@@ -11,6 +11,7 @@ import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
 import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
+import eu.europeana.clio.common.persistence.dao.LinkDao.UncheckedLinkData;
 import eu.europeana.clio.common.persistence.dao.RunDao;
 import eu.europeana.clio.link.checking.service.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.link.checking.service.dao.MongoCoreDao;
@@ -159,9 +160,9 @@ public final class LinkCheckingEngine {
         for (SampleRecord sampleRecord : sampleRecords) {
             for (Entry<LinkType, Set<String>> links : sampleRecord.getLinks().entrySet()) {
                 for (String url : links.getValue()) {
-                    linkDao.createUncheckedLink(runId, sampleRecord.getRecordId(), sampleRecord.getLastIndexTime(),
+                    linkDao.createUncheckedLink( new UncheckedLinkData(runId, sampleRecord.getRecordId(), sampleRecord.getLastIndexTime(),
                             sampleRecord.getEdmType(), sampleRecord.getContentTier(), sampleRecord.getMetadataTier(), url,
-                            links.getKey());
+                            links.getKey()));
                 }
             }
         }

@@ -227,12 +227,12 @@ public class ReportingController {
    * Get the run summary of the given {@link FilterRequest}.
    *
    * @param request the request
-   * @return the checks
+   * @return the run dataset summaries
    * @throws ClioException the clio exception
    */
   @PostMapping(value = RUNS_SUMMARY_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
-  @Operation(summary = "Returns a complete filtered view of Clio checks")
+  @Operation(summary = "Returns a complete filtered view of Clio runs dataset summaries with pagination")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
   public ResponseEntity<FilterResponse> findRunsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
@@ -256,8 +256,8 @@ public class ReportingController {
    * @throws ClioException the clio exception
    */
   @PostMapping(value = RUNS_LINKS_EXPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @Operation(summary = "Get filtered report with link checking results.",
-      description = "The links in the report may be part of multiple batches.")
+  @Operation(summary = "Export filtered report of Clio runs dataset summaries with pagination",
+      description = "The links in the report may be part of multiple runs.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
           content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),

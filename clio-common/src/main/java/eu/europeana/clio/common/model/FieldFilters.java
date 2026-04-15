@@ -178,8 +178,8 @@ public class FieldFilters {
         filters.getExcludedCheckId(),             // No sanitization needed for numbers
         filters.getDateFrom(),                    // No sanitization needed for dates
         filters.getDateTo(),                      // No sanitization needed for dates
-        sanitizeNumber(filters.getPercentLinksInOperationFrom()),
-        sanitizeNumber(filters.getPercentLinksInOperationTo()),
+        filters.getPercentLinksInOperationFrom(), // No sanitization needed for range
+        filters.getPercentLinksInOperationTo(),   // No sanitization needed for range
         sanitizeNumber(filters.getOffset()),
         sanitizeLimit(filters.getLimit())
     );

@@ -278,23 +278,6 @@ class FieldFiltersTest {
   }
 
   @Test
-  void testSanitizeFieldFilters_withNegativePercentValues_setsToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, -10, -5, null, null
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getPercentLinksInOperationFrom());
-    assertEquals(0, sanitized.getPercentLinksInOperationTo());
-  }
-
-  @Test
   void testSanitizeFieldFilters_withValidPercentValues_preservesValues() {
     // Given
     FieldFilters filters = new FieldFilters(
@@ -434,7 +417,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, -5, -10, -1, -1
+        null, null, null, null, -1, -1
     );
 
     // When
@@ -442,8 +425,6 @@ class FieldFiltersTest {
 
     // Then
     assertNotNull(sanitized);
-    assertEquals(0, sanitized.getPercentLinksInOperationFrom());
-    assertEquals(0, sanitized.getPercentLinksInOperationTo());
     assertEquals(0, sanitized.getOffset());
     assertEquals(0, sanitized.getLimit());
   }

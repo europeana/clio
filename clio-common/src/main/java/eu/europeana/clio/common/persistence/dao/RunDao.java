@@ -109,13 +109,13 @@ public class RunDao {
     if (filters.getPercentLinksInOperationFrom() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
           FieldNames.PERCENT_LINKS_IN_OPERATION_FROM_DB);
-      predicates.add(criteriaBuilder.ge(expressionPercentage, percentLinksInOperationParameter));
+      predicates.add(criteriaBuilder.greaterThanOrEqualTo(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationFrom());
     }
     if (filters.getPercentLinksInOperationTo() != null) {
       ParameterExpression<Integer> percentLinksInOperationParameter = criteriaBuilder.parameter(Integer.class,
           FieldNames.PERCENT_LINKS_IN_OPERATION_TO_DB);
-      predicates.add(criteriaBuilder.lt(expressionPercentage, percentLinksInOperationParameter));
+      predicates.add(criteriaBuilder.lessThanOrEqualTo(expressionPercentage, percentLinksInOperationParameter));
       parametersMap.put(percentLinksInOperationParameter, filters.getPercentLinksInOperationTo());
     }
   }

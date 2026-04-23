@@ -237,13 +237,17 @@ public class ReportingController {
   public ResponseEntity<FilterResponse> findRunsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request.getFilterOptions() == null) {
+    if (request.getFilters() == null) {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final FieldFilters filterOptions = this.reportingEngine.findRunsSummaryFilterOptions(sanitizedFilters);
     final List<RunSummary> runSummaries = this.reportingEngine.findRunsSummary(sanitizedFilters);
-
+    sanitizedFilters.setProvider(filterOptions.getProvider());
+    sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
+    sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
+    sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
     return new ResponseEntity<>( new FilterResponse(runSummaries, sanitizedFilters), HttpStatus.OK);
   }
 
@@ -271,10 +275,10 @@ public class ReportingController {
   public ResponseEntity<byte[]> exportRunsLinks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request == null || request.getFilterOptions() == null) {
+    if (request == null || request.getFilters() == null) {
       return ResponseEntity.badRequest().build();
     }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilterOptions());
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
     final String report = reportingEngine.generateReport(sanitizedFilters);
     if (report == null) {
       throw new ReportNotFoundException("Report not found.");

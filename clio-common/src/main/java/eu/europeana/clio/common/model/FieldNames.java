@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class FieldNames {
 
-  public static final String FILTERS = "filterOptions";
+  public static final String FILTERS = "filters";
+  public static final String FILTERS_OPTIONS = "filtersOptions";
   public static final String PROVIDER = "provider";
   public static final String DATA_PROVIDER = "dataProvider";
   public static final String DATASET_ID = "datasetId";

@@ -261,25 +261,25 @@ public class RunDao {
 
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
-
+      List<RunSummary> runSummaries = query.getResultStream().toList();
       Map<ClioFilterField, Set<String>> result = new EnumMap<>(ClioFilterField.class);
       ClioFilterField
           .getValueFields()
           .forEach(fieldName -> {
             Set<String> stringSet = switch (fieldName) {
-              case DATASET_NAME -> query.getResultStream()
+              case DATASET_NAME -> runSummaries.stream()
                                         .map(RunSummary::datasetName)
                                         .filter(value -> value != null && !value.isEmpty())
                                         .collect(Collectors.toSet());
-              case DATASET_ID -> query.getResultStream()
+              case DATASET_ID -> runSummaries.stream()
                                       .map(RunSummary::datasetId)
                                       .filter(value -> value != null && !value.isEmpty())
                                       .collect(Collectors.toSet());
-              case PROVIDER -> query.getResultStream()
+              case PROVIDER -> runSummaries.stream()
                                     .map(RunSummary::provider)
                                     .filter(value -> value != null && !value.isEmpty())
                                     .collect(Collectors.toSet());
-              case DATA_PROVIDER -> query.getResultStream()
+              case DATA_PROVIDER -> runSummaries.stream()
                                          .map(RunSummary::dataProvider)
                                          .filter(value -> value != null && !value.isEmpty())
                                          .collect(Collectors.toSet());
@@ -319,7 +319,7 @@ public class RunDao {
     });
   }
 
-  private static TypedQuery<RunSummary> getRunSummaryTypedQuery(FieldFilters filters, Session session) {
+  public static TypedQuery<RunSummary> getRunSummaryTypedQuery(FieldFilters filters, Session session) {
     CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
     CommonRunSummaryQueryParts<RunSummary> queryParts = buildCommonRunSummaryQueryWithPredicates(
         criteriaBuilder, RunSummary.class, filters);

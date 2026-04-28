@@ -28,7 +28,7 @@ public enum ClioFilterField {
    */
   DATASET_NAME(FieldNames.DATASET_NAME, FieldFilters::getDatasetName, FieldFilters::setDatasetName);
 
-  private static final Integer CLIO_FILTER_FIELD_COUNT = 5;
+  private static final Integer CLIO_FILTER_FIELD_COUNT = 4;
   private final String fieldName;
   private final Function<FieldFilters, Set<String>> valueFilterGetter;
   private final BiConsumer<FieldFilters, Set<String>> valueFilterSetter;
@@ -55,7 +55,6 @@ public enum ClioFilterField {
 
     return result;
   }
-
 
   /**
    * Gets field name.

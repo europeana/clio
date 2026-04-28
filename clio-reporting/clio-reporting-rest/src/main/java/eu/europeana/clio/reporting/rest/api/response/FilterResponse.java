@@ -25,7 +25,7 @@ public class FilterResponse {
 
   private List<RunSummary> results;
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  @JsonProperty(FieldNames.FILTERS_OPTIONS)
+  @JsonProperty(FieldNames.FILTER_OPTIONS)
   private FieldFilters filterOptions;
 
 }

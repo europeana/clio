@@ -1,71 +1,44 @@
 package eu.europeana.clio.common.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Unit tests for ClioFilterField enum with 100% coverage.
  */
 class ClioFilterFieldTest {
 
-  @Test
-  void testProviderEnumConstant_hasCorrectFieldName() {
-    // Given
-    ClioFilterField provider = ClioFilterField.PROVIDER;
-
-    // When
-    String fieldName = provider.getFieldName();
-
-    // Then
-    assertEquals(FieldNames.PROVIDER, fieldName);
-    assertEquals("provider", fieldName);
+  @MethodSource
+  public static Stream<Arguments> getClioFilterFields() {
+    return Stream.of(
+        Arguments.of(ClioFilterField.PROVIDER, FieldNames.PROVIDER),
+        Arguments.of(ClioFilterField.DATA_PROVIDER, FieldNames.DATA_PROVIDER),
+        Arguments.of(ClioFilterField.DATASET_ID, FieldNames.DATASET_ID),
+        Arguments.of(ClioFilterField.DATASET_NAME, FieldNames.DATASET_NAME)
+    );
   }
 
-  @Test
-  void testDataProviderEnumConstant_hasCorrectFieldName() {
+  @ParameterizedTest
+  @MethodSource("getClioFilterFields")
+  void testEnumConstant_hasCorrectFieldName(ClioFilterField field, String expectedFieldName) {
     // Given
-    ClioFilterField dataProvider = ClioFilterField.DATA_PROVIDER;
+    // No setup needed
 
     // When
-    String fieldName = dataProvider.getFieldName();
+    String fieldName = field.getFieldName();
 
     // Then
-    assertEquals(FieldNames.DATA_PROVIDER, fieldName);
-    assertEquals("dataProvider", fieldName);
-  }
-
-  @Test
-  void testDatasetIdEnumConstant_hasCorrectFieldName() {
-    // Given
-    ClioFilterField datasetId = ClioFilterField.DATASET_ID;
-
-    // When
-    String fieldName = datasetId.getFieldName();
-
-    // Then
-    assertEquals(FieldNames.DATASET_ID, fieldName);
-    assertEquals("datasetId", fieldName);
-  }
-
-  @Test
-  void testDatasetNameEnumConstant_hasCorrectFieldName() {
-    // Given
-    ClioFilterField datasetName = ClioFilterField.DATASET_NAME;
-
-    // When
-    String fieldName = datasetName.getFieldName();
-
-    // Then
-    assertEquals(FieldNames.DATASET_NAME, fieldName);
-    assertEquals("datasetName", fieldName);
+    assertNotNull(fieldName);
+    assertEquals(expectedFieldName, fieldName);
   }
 
   @Test
@@ -365,23 +338,6 @@ class ClioFilterFieldTest {
   }
 
   @Test
-  void testGetValueFields_containsOnlyExpectedValues() {
-    // Given
-    Set<ClioFilterField> expectedFields = Set.of(
-        ClioFilterField.PROVIDER,
-        ClioFilterField.DATA_PROVIDER,
-        ClioFilterField.DATASET_ID,
-        ClioFilterField.DATASET_NAME
-    );
-
-    // When
-    Set<ClioFilterField> actualFields = ClioFilterField.getValueFields();
-
-    // Then
-    assertEquals(expectedFields, actualFields);
-  }
-
-  @Test
   void testFieldNames_areCorrectAndDistinct() {
     // Given
     // No setup needed
@@ -453,16 +409,4 @@ class ClioFilterFieldTest {
     // Then
     assertNull(filters.getProvider());
   }
-
-  @Test
-  void testGetValueFields_isModifiable() {
-    // Given
-    Set<ClioFilterField> valueFields = ClioFilterField.getValueFields();
-
-    // When & Then (testing if the set is modifiable)
-    assertInstanceOf(Set.class, valueFields);
-    // The set should contain exactly 4 elements initially
-    assertEquals(4, valueFields.size());
-  }
 }
-

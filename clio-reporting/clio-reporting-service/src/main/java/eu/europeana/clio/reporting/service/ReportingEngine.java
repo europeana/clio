@@ -247,6 +247,17 @@ public final class ReportingEngine {
     }
 
     /**
+     * Find runs summary filter options field filters.
+     *
+     * @param clioFilters the clio filters
+     * @return the field filters
+     * @throws PersistenceException the persistence exception
+     */
+    public FieldFilters findRunsSummaryFilterOptions(FieldFilters clioFilters) throws PersistenceException {
+        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummaryFilterOptions(clioFilters);
+    }
+
+    /**
      * Sanitizes a CSV field to mitigate CSV injection attacks.
      * If the value starts with any of the characters =, +, -, @ it will be prefixed with a single quote (').
      * Null values are preserved.

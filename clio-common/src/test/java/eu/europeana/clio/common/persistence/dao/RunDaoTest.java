@@ -3,16 +3,17 @@ package eu.europeana.clio.common.persistence.dao;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.persistence.dao.RunDao.CommonRunSummaryQueryParts;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
@@ -34,7 +35,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCoalesce;
+import org.hibernate.query.criteria.JpaCriteriaQuery;
+import org.hibernate.query.criteria.JpaExpression;
+import org.hibernate.query.criteria.JpaJoin;
+import org.hibernate.query.criteria.JpaParameterExpression;
+import org.hibernate.query.criteria.JpaPath;
+import org.hibernate.query.criteria.JpaPredicate;
+import org.hibernate.query.criteria.JpaRoot;
+import org.hibernate.query.criteria.JpaSearchedCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
@@ -69,7 +83,7 @@ class RunDaoTest {
     when(criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB)).thenReturn(paramExpression);
     Predicate predicate = mock(Predicate.class);
 
-    jakarta.persistence.criteria.Path<Long> path = mock(Path.class);
+    Path<Long> path = mock(Path.class);
     doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
     when(criteriaBuilder.greaterThanOrEqualTo(path, paramExpression)).thenReturn(predicate);
 
@@ -97,7 +111,7 @@ class RunDaoTest {
     when(criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB)).thenReturn(paramExpression);
     Predicate predicate = mock(Predicate.class);
 
-    jakarta.persistence.criteria.Path<Long> path = mock(Path.class);
+    Path<Long> path = mock(Path.class);
     doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
     when(criteriaBuilder.lessThan(path, paramExpression)).thenReturn(predicate);
 
@@ -130,7 +144,7 @@ class RunDaoTest {
 
     Predicate fromPredicate = mock(Predicate.class);
     Predicate toPredicate = mock(Predicate.class);
-    jakarta.persistence.criteria.Path<Long> path = mock(Path.class);
+    Path<Long> path = mock(Path.class);
     doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
     when(criteriaBuilder.greaterThanOrEqualTo(path, fromParamExpression)).thenReturn(fromPredicate);
     when(criteriaBuilder.lessThan(path, toParamExpression)).thenReturn(toPredicate);
@@ -173,7 +187,7 @@ class RunDaoTest {
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
     when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID)).thenReturn(paramExpression);
 
-    jakarta.persistence.criteria.Path<?> path = mock(Path.class);
+    Path<?> path = mock(Path.class);
     doReturn(path).when(run).get(FieldNames.RUN_ID_DB);
 
     Predicate inPredicate = mock(Predicate.class);
@@ -235,7 +249,7 @@ class RunDaoTest {
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
     when(criteriaBuilder.parameter(Set.class, fieldName + "Parameter")).thenReturn(paramExpression);
     Predicate predicate = mock(Predicate.class);
-    jakarta.persistence.criteria.Path<Object> path = mock(Path.class);
+    Path<Object> path = mock(Path.class);
     when(dataset.get(fieldName)).thenReturn(path);
     when(path.in(paramExpression)).thenReturn(predicate);
 
@@ -519,5 +533,699 @@ class RunDaoTest {
       assertEquals(Instant.ofEpochMilli(1234567890L), result.getStartingTime());
       assertEquals(mockDataset, result.getDataset());
     }
+  }
+
+  private Query mockQuery(SessionFactory sessionFactory,
+      Session session,
+      HibernateCriteriaBuilder criteriaBuilder,
+      JpaJoin run) {
+    when(sessionFactory.openSession()).thenReturn(session);
+    JpaCriteriaQuery<RunSummary> criteriaQuery = mock(JpaCriteriaQuery.class);
+
+    when(session.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+    when(criteriaBuilder.createQuery(RunSummary.class)).thenReturn(criteriaQuery);
+    Query query = mock(Query.class);
+    when(query.getResultStream()).thenReturn(Stream.empty());
+    when(session.createQuery(any(CriteriaQuery.class))).thenReturn(query);
+    JpaRoot<LinkRow> link = mock(JpaRoot.class);
+    when(criteriaQuery.from(LinkRow.class)).thenReturn(link);
+
+    doReturn(run).when(link).join("run", JoinType.INNER);
+
+    JpaJoin<RunRow, DatasetRow> dataset = mock(JpaJoin.class);
+    doReturn(dataset).when(run).join("dataset", JoinType.INNER);
+
+    JpaJoin<RunRow, BatchRow> batch = mock(JpaJoin.class);
+    doReturn(batch).when(run).join("batch", JoinType.INNER);
+
+    // Mock the path methods for aggregations
+    JpaPath<Object> linkErrorPath = mock(JpaPath.class);
+    when(link.get(FieldNames.ERROR_MESSAGE_DB)).thenReturn(linkErrorPath);
+    JpaExpression<Long> countLinkErrors = mock(JpaExpression.class);
+    when(criteriaBuilder.count(linkErrorPath)).thenReturn(countLinkErrors);
+
+    JpaExpression<Long> countLink = mock(JpaExpression.class);
+    when(criteriaBuilder.count(link)).thenReturn(countLink);
+
+    // Mock coalesce for errorsLinks: coalesce(count(errorMessage), 0).as(Long.class)
+    JpaCoalesce coalescedErrorsTemp = mock(JpaCoalesce.class);
+    when(criteriaBuilder.coalesce(countLinkErrors, 0)).thenReturn(coalescedErrorsTemp);
+    JpaExpression<Long> coalescedErrors = mock(JpaExpression.class);
+    when(coalescedErrorsTemp.as(Long.class)).thenReturn(coalescedErrors);
+
+    // Mock coalesce for totalLinks: coalesce(count(link), 0).as(Long.class)
+    JpaCoalesce coalescedTotalTemp = mock(JpaCoalesce.class);
+    when(criteriaBuilder.coalesce(countLink, 0)).thenReturn(coalescedTotalTemp);
+    JpaExpression<Long> coalescedTotal = mock(JpaExpression.class);
+    when(coalescedTotalTemp.as(Long.class)).thenReturn(coalescedTotal);
+
+    // Mock selectCase for percentLinksInOperation
+    JpaSearchedCase<Double> selectCaseWhen = mock(JpaSearchedCase.class);
+    doReturn(selectCaseWhen).when(criteriaBuilder).selectCase();
+
+    JpaExpression<Double> doubleErrors = mock(JpaExpression.class);
+    when(criteriaBuilder.toDouble(coalescedErrors)).thenReturn(doubleErrors);
+
+    JpaExpression<Double> doubleTotal = mock(JpaExpression.class);
+    when(criteriaBuilder.toDouble(coalescedTotal)).thenReturn(doubleTotal);
+
+    JpaExpression<Number> longStartingTime = mock(JpaExpression.class);
+    when(criteriaBuilder.min(any())).thenReturn(longStartingTime);
+
+    JpaExpression<Double> quotResult = mock(JpaExpression.class);
+    doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
+
+    JpaExpression<Double> quotResultCasted = mock(JpaExpression.class);
+    when(quotResult.as(Double.class)).thenReturn(quotResultCasted);
+
+    JpaPredicate equalExpr = mock(JpaPredicate.class);
+    when(criteriaBuilder.equal(coalescedTotal, 0D)).thenReturn(equalExpr);
+
+    JpaSearchedCase<Double> caseWhenThen = mock(JpaSearchedCase.class);
+    when(selectCaseWhen.when(equalExpr, 0D)).thenReturn(caseWhenThen);
+
+    JpaExpression<Double> caseResult = mock(JpaExpression.class);
+    doReturn(caseResult).when(caseWhenThen).otherwise(quotResultCasted);
+
+    JpaExpression<Double> prodResult = mock(JpaExpression.class);
+    doReturn(prodResult).when(criteriaBuilder).prod(caseResult, RunDao.HUNDRED);
+
+    JpaExpression<Double> diffResult = mock(JpaExpression.class);
+    doReturn(diffResult).when(criteriaBuilder).diff(RunDao.HUNDRED, prodResult);
+
+    JpaExpression<Integer> percentExpr = mock(JpaExpression.class);
+    when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
+
+    return query;
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_withEmptyResults_returnsFilterWithEmptySets() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    when(query.getResultStream()).thenReturn(Stream.empty());
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertTrue(result.getProvider() == null || result.getProvider().isEmpty());
+    assertTrue(result.getDataProvider() == null || result.getDataProvider().isEmpty());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_withSingleRunSummary_returnsSingleFilterOption() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary runSummary = new RunSummary(
+        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        "provider1", "dataProvider1", 75
+    );
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertTrue(result.getProvider().contains("provider1"));
+    assertTrue(result.getDataProvider().contains("dataProvider1"));
+    assertTrue(result.getDatasetId().contains("dataset1"));
+    assertTrue(result.getDatasetName().contains("Dataset 1"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_withMultipleRunSummaries_returnsMultipleFilterOptions() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary runSummary1 = new RunSummary(
+        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        "provider1", "dataProvider1", 75
+    );
+    RunSummary runSummary2 = new RunSummary(
+        2L, new Date(), "dataset2", "Dataset 2", 200L, new Date(),
+        "provider2", "dataProvider2", 80
+    );
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getProvider().size());
+    assertTrue(result.getProvider().contains("provider1"));
+    assertTrue(result.getProvider().contains("provider2"));
+    assertEquals(2, result.getDatasetId().size());
+    assertTrue(result.getDatasetId().contains("dataset1"));
+    assertTrue(result.getDatasetId().contains("dataset2"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_filtersOutNullValues() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary runSummary1 = new RunSummary(
+        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        "provider1", "dataProvider1", 75
+    );
+    RunSummary runSummary2 = new RunSummary(
+        2L, new Date(), null, "Dataset 2", 200L, new Date(),
+        null, "dataProvider2", 80
+    );
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.getDatasetId().size());
+    assertTrue(result.getDatasetId().contains("dataset1"));
+    assertEquals(1, result.getProvider().size());
+    assertTrue(result.getProvider().contains("provider1"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_filtersOutEmptyStrings() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary runSummary1 = new RunSummary(
+        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        "provider1", "dataProvider1", 75
+    );
+    RunSummary runSummary2 = new RunSummary(
+        2L, new Date(), "", "", 200L, new Date(),
+        "", "", 80
+    );
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.getDatasetName().size());
+    assertTrue(result.getDatasetName().contains("Dataset 1"));
+    assertEquals(1, result.getDataProvider().size());
+    assertTrue(result.getDataProvider().contains("dataProvider1"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_extractsProviderFieldCorrectly() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Dataset 1", 100L, new Date(),
+        "provider1", "dp1", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "Dataset 2", 200L, new Date(),
+        "provider2", "dp2", 80);
+    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "Dataset 3", 300L, new Date(),
+        "provider1", "dp3", 85);
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getProvider().size());
+    assertTrue(result.getProvider().contains("provider1"));
+    assertTrue(result.getProvider().contains("provider2"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_extractsDataProviderFieldCorrectly() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Dataset 1", 100L, new Date(),
+        "prov1", "dataProvider1", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "Dataset 2", 200L, new Date(),
+        "prov2", "dataProvider2", 80);
+    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "Dataset 3", 300L, new Date(),
+        "prov3", "dataProvider1", 85);
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getDataProvider().size());
+    assertTrue(result.getDataProvider().contains("dataProvider1"));
+    assertTrue(result.getDataProvider().contains("dataProvider2"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_extractsDatasetIdFieldCorrectly() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "datasetId1", "Dataset 1", 100L, new Date(),
+        "prov1", "dp1", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "datasetId2", "Dataset 2", 200L, new Date(),
+        "prov2", "dp2", 80);
+    RunSummary summary3 = new RunSummary(3L, new Date(), "datasetId1", "Dataset 1 Copy", 300L, new Date(),
+        "prov1", "dp1", 85);
+
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getDatasetId().size());
+    assertTrue(result.getDatasetId().contains("datasetId1"));
+    assertTrue(result.getDatasetId().contains("datasetId2"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_extractsDatasetNameFieldCorrectly() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "DatasetName1", 100L, new Date(),
+        "prov1", "dp1", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "DatasetName2", 200L, new Date(),
+        "prov2", "dp2", 80);
+    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "DatasetName1", 300L, new Date(),
+        "prov3", "dp3", 85);
+
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getDatasetName().size());
+    assertTrue(result.getDatasetName().contains("DatasetName1"));
+    assertTrue(result.getDatasetName().contains("DatasetName2"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesExcludedCheckId() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    Set<Long> excludedCheckIds = Set.of(1L, 2L, 3L);
+    inputFilters.setExcludedCheckId(excludedCheckIds);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID)).thenReturn(paramExpression);
+
+    JpaPath<?> path = mock(JpaPath.class);
+    doReturn(path).when(run).get(FieldNames.RUN_ID_DB);
+
+    JpaPredicate inPredicate = mock(JpaPredicate.class);
+    when(path.in(paramExpression)).thenReturn(inPredicate);
+
+    JpaPredicate notPredicate = mock(JpaPredicate.class);
+    when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
+    
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(excludedCheckIds, result.getExcludedCheckId());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesDateFrom() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    Date testDate = new Date();
+    inputFilters.setDateFrom(testDate);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    JpaParameterExpression<Long> fromParamExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB)).thenReturn(fromParamExpression);
+    JpaPredicate fromPredicate = mock(JpaPredicate.class);
+    JpaPath<Long> path = mock(JpaPath.class);
+    doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
+    when(criteriaBuilder.greaterThanOrEqualTo(path, fromParamExpression)).thenReturn(fromPredicate);
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(testDate, result.getDateFrom());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesDateTo() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    FieldFilters inputFilters = new FieldFilters();
+    Date testDate = new Date();
+    inputFilters.setDateTo(testDate);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    JpaParameterExpression<Long> toParamExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB)).thenReturn(toParamExpression);
+    JpaPredicate toPredicate = mock(JpaPredicate.class);
+    JpaPath<Long> path = mock(JpaPath.class);
+    doReturn(path).when(run).get(FieldNames.STARTING_TIME_DB);
+    when(criteriaBuilder.lessThan(path, toParamExpression)).thenReturn(toPredicate);
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(testDate, result.getDateTo());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesPercentLinksInOperationFrom() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    FieldFilters inputFilters = new FieldFilters();
+    Integer percentFrom = 25;
+    inputFilters.setPercentLinksInOperationFrom(percentFrom);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    JpaParameterExpression<Integer> fromParamExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Integer.class, FieldNames.PERCENT_LINKS_IN_OPERATION_FROM_DB)).thenReturn(fromParamExpression);
+
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(percentFrom, result.getPercentLinksInOperationFrom());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesPercentLinksInOperationTo() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    FieldFilters inputFilters = new FieldFilters();
+    Integer percentTo = 75;
+    inputFilters.setPercentLinksInOperationTo(percentTo);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    JpaParameterExpression<Integer> toParamExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Integer.class, FieldNames.PERCENT_LINKS_IN_OPERATION_TO)).thenReturn(toParamExpression);
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(percentTo, result.getPercentLinksInOperationTo());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesOffset() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    FieldFilters inputFilters = new FieldFilters();
+    Integer offset = 10;
+    inputFilters.setOffset(offset);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(offset, result.getOffset());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_preservesLimit() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    FieldFilters inputFilters = new FieldFilters();
+    Integer limit = 50;
+    inputFilters.setLimit(limit);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    when(query.getResultStream()).thenReturn(Stream.of(runSummary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(limit, result.getLimit());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_createsNewFieldFiltersWithCollectedValues() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "dataset1", "Dataset1", 100L, new Date(),
+        "provider1", "dataProvider1", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "dataset2", "Dataset2", 200L, new Date(),
+        "provider2", "dataProvider2", 80);
+
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(2, result.getProvider().size());
+    assertEquals(2, result.getDataProvider().size());
+    assertEquals(2, result.getDatasetId().size());
+    assertEquals(2, result.getDatasetName().size());
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_handlesAllClioFilterFieldTypes() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary = new RunSummary(1L, new Date(), "datasetId", "datasetName", 100L, new Date(),
+        "provider", "dataProvider", 75);
+
+    when(query.getResultStream()).thenReturn(Stream.of(summary));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertTrue(result.getProvider().contains("provider"));
+    assertTrue(result.getDataProvider().contains("dataProvider"));
+    assertTrue(result.getDatasetId().contains("datasetId"));
+    assertTrue(result.getDatasetName().contains("datasetName"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_deduplicatesFilterValues() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+
+    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Name", 100L, new Date(),
+        "provider", "dataProv", 75);
+    RunSummary summary2 = new RunSummary(2L, new Date(), "ds1", "Name", 200L, new Date(),
+        "provider", "dataProv", 80);
+    RunSummary summary3 = new RunSummary(3L, new Date(), "ds1", "Name", 300L, new Date(),
+        "provider", "dataProv", 85);
+
+    when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.getDatasetId().size());
+    assertTrue(result.getDatasetId().contains("ds1"));
+  }
+
+  @Test
+  void findRunsSummaryFilterOptions_returnsEmptySetsForNullOrEmptyResults() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    RunDao runDao = new RunDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
+    when(query.getResultStream()).thenReturn(Stream.of());
+
+    // When
+    FieldFilters result = runDao.findRunsSummaryFilterOptions(inputFilters);
+
+    // Then
+    assertNotNull(result);
+    assertTrue(result.getProvider() == null || result.getProvider().isEmpty());
   }
 }

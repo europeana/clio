@@ -3,6 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.ClioFilterField;
 import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
@@ -24,10 +25,13 @@ import jakarta.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.util.CollectionUtils;
 
@@ -247,6 +251,58 @@ public class RunDao {
   }
 
   /**
+   * Find runs summary filter options field filters.
+   *
+   * @param filters the filters
+   * @return the field filters
+   * @throws PersistenceException the persistence exception
+   */
+  public FieldFilters findRunsSummaryFilterOptions(FieldFilters filters) throws PersistenceException {
+
+    return hibernateSessionUtils.performInSession(session -> {
+      TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
+      List<RunSummary> runSummaries = query.getResultStream().toList();
+      Map<ClioFilterField, Set<String>> result = new EnumMap<>(ClioFilterField.class);
+      ClioFilterField
+          .getValueFields()
+          .forEach(fieldName -> {
+            Set<String> stringSet = switch (fieldName) {
+              case DATASET_NAME -> runSummaries.stream()
+                                        .map(RunSummary::datasetName)
+                                        .filter(value -> value != null && !value.isEmpty())
+                                        .collect(Collectors.toSet());
+              case DATASET_ID -> runSummaries.stream()
+                                      .map(RunSummary::datasetId)
+                                      .filter(value -> value != null && !value.isEmpty())
+                                      .collect(Collectors.toSet());
+              case PROVIDER -> runSummaries.stream()
+                                    .map(RunSummary::provider)
+                                    .filter(value -> value != null && !value.isEmpty())
+                                    .collect(Collectors.toSet());
+              case DATA_PROVIDER -> runSummaries.stream()
+                                         .map(RunSummary::dataProvider)
+                                         .filter(value -> value != null && !value.isEmpty())
+                                         .collect(Collectors.toSet());
+              default -> Set.of();
+            };
+            result.put(fieldName, stringSet);
+          });
+
+      return new FieldFilters(result.get(ClioFilterField.PROVIDER),
+          result.get(ClioFilterField.DATA_PROVIDER),
+          result.get(ClioFilterField.DATASET_ID),
+          result.get(ClioFilterField.DATASET_NAME),
+          filters.getExcludedCheckId(),
+          filters.getDateFrom(),
+          filters.getDateTo(),
+          filters.getPercentLinksInOperationFrom(),
+          filters.getPercentLinksInOperationTo(),
+          filters.getOffset(),
+          filters.getLimit());
+    });
+  }
+
+  /**
    * Finds runs summary.
    *
    * @param filters the filters
@@ -255,49 +311,54 @@ public class RunDao {
    */
   public List<RunSummary> findRunsSummary(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
-      CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonRunSummaryQueryParts<RunSummary> queryParts = buildCommonRunSummaryQueryWithPredicates(
-          criteriaBuilder, RunSummary.class, filters);
-
-      CriteriaQuery<RunSummary> criteriaQuery = queryParts.criteriaQuery();
-      Expression<Long> startingTime = criteriaBuilder.min(queryParts.run().get(FieldNames.STARTING_TIME_DB));
-
-      // select
-      criteriaQuery.select(criteriaBuilder.construct(
-          RunSummary.class,
-          queryParts.run().get(FieldNames.RUN_ID_DB),
-          startingTime.alias(FieldNames.STARTING_TIME_DB),
-          queryParts.dataset().get(FieldNames.DATASET_ID_DB),
-          queryParts.dataset().get(FieldNames.DATASET_NAME_DB),
-          queryParts.dataset().get(FieldNames.DATASET_SIZE),
-          queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX),
-          queryParts.dataset().get(FieldNames.PROVIDER),
-          queryParts.dataset().get(FieldNames.DATA_PROVIDER),
-          queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
-      ));
-
-      // where & having
-      criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
-      criteriaQuery.having(queryParts.havingPredicates());
-
-      // order by (specific to LinkDao)
-      criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
-
-      // group by
-      criteriaQuery.groupBy(
-          queryParts.batch().get(FieldNames.BATCH_ID_DB),
-          queryParts.run().get(FieldNames.RUN_ID_DB),
-          queryParts.dataset().get(FieldNames.DATASET_ID_DB)
-      );
-
-      // execute query
-      TypedQuery<RunSummary> query = session.createQuery(criteriaQuery);
-      queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
+      TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
 
       return query.setFirstResult(filters.getOffset())
                   .setMaxResults(filters.getLimit())
                   .getResultList();
     });
+  }
+
+  public static TypedQuery<RunSummary> getRunSummaryTypedQuery(FieldFilters filters, Session session) {
+    CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
+    CommonRunSummaryQueryParts<RunSummary> queryParts = buildCommonRunSummaryQueryWithPredicates(
+        criteriaBuilder, RunSummary.class, filters);
+
+    CriteriaQuery<RunSummary> criteriaQuery = queryParts.criteriaQuery();
+    Expression<Long> startingTime = criteriaBuilder.min(queryParts.run().get(FieldNames.STARTING_TIME_DB));
+
+    // select
+    criteriaQuery.select(criteriaBuilder.construct(
+        RunSummary.class,
+        queryParts.run().get(FieldNames.RUN_ID_DB),
+        startingTime.alias(FieldNames.STARTING_TIME_DB),
+        queryParts.dataset().get(FieldNames.DATASET_ID_DB),
+        queryParts.dataset().get(FieldNames.DATASET_NAME_DB),
+        queryParts.dataset().get(FieldNames.DATASET_SIZE),
+        queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX),
+        queryParts.dataset().get(FieldNames.PROVIDER),
+        queryParts.dataset().get(FieldNames.DATA_PROVIDER),
+        queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
+    ));
+
+    // where & having
+    criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
+    criteriaQuery.having(queryParts.havingPredicates());
+
+    // order by (specific to LinkDao)
+    criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
+
+    // group by
+    criteriaQuery.groupBy(
+        queryParts.batch().get(FieldNames.BATCH_ID_DB),
+        queryParts.run().get(FieldNames.RUN_ID_DB),
+        queryParts.dataset().get(FieldNames.DATASET_ID_DB)
+    );
+
+    // execute query
+    TypedQuery<RunSummary> query = session.createQuery(criteriaQuery);
+    queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
+    return query;
   }
 
   /**

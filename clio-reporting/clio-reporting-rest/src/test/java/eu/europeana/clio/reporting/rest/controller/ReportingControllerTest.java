@@ -263,7 +263,7 @@ class ReportingControllerTest {
     FilterRequest request = new FilterRequest(filters);
     RunSummary runSummary = mock(RunSummary.class);
     when(reportingEngine.findRunsSummary(any(FieldFilters.class))).thenReturn(List.of(runSummary));
-
+    when(reportingEngine.findRunsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
     // When
     var responseEntity = controller.findRunsSummary(request);
 

@@ -20,6 +20,6 @@ import tools.jackson.databind.annotation.JsonSerialize;
 public class FilterRequest {
 
   @JsonProperty(FieldNames.FILTERS)
-  private FieldFilters filterOptions;
+  private FieldFilters filters;
 
 }

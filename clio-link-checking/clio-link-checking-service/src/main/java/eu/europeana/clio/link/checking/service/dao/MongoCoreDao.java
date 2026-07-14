@@ -1,5 +1,8 @@
 package eu.europeana.clio.link.checking.service.dao;
 
+import static eu.europeana.metis.core.common.DaoFieldNames.DATASET_ID;
+import static eu.europeana.metis.core.common.DaoFieldNames.ID;
+
 import com.mongodb.client.MongoClient;
 import dev.morphia.aggregation.Aggregation;
 import dev.morphia.aggregation.expressions.Expressions;
@@ -16,16 +19,20 @@ import eu.europeana.metis.core.mongo.MorphiaDatastoreProvider;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProviderImpl;
 import eu.europeana.metis.core.workflow.WorkflowExecution;
 import eu.europeana.metis.core.workflow.WorkflowStatus;
-import eu.europeana.metis.core.workflow.plugins.*;
+import eu.europeana.metis.core.workflow.plugins.DataStatus;
+import eu.europeana.metis.core.workflow.plugins.ExecutablePlugin;
+import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
+import eu.europeana.metis.core.workflow.plugins.MetisPlugin;
+import eu.europeana.metis.core.workflow.plugins.PluginType;
 import eu.europeana.metis.network.ExternalRequestUtil;
-
 import java.time.Instant;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static eu.europeana.metis.core.common.DaoFieldNames.DATASET_ID;
-import static eu.europeana.metis.core.common.DaoFieldNames.ID;
 
 /**
  * Data access object for the Metis core Mongo.

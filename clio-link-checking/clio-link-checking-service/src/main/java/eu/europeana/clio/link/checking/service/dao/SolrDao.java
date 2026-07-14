@@ -6,7 +6,6 @@ import eu.europeana.clio.link.checking.service.model.SampleRecord;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -96,8 +95,8 @@ public class SolrDao {
 
         // Get the last indexed time (update time). This should really exist.
         final Instant lastIndexedTime = Optional
-                .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
-                .map(Date::toInstant).orElse(Instant.EPOCH);
+                .ofNullable(result.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Instant.class::cast)
+                .orElse(Instant.EPOCH);
 
         // Get the edm:type.
         final List<String> edmTypes = Optional
@@ -134,8 +133,8 @@ public class SolrDao {
 
         // Get and return result
         return executeQuery(solrQuery).stream().findFirst()
-                .map(document -> document.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Date.class::cast)
-                .map(Date::toInstant).orElse(Instant.EPOCH);
+                .map(document -> document.getFieldValue(TIMESTAMP_UPDATE_FIELD)).map(Instant.class::cast)
+                .orElse(Instant.EPOCH);
     }
 
     private SolrDocumentList executeQuery(SolrQuery solrQuery) throws PersistenceException {

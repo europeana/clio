@@ -82,12 +82,12 @@ public class MongoCoreDao {
                         false);
         final long datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
                 .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getExecutionProgress)
-                .map(progress -> progress.getProcessedRecords() - progress.getErrors()).orElse(-1L);
+                .map(progress -> progress.getProcessedRecords() - (progress.getFailRecords()+progress.getFailDepublishRecords())).orElse(-1L);
 
         // Convert to the dataset object we're interested in.
         final Instant lastIndexTime = Optional.ofNullable(latestSuccessfulExecutableIndex)
                 .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getFinishedDate)
-                .map(Date::toInstant).orElse(null);
+                .orElse(null);
         return new Dataset(metisDataset.getDatasetId(), metisDataset.getDatasetName(), datasetSize,
                 lastIndexTime, metisDataset.getProvider(), metisDataset.getDataProvider());
     }
@@ -130,7 +130,7 @@ public class MongoCoreDao {
                 .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
                         DaoFieldNames.FINISHED_DATE, false, 0, 1, false);
         return executions.results().stream().findFirst().map(WorkflowExecution::getFinishedDate)
-                .map(Date::toInstant).orElse(Instant.EPOCH);
+                .orElse(Instant.EPOCH);
     }
 
     /**

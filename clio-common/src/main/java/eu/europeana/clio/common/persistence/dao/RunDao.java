@@ -4,10 +4,10 @@ import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.ClioFilterField;
-import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
@@ -22,8 +22,8 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -68,13 +68,13 @@ public class RunDao {
     if (filters.getDateFrom() != null) {
       ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB);
       predicates.add(criteriaBuilder.greaterThanOrEqualTo(run.get(FieldNames.STARTING_TIME_DB), dateFromParameter));
-      parametersMap.put(dateFromParameter, filters.getDateFrom().toInstant().toEpochMilli());
+      parametersMap.put(dateFromParameter, filters.getDateFrom().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
 
     if (filters.getDateTo() != null) {
       ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB);
       predicates.add(criteriaBuilder.lessThan(run.get(FieldNames.STARTING_TIME_DB), dateToParameter));
-      parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(Duration.ofDays(1)).toEpochMilli());
+      parametersMap.put(dateToParameter, filters.getDateTo().plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
   }
 
@@ -258,7 +258,6 @@ public class RunDao {
    * @throws PersistenceException the persistence exception
    */
   public FieldFilters findRunsSummaryFilterOptions(FieldFilters filters) throws PersistenceException {
-
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
       List<RunSummary> runSummaries = query.getResultStream().toList();
@@ -298,7 +297,8 @@ public class RunDao {
           filters.getPercentLinksInOperationFrom(),
           filters.getPercentLinksInOperationTo(),
           filters.getOffset(),
-          filters.getLimit());
+          filters.getLimit(),
+          filters.isMoreAvailable());
     });
   }
 
@@ -311,12 +311,28 @@ public class RunDao {
    */
   public List<RunSummary> findRunsSummary(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
+      filters.setLimit(filters.getLimit() + 1);
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
+      List<RunSummary> tempRunSummaries = query.setFirstResult(filters.getOffset())
+                                               .setMaxResults(filters.getLimit())
+                                               .getResultList();
 
-      return query.setFirstResult(filters.getOffset())
-                  .setMaxResults(filters.getLimit())
-                  .getResultList();
+      List<RunSummary> runSummaries = pagingHasMoreAvailable(filters, tempRunSummaries);
+      filters.setLimit(filters.getLimit() - 1);
+      return runSummaries;
     });
+  }
+
+  private List<RunSummary> pagingHasMoreAvailable(FieldFilters filters, List<RunSummary> tempRunSummaries) {
+    List<RunSummary> runSummaries;
+    if ((long) tempRunSummaries.size() < filters.getLimit()) {
+      filters.setMoreAvailable(false);
+      runSummaries = tempRunSummaries;
+    } else {
+      filters.setMoreAvailable(true);
+      runSummaries = tempRunSummaries.subList(0, filters.getLimit());
+    }
+    return runSummaries;
   }
 
   public static TypedQuery<RunSummary> getRunSummaryTypedQuery(FieldFilters filters, Session session) {

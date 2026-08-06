@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -76,7 +76,7 @@ public class FieldFilters {
   @JsonProperty(FieldNames.DATE_FROM)
   @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
   @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-  private Date dateFrom;
+  private LocalDate dateFrom;
   /**
    * The date from and date to filters are dates, which means that they can be used to filter by a range of dates. For example, if
    * the date from filter is set to "2026-01-01" and the date to filter is set to "2026-12-31", the filtering will return all the
@@ -85,7 +85,7 @@ public class FieldFilters {
   @JsonProperty(FieldNames.DATE_TO)
   @Schema(pattern = "yyyy-MM-dd", example = "2026-12-31")
   @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-  private Date dateTo;
+  private LocalDate dateTo;
   /**
    * The percent links in operation FROM filters are integers, which means that they can be used to filter by a range of integers.
    * For example, if the percent links in operation FROM filter is set to 50 the filtering will return all the records that have a
@@ -113,6 +113,9 @@ public class FieldFilters {
   @Schema(example = "5")
   private Integer limit;
 
+  @JsonProperty(FieldNames.HAS_MORE_AVAILABLE)
+  private boolean moreAvailable;
+
   /**
    * Instantiates a new Clio filter.
    *
@@ -137,25 +140,27 @@ public class FieldFilters {
       @JsonProperty(FieldNames.EXCLUDED_CHECK_ID) Set<Long> excludedCheckId,
       @Schema(pattern = "yyyy-MM-dd")
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-      @JsonProperty(FieldNames.DATE_FROM) Date dateFrom,
+      @JsonProperty(FieldNames.DATE_FROM) LocalDate dateFrom,
       @Schema(pattern = "yyyy-MM-dd")
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-      @JsonProperty(FieldNames.DATE_TO) Date dateTo,
+      @JsonProperty(FieldNames.DATE_TO) LocalDate dateTo,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_FROM) Integer percentLinksInOperationFrom,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO) Integer percentLinksInOperationTo,
       @JsonProperty(FieldNames.OFFSET) Integer offset,
-      @JsonProperty(FieldNames.LIMIT) Integer limit) {
+      @JsonProperty(FieldNames.LIMIT) Integer limit,
+      @JsonProperty(FieldNames.HAS_MORE_AVAILABLE) Boolean moreAvailable) {
     this.dataProvider = dataProvider == null ? null : Set.copyOf(dataProvider);
     this.provider = provider == null ? null : Set.copyOf(provider);
     this.datasetId = datasetId == null ? null : Set.copyOf(datasetId);
     this.datasetName = datasetName == null ? null : Set.copyOf(datasetName);
     this.excludedCheckId = excludedCheckId == null ? null : Set.copyOf(excludedCheckId);
-    this.dateFrom = dateFrom == null ? null : Date.from(dateFrom.toInstant());
-    this.dateTo = dateTo == null ? null : Date.from(dateTo.toInstant());
+    this.dateFrom = dateFrom;
+    this.dateTo = dateTo;
     this.percentLinksInOperationFrom = percentLinksInOperationFrom;
     this.percentLinksInOperationTo = percentLinksInOperationTo;
     this.offset = offset;
     this.limit = limit;
+    this.moreAvailable = moreAvailable != null && moreAvailable;
   }
 
   /**
@@ -181,7 +186,8 @@ public class FieldFilters {
         filters.getPercentLinksInOperationFrom(), // No sanitization needed for range
         filters.getPercentLinksInOperationTo(),   // No sanitization needed for range
         sanitizeNumber(filters.getOffset()),
-        sanitizeLimit(filters.getLimit())
+        sanitizeLimit(filters.getLimit()),
+        filters.isMoreAvailable()
     );
   }
 

@@ -3,7 +3,9 @@ package eu.europeana.clio.common.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
@@ -13,13 +15,13 @@ import tools.jackson.databind.annotation.JsonSerialize;
 public record RunSummary(Long id,
                          @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
                          @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                         Date date,
+                         LocalDate date,
                          String datasetId,
                          String datasetName,
                          Long datasetSize,
                          @Schema(pattern = "yyyy-MM-dd", example = "2026-01-01")
                          @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
-                         Date datasetLastIndex,
+                         LocalDate datasetLastIndex,
                          String provider,
                          String dataProvider,
                          int percentLinksInOperation) {
@@ -40,7 +42,8 @@ public record RunSummary(Long id,
   public RunSummary(Long id, Long date,
       String datasetId, String datasetName, Long datasetSize, Long datasetLastIndex,
       String provider, String dataProvider, int percentLinksInOperation) {
-    this(id, new Date(date), datasetId, datasetName, datasetSize, new Date(datasetLastIndex), provider, dataProvider,
-        percentLinksInOperation);
+    this(id, Instant.ofEpochMilli(date).atZone(ZoneOffset.UTC).toLocalDate(), datasetId, datasetName,
+        datasetSize, Instant.ofEpochMilli(datasetLastIndex).atZone(ZoneOffset.UTC).toLocalDate(),
+        provider, dataProvider, percentLinksInOperation);
   }
 }

@@ -29,8 +29,9 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,7 @@ class RunDaoTest {
     Join<LinkRow, RunRow> run = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
-    Date testDate = new Date(1000000L);
+    LocalDate testDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
     filters.setDateFrom(testDate);
 
     ParameterExpression<Long> paramExpression = mock(ParameterExpression.class);
@@ -104,7 +105,7 @@ class RunDaoTest {
     Join<LinkRow, RunRow> run = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
-    Date testDate = new Date(1000000L);
+    LocalDate testDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
     filters.setDateTo(testDate);
 
     ParameterExpression<Long> paramExpression = mock(ParameterExpression.class);
@@ -132,8 +133,8 @@ class RunDaoTest {
     Join<LinkRow, RunRow> run = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
-    Date fromDate = new Date(1000000L);
-    Date toDate = new Date(2000000L);
+    LocalDate fromDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
+    LocalDate toDate = Instant.ofEpochMilli(2000000L).atZone(ZoneOffset.UTC).toLocalDate();
     filters.setDateFrom(fromDate);
     filters.setDateTo(toDate);
 
@@ -648,6 +649,8 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(1);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -655,7 +658,7 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     RunSummary runSummary = new RunSummary(
-        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        1L, LocalDate.now(), "dataset1", "Dataset 1", 100L, LocalDate.now(),
         "provider1", "dataProvider1", 75
     );
     when(query.getResultStream()).thenReturn(Stream.of(runSummary));
@@ -677,6 +680,8 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(2);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -684,11 +689,11 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     RunSummary runSummary1 = new RunSummary(
-        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        1L, LocalDate.now(), "dataset1", "Dataset 1", 100L, LocalDate.now(),
         "provider1", "dataProvider1", 75
     );
     RunSummary runSummary2 = new RunSummary(
-        2L, new Date(), "dataset2", "Dataset 2", 200L, new Date(),
+        2L, LocalDate.now(), "dataset2", "Dataset 2", 200L, LocalDate.now(),
         "provider2", "dataProvider2", 80
     );
     when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
@@ -712,6 +717,8 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(2);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -719,11 +726,11 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     RunSummary runSummary1 = new RunSummary(
-        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        1L, LocalDate.now(), "dataset1", "Dataset 1", 100L, LocalDate.now(),
         "provider1", "dataProvider1", 75
     );
     RunSummary runSummary2 = new RunSummary(
-        2L, new Date(), null, "Dataset 2", 200L, new Date(),
+        2L, LocalDate.now(), null, "Dataset 2", 200L, LocalDate.now(),
         null, "dataProvider2", 80
     );
     when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
@@ -745,6 +752,8 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(2);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -752,11 +761,11 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     RunSummary runSummary1 = new RunSummary(
-        1L, new Date(), "dataset1", "Dataset 1", 100L, new Date(),
+        1L, LocalDate.now(), "dataset1", "Dataset 1", 100L, LocalDate.now(),
         "provider1", "dataProvider1", 75
     );
     RunSummary runSummary2 = new RunSummary(
-        2L, new Date(), "", "", 200L, new Date(),
+        2L, LocalDate.now(), "", "", 200L, LocalDate.now(),
         "", "", 80
     );
     when(query.getResultStream()).thenReturn(Stream.of(runSummary1, runSummary2));
@@ -778,17 +787,19 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(3);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Dataset 1", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "ds1", "Dataset 1", 100L, LocalDate.now(),
         "provider1", "dp1", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "Dataset 2", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "ds2", "Dataset 2", 200L, LocalDate.now(),
         "provider2", "dp2", 80);
-    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "Dataset 3", 300L, new Date(),
+    RunSummary summary3 = new RunSummary(3L, LocalDate.now(), "ds3", "Dataset 3", 300L, LocalDate.now(),
         "provider1", "dp3", 85);
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
 
@@ -808,17 +819,19 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(3);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Dataset 1", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "ds1", "Dataset 1", 100L, LocalDate.now(),
         "prov1", "dataProvider1", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "Dataset 2", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "ds2", "Dataset 2", 200L, LocalDate.now(),
         "prov2", "dataProvider2", 80);
-    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "Dataset 3", 300L, new Date(),
+    RunSummary summary3 = new RunSummary(3L, LocalDate.now(), "ds3", "Dataset 3", 300L, LocalDate.now(),
         "prov3", "dataProvider1", 85);
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
 
@@ -838,17 +851,19 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(3);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "datasetId1", "Dataset 1", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "datasetId1", "Dataset 1", 100L, LocalDate.now(),
         "prov1", "dp1", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "datasetId2", "Dataset 2", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "datasetId2", "Dataset 2", 200L, LocalDate.now(),
         "prov2", "dp2", 80);
-    RunSummary summary3 = new RunSummary(3L, new Date(), "datasetId1", "Dataset 1 Copy", 300L, new Date(),
+    RunSummary summary3 = new RunSummary(3L, LocalDate.now(), "datasetId1", "Dataset 1 Copy", 300L, LocalDate.now(),
         "prov1", "dp1", 85);
 
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
@@ -869,17 +884,19 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(3);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "DatasetName1", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "ds1", "DatasetName1", 100L, LocalDate.now(),
         "prov1", "dp1", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "ds2", "DatasetName2", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "ds2", "DatasetName2", 200L, LocalDate.now(),
         "prov2", "dp2", 80);
-    RunSummary summary3 = new RunSummary(3L, new Date(), "ds3", "DatasetName1", 300L, new Date(),
+    RunSummary summary3 = new RunSummary(3L, LocalDate.now(), "ds3", "DatasetName1", 300L, LocalDate.now(),
         "prov3", "dp3", 85);
 
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));
@@ -909,7 +926,7 @@ class RunDaoTest {
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
@@ -946,11 +963,11 @@ class RunDaoTest {
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    Date testDate = new Date();
+    LocalDate testDate = LocalDate.now();
     inputFilters.setDateFrom(testDate);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     JpaParameterExpression<Long> fromParamExpression = mock(JpaParameterExpression.class);
@@ -980,11 +997,13 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     FieldFilters inputFilters = new FieldFilters();
-    Date testDate = new Date();
+    LocalDate testDate = LocalDate.now();
+    inputFilters.setLimit(5);
+    inputFilters.setOffset(0);
     inputFilters.setDateTo(testDate);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     JpaParameterExpression<Long> toParamExpression = mock(JpaParameterExpression.class);
@@ -1018,7 +1037,7 @@ class RunDaoTest {
     inputFilters.setPercentLinksInOperationFrom(percentFrom);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     JpaParameterExpression<Integer> fromParamExpression = mock(JpaParameterExpression.class);
@@ -1049,7 +1068,7 @@ class RunDaoTest {
     inputFilters.setPercentLinksInOperationTo(percentTo);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     JpaParameterExpression<Integer> toParamExpression = mock(JpaParameterExpression.class);
@@ -1079,7 +1098,7 @@ class RunDaoTest {
     inputFilters.setOffset(offset);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     when(query.getResultStream()).thenReturn(Stream.of(runSummary));
@@ -1103,11 +1122,12 @@ class RunDaoTest {
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
     FieldFilters inputFilters = new FieldFilters();
-    Integer limit = 50;
+    Integer limit = 5;
     inputFilters.setLimit(limit);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-    RunSummary runSummary = new RunSummary(1L, new Date(), "dataset", "Dataset", 100L, new Date(),
+    RunSummary runSummary = new RunSummary(1L, LocalDate.now(), "dataset", "Dataset", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     when(query.getResultStream()).thenReturn(Stream.of(runSummary));
@@ -1126,15 +1146,17 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(2);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "dataset1", "Dataset1", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "dataset1", "Dataset1", 100L, LocalDate.now(),
         "provider1", "dataProvider1", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "dataset2", "Dataset2", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "dataset2", "Dataset2", 200L, LocalDate.now(),
         "provider2", "dataProvider2", 80);
 
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2));
@@ -1156,13 +1178,15 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(1);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary = new RunSummary(1L, new Date(), "datasetId", "datasetName", 100L, new Date(),
+    RunSummary summary = new RunSummary(1L, LocalDate.now(), "datasetId", "datasetName", 100L, LocalDate.now(),
         "provider", "dataProvider", 75);
 
     when(query.getResultStream()).thenReturn(Stream.of(summary));
@@ -1184,17 +1208,19 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
+    inputFilters.setLimit(3);
+    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
     JpaJoin<LinkRow, RunRow> run = mock(JpaJoin.class);
     Query query = mockQuery(sessionFactory, session, criteriaBuilder, run);
 
-    RunSummary summary1 = new RunSummary(1L, new Date(), "ds1", "Name", 100L, new Date(),
+    RunSummary summary1 = new RunSummary(1L, LocalDate.now(), "ds1", "Name", 100L, LocalDate.now(),
         "provider", "dataProv", 75);
-    RunSummary summary2 = new RunSummary(2L, new Date(), "ds1", "Name", 200L, new Date(),
+    RunSummary summary2 = new RunSummary(2L, LocalDate.now(), "ds1", "Name", 200L, LocalDate.now(),
         "provider", "dataProv", 80);
-    RunSummary summary3 = new RunSummary(3L, new Date(), "ds1", "Name", 300L, new Date(),
+    RunSummary summary3 = new RunSummary(3L, LocalDate.now(), "ds1", "Name", 300L, LocalDate.now(),
         "provider", "dataProv", 85);
 
     when(query.getResultStream()).thenReturn(Stream.of(summary1, summary2, summary3));

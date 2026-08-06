@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
@@ -21,8 +23,8 @@ class FieldFiltersTest {
     Set<String> datasetId = Set.of("dataset1", "dataset2");
     Set<String> datasetName = Set.of("name1");
     Set<Long> excludedCheckId = Set.of(1L, 2L);
-    Date dateFrom = Date.from(Instant.now());
-    Date dateTo = Date.from(Instant.now().plus(1, ChronoUnit.DAYS));
+    LocalDate dateFrom = LocalDate.now(ZoneOffset.UTC);
+    LocalDate dateTo = LocalDate.now(ZoneOffset.UTC).plus(1, ChronoUnit.DAYS);
     Integer percentLinksInOperationFrom = 10;
     Integer percentLinksInOperationTo = 90;
     Integer offset = 0;
@@ -32,7 +34,7 @@ class FieldFiltersTest {
     FieldFilters fieldFilters = new FieldFilters(
         provider, dataProvider, datasetId, datasetName, excludedCheckId,
         dateFrom, dateTo, percentLinksInOperationFrom, percentLinksInOperationTo,
-        offset, limit
+        offset, limit, false
     );
 
     // Then
@@ -59,7 +61,7 @@ class FieldFiltersTest {
     FieldFilters fieldFilters = new FieldFilters(
         null, null, null, null, null,
         null, null, null, null,
-        null, null
+        null, null, false
     );
 
     // Then
@@ -86,7 +88,7 @@ class FieldFiltersTest {
     FieldFilters fieldFilters = new FieldFilters(
         provider, null, null, null, null,
         null, null, null, null,
-        null, null
+        null, null, false
     );
 
     // Then
@@ -107,7 +109,7 @@ class FieldFiltersTest {
     FieldFilters fieldFilters = new FieldFilters(
         null, null, null, null, excludedCheckId,
         null, null, null, null,
-        null, null
+        null, null, false
     );
 
     // Then
@@ -133,7 +135,7 @@ class FieldFiltersTest {
     Set<String> provider = Set.of("<script>alert('xss')</script>", "provider&test");
     FieldFilters filters = new FieldFilters(
         provider, null, null, null, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -152,7 +154,7 @@ class FieldFiltersTest {
     Set<String> dataProvider = Set.of("provider<tag>", "provider\"quoted\"");
     FieldFilters filters = new FieldFilters(
         null, dataProvider, null, null, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -170,7 +172,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, -10, null
+        null, null, null, null, -10, null, false
     );
 
     // When
@@ -186,7 +188,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -202,7 +204,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, 2  // Below MIN_PAGE_LIMIT (5)
+        null, null, null, null, null, 2, false  // Below MIN_PAGE_LIMIT (5)
     );
 
     // When
@@ -218,7 +220,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, 150  // Above MAX_PAGE_LIMIT (100)
+        null, null, null, null, null, 150, false  // Above MAX_PAGE_LIMIT (100)
     );
 
     // When
@@ -234,7 +236,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, 50
+        null, null, null, null, null, 50, false
     );
 
     // When
@@ -250,7 +252,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -266,7 +268,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, null, -5
+        null, null, null, null, null, -5, false
     );
 
     // When
@@ -282,7 +284,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, 10, 90, null, null
+        null, null, 10, 90, null, null, false
     );
 
     // When
@@ -303,7 +305,7 @@ class FieldFiltersTest {
     );
     FieldFilters filters = new FieldFilters(
         null, null, null, datasetName, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -325,7 +327,7 @@ class FieldFiltersTest {
     Set<String> provider = Set.of();
     FieldFilters filters = new FieldFilters(
         provider, null, null, null, null,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -340,11 +342,11 @@ class FieldFiltersTest {
   @Test
   void testSanitizeFieldFilters_preservesDateFilters_noSanitization() {
     // Given
-    Date dateFrom = Date.from(Instant.now());
-    Date dateTo = Date.from(Instant.now().plus(7, ChronoUnit.DAYS));
+    LocalDate dateFrom = LocalDate.now();
+    LocalDate dateTo = LocalDate.now().plus(7, ChronoUnit.DAYS);
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        dateFrom, dateTo, null, null, null, null
+        dateFrom, dateTo, null, null, null, null, false
     );
 
     // When
@@ -362,7 +364,7 @@ class FieldFiltersTest {
     Set<Long> excludedCheckId = Set.of(1L, 2L, 3L);
     FieldFilters filters = new FieldFilters(
         null, null, null, null, excludedCheckId,
-        null, null, null, null, null, null
+        null, null, null, null, null, null, false
     );
 
     // When
@@ -417,7 +419,7 @@ class FieldFiltersTest {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null, -1, -1
+        null, null, null, null, -1, -1, false
     );
 
     // When
@@ -437,14 +439,14 @@ class FieldFiltersTest {
     Set<String> datasetId = Set.of("dataset1");
     Set<String> datasetName = Set.of("name1");
     Set<Long> excludedCheckId = Set.of(1L);
-    Date dateFrom = Date.from(Instant.now());
-    Date dateTo = Date.from(Instant.now().plus(1, ChronoUnit.DAYS));
+    LocalDate dateFrom = LocalDate.now(ZoneOffset.UTC);
+    LocalDate dateTo = LocalDate.from(Instant.now().plus(1, ChronoUnit.DAYS).atZone(ZoneOffset.UTC));
     Integer offset = 0;
     Integer limit = 50;
 
     FieldFilters filters = new FieldFilters(
         provider, dataProvider, datasetId, datasetName, excludedCheckId,
-        dateFrom, dateTo, 20, 80, offset, limit
+        dateFrom, dateTo, 20, 80, offset, limit, false
     );
 
     // When

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -287,10 +288,10 @@ public class RunDao {
             result.put(fieldName, stringSet);
           });
 
-      return new FieldFilters(result.get(ClioFilterField.PROVIDER),
-          result.get(ClioFilterField.DATA_PROVIDER),
-          result.get(ClioFilterField.DATASET_ID),
-          result.get(ClioFilterField.DATASET_NAME),
+      return new FieldFilters(new TreeSet<>(result.get(ClioFilterField.PROVIDER)),
+          new TreeSet<>(result.get(ClioFilterField.DATA_PROVIDER)),
+          new TreeSet<>(result.get(ClioFilterField.DATASET_ID)),
+          new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)),
           filters.getExcludedCheckId(),
           filters.getDateFrom(),
           filters.getDateTo(),
@@ -362,7 +363,7 @@ public class RunDao {
     criteriaQuery.having(queryParts.havingPredicates());
 
     // order by (specific to LinkDao)
-    criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
+    criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.dataset().get(FieldNames.DATASET_ID_DB)), criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
 
     // group by
     criteriaQuery.groupBy(

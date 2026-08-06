@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -917,7 +919,7 @@ class RunDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     RunDao runDao = new RunDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    Set<Long> excludedCheckIds = Set.of(1L, 2L, 3L);
+    SortedSet<Long> excludedCheckIds = new TreeSet<>(Set.of(1L, 2L, 3L));
     inputFilters.setExcludedCheckId(excludedCheckIds);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 

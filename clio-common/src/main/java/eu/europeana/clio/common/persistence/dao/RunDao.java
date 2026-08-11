@@ -312,15 +312,12 @@ public class RunDao {
    */
   public List<RunSummary> findRunsSummary(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
-      filters.setLimit(filters.getLimit() + 1);
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
       List<RunSummary> tempRunSummaries = query.setFirstResult(filters.getOffset())
-                                               .setMaxResults(filters.getLimit())
+                                               .setMaxResults(filters.getLimit() + 1)
                                                .getResultList();
 
-      List<RunSummary> runSummaries = pagingHasMoreAvailable(filters, tempRunSummaries);
-      filters.setLimit(filters.getLimit() - 1);
-      return runSummaries;
+      return pagingHasMoreAvailable(filters, tempRunSummaries);
     });
   }
 

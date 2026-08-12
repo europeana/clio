@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,7 +64,7 @@ class ClioFilterFieldTest {
   void testProviderValueFilterGetter_retrievesProviderSetFromFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> providerSet = Set.of("provider1", "provider2");
+    SortedSet<String> providerSet = new TreeSet<>(Set.of("provider1", "provider2"));
     filters.setProvider(providerSet);
     ClioFilterField provider = ClioFilterField.PROVIDER;
 
@@ -81,7 +83,7 @@ class ClioFilterFieldTest {
   void testDataProviderValueFilterGetter_retrievesDataProviderSetFromFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> dataProviderSet = Set.of("dataProvider1");
+    SortedSet<String> dataProviderSet = new TreeSet<>(Set.of("dataProvider1"));
     filters.setDataProvider(dataProviderSet);
     ClioFilterField dataProvider = ClioFilterField.DATA_PROVIDER;
 
@@ -99,7 +101,7 @@ class ClioFilterFieldTest {
   void testDatasetIdValueFilterGetter_retrievesDatasetIdSetFromFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> datasetIdSet = Set.of("dataset1", "dataset2", "dataset3");
+    SortedSet<String> datasetIdSet = new TreeSet<>(Set.of("dataset1", "dataset2", "dataset3"));
     filters.setDatasetId(datasetIdSet);
     ClioFilterField datasetId = ClioFilterField.DATASET_ID;
 
@@ -119,7 +121,7 @@ class ClioFilterFieldTest {
   void testDatasetNameValueFilterGetter_retrievesDatasetNameSetFromFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> datasetNameSet = Set.of("name1", "name2");
+    SortedSet<String> datasetNameSet = new TreeSet<>(Set.of("name1", "name2"));
     filters.setDatasetName(datasetNameSet);
     ClioFilterField datasetName = ClioFilterField.DATASET_NAME;
 
@@ -138,7 +140,7 @@ class ClioFilterFieldTest {
   void testProviderValueFilterSetter_setsProviderSetInFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> providerSet = Set.of("provider1", "provider2");
+    SortedSet<String> providerSet = new TreeSet<>(Set.of("provider1", "provider2"));
     ClioFilterField provider = ClioFilterField.PROVIDER;
 
     // When
@@ -156,7 +158,7 @@ class ClioFilterFieldTest {
   void testDataProviderValueFilterSetter_setsDataProviderSetInFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> dataProviderSet = Set.of("dataProvider1");
+    SortedSet<String> dataProviderSet = new TreeSet<>(Set.of("dataProvider1"));
     ClioFilterField dataProvider = ClioFilterField.DATA_PROVIDER;
 
     // When
@@ -173,7 +175,7 @@ class ClioFilterFieldTest {
   void testDatasetIdValueFilterSetter_setsDatasetIdSetInFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> datasetIdSet = Set.of("dataset1", "dataset2");
+    SortedSet<String> datasetIdSet = new TreeSet<>(Set.of("dataset1", "dataset2"));
     ClioFilterField datasetId = ClioFilterField.DATASET_ID;
 
     // When
@@ -191,7 +193,7 @@ class ClioFilterFieldTest {
   void testDatasetNameValueFilterSetter_setsDatasetNameSetInFieldFilters() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> datasetNameSet = Set.of("name1");
+    SortedSet<String> datasetNameSet = new TreeSet<>(Set.of("name1"));
     ClioFilterField datasetName = ClioFilterField.DATASET_NAME;
 
     // When
@@ -255,7 +257,7 @@ class ClioFilterFieldTest {
   void testProviderValueFilterGetterAndSetter_roundTrip() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> originalSet = Set.of("provider1", "provider2", "provider3");
+    SortedSet<String> originalSet = new TreeSet<>(Set.of("provider1", "provider2", "provider3"));
     ClioFilterField provider = ClioFilterField.PROVIDER;
 
     // When
@@ -271,7 +273,7 @@ class ClioFilterFieldTest {
   void testDataProviderValueFilterGetterAndSetter_roundTrip() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> originalSet = Set.of("dp1", "dp2");
+    SortedSet<String> originalSet = new TreeSet<>(Set.of("dp1", "dp2"));
     ClioFilterField dataProvider = ClioFilterField.DATA_PROVIDER;
 
     // When
@@ -287,7 +289,7 @@ class ClioFilterFieldTest {
   void testDatasetIdValueFilterGetterAndSetter_roundTrip() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> originalSet = Set.of("did1");
+    SortedSet<String> originalSet = new TreeSet<>(Set.of("did1"));
     ClioFilterField datasetId = ClioFilterField.DATASET_ID;
 
     // When
@@ -303,7 +305,7 @@ class ClioFilterFieldTest {
   void testDatasetNameValueFilterGetterAndSetter_roundTrip() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> originalSet = Set.of("dataset1", "dataset2", "dataset3", "dataset4");
+    SortedSet<String> originalSet = new TreeSet<>(Set.of("dataset1", "dataset2", "dataset3", "dataset4"));
     ClioFilterField datasetName = ClioFilterField.DATASET_NAME;
 
     // When
@@ -319,10 +321,10 @@ class ClioFilterFieldTest {
   void testMultipleEnumValues_withDifferentFieldsInSameFilter() {
     // Given
     FieldFilters filters = new FieldFilters();
-    Set<String> providerSet = Set.of("prov1");
-    Set<String> dataProviderSet = Set.of("dprov1");
-    Set<String> datasetIdSet = Set.of("ds1");
-    Set<String> datasetNameSet = Set.of("name1");
+    SortedSet<String> providerSet = new TreeSet<>(Set.of("prov1"));
+    SortedSet<String> dataProviderSet = new TreeSet<>(Set.of("dprov1"));
+    SortedSet<String> datasetIdSet = new TreeSet<>(Set.of("ds1"));
+    SortedSet<String> datasetNameSet = new TreeSet<>(Set.of("name1"));
 
     // When
     ClioFilterField.PROVIDER.getValueFilterSetter().accept(filters, providerSet);

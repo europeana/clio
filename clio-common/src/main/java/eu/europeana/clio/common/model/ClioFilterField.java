@@ -2,6 +2,7 @@ package eu.europeana.clio.common.model;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -30,12 +31,12 @@ public enum ClioFilterField {
 
   private static final Integer CLIO_FILTER_FIELD_COUNT = 4;
   private final String fieldName;
-  private final Function<FieldFilters, Set<String>> valueFilterGetter;
-  private final BiConsumer<FieldFilters, Set<String>> valueFilterSetter;
+  private final Function<FieldFilters, SortedSet<String>> valueFilterGetter;
+  private final BiConsumer<FieldFilters, SortedSet<String>> valueFilterSetter;
 
   ClioFilterField(String fieldName,
-      Function<FieldFilters, Set<String>> valueFilterGetter,
-      BiConsumer<FieldFilters, Set<String>> valueFilterSetter) {
+      Function<FieldFilters, SortedSet<String>> valueFilterGetter,
+      BiConsumer<FieldFilters, SortedSet<String>> valueFilterSetter) {
     this.fieldName = fieldName;
     this.valueFilterGetter = valueFilterGetter;
     this.valueFilterSetter = valueFilterSetter;
@@ -70,7 +71,7 @@ public enum ClioFilterField {
    *
    * @return the value filter getter
    */
-  public Function<FieldFilters, Set<String>> getValueFilterGetter() {
+  public Function<FieldFilters, SortedSet<String>> getValueFilterGetter() {
     return valueFilterGetter;
   }
 
@@ -79,7 +80,7 @@ public enum ClioFilterField {
    *
    * @return the value filter setter
    */
-  public BiConsumer<FieldFilters, Set<String>> getValueFilterSetter() {
+  public BiConsumer<FieldFilters, SortedSet<String>> getValueFilterSetter() {
     return valueFilterSetter;
   }
 

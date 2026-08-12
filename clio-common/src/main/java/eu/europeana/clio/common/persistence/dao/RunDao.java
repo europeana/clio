@@ -4,10 +4,10 @@ import static java.lang.String.format;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.ClioFilterField;
-import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Run;
+import eu.europeana.clio.common.model.RunSummary;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
@@ -22,14 +22,15 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -68,13 +69,13 @@ public class RunDao {
     if (filters.getDateFrom() != null) {
       ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB);
       predicates.add(criteriaBuilder.greaterThanOrEqualTo(run.get(FieldNames.STARTING_TIME_DB), dateFromParameter));
-      parametersMap.put(dateFromParameter, filters.getDateFrom().toInstant().toEpochMilli());
+      parametersMap.put(dateFromParameter, filters.getDateFrom().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
 
     if (filters.getDateTo() != null) {
       ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB);
       predicates.add(criteriaBuilder.lessThan(run.get(FieldNames.STARTING_TIME_DB), dateToParameter));
-      parametersMap.put(dateToParameter, filters.getDateTo().toInstant().plus(Duration.ofDays(1)).toEpochMilli());
+      parametersMap.put(dateToParameter, filters.getDateTo().plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
   }
 
@@ -258,7 +259,6 @@ public class RunDao {
    * @throws PersistenceException the persistence exception
    */
   public FieldFilters findRunsSummaryFilterOptions(FieldFilters filters) throws PersistenceException {
-
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
       List<RunSummary> runSummaries = query.getResultStream().toList();
@@ -288,17 +288,18 @@ public class RunDao {
             result.put(fieldName, stringSet);
           });
 
-      return new FieldFilters(result.get(ClioFilterField.PROVIDER),
-          result.get(ClioFilterField.DATA_PROVIDER),
-          result.get(ClioFilterField.DATASET_ID),
-          result.get(ClioFilterField.DATASET_NAME),
+      return new FieldFilters(new TreeSet<>(result.get(ClioFilterField.PROVIDER)),
+          new TreeSet<>(result.get(ClioFilterField.DATA_PROVIDER)),
+          new TreeSet<>(result.get(ClioFilterField.DATASET_ID)),
+          new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)),
           filters.getExcludedCheckId(),
           filters.getDateFrom(),
           filters.getDateTo(),
           filters.getPercentLinksInOperationFrom(),
           filters.getPercentLinksInOperationTo(),
           filters.getOffset(),
-          filters.getLimit());
+          filters.getLimit(),
+          filters.isMoreAvailable());
     });
   }
 
@@ -312,11 +313,24 @@ public class RunDao {
   public List<RunSummary> findRunsSummary(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<RunSummary> query = getRunSummaryTypedQuery(filters, session);
+      List<RunSummary> tempRunSummaries = query.setFirstResult(filters.getOffset())
+                                               .setMaxResults(filters.getLimit() + 1)
+                                               .getResultList();
 
-      return query.setFirstResult(filters.getOffset())
-                  .setMaxResults(filters.getLimit())
-                  .getResultList();
+      return pagingHasMoreAvailable(filters, tempRunSummaries);
     });
+  }
+
+  private List<RunSummary> pagingHasMoreAvailable(FieldFilters filters, List<RunSummary> tempRunSummaries) {
+    List<RunSummary> runSummaries;
+    if ((long) tempRunSummaries.size() < filters.getLimit()) {
+      filters.setMoreAvailable(false);
+      runSummaries = tempRunSummaries;
+    } else {
+      filters.setMoreAvailable(true);
+      runSummaries = tempRunSummaries.subList(0, filters.getLimit());
+    }
+    return runSummaries;
   }
 
   public static TypedQuery<RunSummary> getRunSummaryTypedQuery(FieldFilters filters, Session session) {
@@ -346,7 +360,7 @@ public class RunDao {
     criteriaQuery.having(queryParts.havingPredicates());
 
     // order by (specific to LinkDao)
-    criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
+    criteriaQuery.orderBy(criteriaBuilder.asc(queryParts.dataset().get(FieldNames.DATASET_ID_DB)), criteriaBuilder.asc(queryParts.run().get(FieldNames.RUN_ID_DB)));
 
     // group by
     criteriaQuery.groupBy(

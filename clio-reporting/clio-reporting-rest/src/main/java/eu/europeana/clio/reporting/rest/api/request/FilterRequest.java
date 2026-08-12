@@ -1,5 +1,6 @@
 package eu.europeana.clio.reporting.rest.api.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
@@ -17,9 +18,11 @@ import tools.jackson.databind.annotation.JsonSerialize;
 @AllArgsConstructor
 @Getter
 @Setter
+
 public class FilterRequest {
 
   @JsonProperty(FieldNames.FILTERS)
+  @JsonIgnoreProperties({FieldNames.HAS_MORE_AVAILABLE})
   private FieldFilters filters;
 
 }

@@ -74,6 +74,7 @@ public class LinkCheckingEngineConfiguration {
         throw new ConfigurationException(e.getMessage(), e);
       }
     }
+    properties.setSolrUseHttp1(publishSolrZookeeperConfigurationProperties.isUseHttp1());
     return properties;
   }
 

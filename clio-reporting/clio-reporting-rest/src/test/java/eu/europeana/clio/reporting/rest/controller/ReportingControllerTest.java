@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
@@ -261,11 +261,11 @@ class ReportingControllerTest {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     FilterRequest request = new FilterRequest(filters);
-    RunSummary runSummary = mock(RunSummary.class);
-    when(reportingEngine.findRunsSummary(any(FieldFilters.class))).thenReturn(List.of(runSummary));
-    when(reportingEngine.findRunsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
+    DatasetSummary datasetSummary = mock(DatasetSummary.class);
+    when(reportingEngine.findDatasetsSummary(any(FieldFilters.class))).thenReturn(List.of(datasetSummary));
+    when(reportingEngine.findDatasetsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
     // When
-    var responseEntity = controller.findRunsSummary(request);
+    var responseEntity = controller.findDatasetsSummary(request);
 
     // Then
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());

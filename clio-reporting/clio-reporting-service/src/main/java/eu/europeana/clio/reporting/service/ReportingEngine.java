@@ -4,11 +4,12 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
+import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
@@ -235,26 +236,26 @@ public final class ReportingEngine {
 
 
     /**
-     * Get a summary of runs for the given filters by finding records processed
+     * Get a summary of datasets for the given filters by finding records processed
      * by the Clio Link Checking Service.
      *
      * @param clioFilters the clio filters
-     * @return the run summary
+     * @return the dataset summary
      * @throws PersistenceException the persistence exception
      */
-    public List<RunSummary> findRunsSummary(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummary(clioFilters);
+    public List<DatasetSummary> findDatasetsSummary(FieldFilters clioFilters) throws PersistenceException {
+        return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummary(clioFilters);
     }
 
     /**
-     * Find runs summary filter options field filters.
+     * Find datasets summary filter options field filters.
      *
      * @param clioFilters the clio filters
      * @return the field filters
      * @throws PersistenceException the persistence exception
      */
-    public FieldFilters findRunsSummaryFilterOptions(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummaryFilterOptions(clioFilters);
+    public FieldFilters findDatasetsSummaryFilterOptions(FieldFilters clioFilters) throws PersistenceException {
+        return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummaryFilterOptions(clioFilters);
     }
 
     /**

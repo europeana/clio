@@ -1,6 +1,7 @@
 package eu.europeana.clio.common.persistence.dao;
 
-import static eu.europeana.clio.common.persistence.dao.RunDao.buildCommonRunSummaryQueryWithPredicates;
+
+import static eu.europeana.clio.common.persistence.dao.DatasetDao.buildCommonDatasetQueryWithPredicates;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -9,7 +10,8 @@ import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
-import eu.europeana.clio.common.persistence.dao.RunDao.CommonRunSummaryQueryParts;
+
+import eu.europeana.clio.common.persistence.dao.DatasetDao.CommonDatasetQueryParts;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
@@ -164,7 +166,7 @@ public class LinkDao {
   public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonRunSummaryQueryParts<RunWithLink> queryParts = buildCommonRunSummaryQueryWithPredicates(
+      CommonDatasetQueryParts<RunWithLink> queryParts = buildCommonDatasetQueryWithPredicates(
           criteriaBuilder, RunWithLink.class, filters);
 
       CriteriaQuery<RunWithLink> criteriaQuery = queryParts.criteriaQuery();
@@ -187,7 +189,6 @@ public class LinkDao {
 
       // group by
       criteriaQuery.groupBy(
-          queryParts.batch().get(FieldNames.BATCH_ID_DB),
           queryParts.dataset().get(FieldNames.DATASET_ID_DB),
           queryParts.link().get(FieldNames.LINK_ID_DB),
           queryParts.run().get(FieldNames.RUN_ID_DB)

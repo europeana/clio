@@ -23,7 +23,7 @@ class FieldFiltersTest {
     SortedSet<String> dataProvider = new TreeSet<>(Set.of("dataProvider1"));
     SortedSet<String> datasetId = new TreeSet<>(Set.of("dataset1", "dataset2"));
     SortedSet<String> datasetName = new TreeSet<>(Set.of("name1"));
-    SortedSet<Long> excludedCheckId = new TreeSet<>(Set.of(1L, 2L));
+    SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset3"));
     LocalDate dateFrom = LocalDate.now(ZoneOffset.UTC);
     LocalDate dateTo = LocalDate.now(ZoneOffset.UTC).plus(1, ChronoUnit.DAYS);
     Integer percentLinksInOperationFrom = 10;
@@ -44,7 +44,7 @@ class FieldFiltersTest {
     assertEquals(dataProvider, fieldFilters.getDataProvider());
     assertEquals(datasetId, fieldFilters.getDatasetId());
     assertEquals(datasetName, fieldFilters.getDatasetName());
-    assertEquals(excludedCheckId, fieldFilters.getExcludedCheckId());
+    assertEquals(excludedCheckId, fieldFilters.getExcludedDatasetId());
     assertEquals(dateFrom, fieldFilters.getDateFrom());
     assertEquals(dateTo, fieldFilters.getDateTo());
     assertEquals(percentLinksInOperationFrom, fieldFilters.getPercentLinksInOperationFrom());
@@ -71,7 +71,7 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDataProvider());
     assertNull(fieldFilters.getDatasetId());
     assertNull(fieldFilters.getDatasetName());
-    assertNull(fieldFilters.getExcludedCheckId());
+    assertNull(fieldFilters.getExcludedDatasetId());
     assertNull(fieldFilters.getDateFrom());
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
@@ -104,7 +104,7 @@ class FieldFiltersTest {
   @Test
   void testConstructor_withExcludedCheckIdSet_createsCopyOfSet() {
     // Given
-    SortedSet<Long> excludedCheckId = new TreeSet<>(Set.of(1L, 2L, 3L));
+    SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset1","dataset2","dataset3"));
 
     // When
     FieldFilters fieldFilters = new FieldFilters(
@@ -114,8 +114,8 @@ class FieldFiltersTest {
     );
 
     // Then
-    assertNotNull(fieldFilters.getExcludedCheckId());
-    assertEquals(excludedCheckId, fieldFilters.getExcludedCheckId());
+    assertNotNull(fieldFilters.getExcludedDatasetId());
+    assertEquals(excludedCheckId, fieldFilters.getExcludedDatasetId());
   }
 
   @Test
@@ -362,7 +362,7 @@ class FieldFiltersTest {
   @Test
   void testSanitizeFieldFilters_preservesExcludedCheckIds_noSanitization() {
     // Given
-    SortedSet<Long> excludedCheckId = new TreeSet<>(Set.of(1L, 2L, 3L));
+    SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset1","dataset2","dataset3"));
     FieldFilters filters = new FieldFilters(
         null, null, null, null, excludedCheckId,
         null, null, null, null, null, null, false
@@ -373,7 +373,7 @@ class FieldFiltersTest {
 
     // Then
     assertNotNull(sanitized);
-    assertEquals(excludedCheckId, sanitized.getExcludedCheckId());
+    assertEquals(excludedCheckId, sanitized.getExcludedDatasetId());
   }
 
   @Test
@@ -390,7 +390,7 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDataProvider());
     assertNull(fieldFilters.getDatasetId());
     assertNull(fieldFilters.getDatasetName());
-    assertNull(fieldFilters.getExcludedCheckId());
+    assertNull(fieldFilters.getExcludedDatasetId());
     assertNull(fieldFilters.getDateFrom());
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
@@ -439,7 +439,7 @@ class FieldFiltersTest {
     SortedSet<String> dataProvider = new TreeSet<>(Set.of("dataProvider1"));
     SortedSet<String> datasetId = new TreeSet<>(Set.of("dataset1"));
     SortedSet<String> datasetName = new TreeSet<>(Set.of("name1"));
-    SortedSet<Long> excludedCheckId = new TreeSet<>(Set.of(1L));
+    SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset1"));
     LocalDate dateFrom = LocalDate.now(ZoneOffset.UTC);
     LocalDate dateTo = LocalDate.from(Instant.now().plus(1, ChronoUnit.DAYS).atZone(ZoneOffset.UTC));
     Integer offset = 0;
@@ -459,7 +459,7 @@ class FieldFiltersTest {
     assertNotNull(sanitized.getDataProvider());
     assertNotNull(sanitized.getDatasetId());
     assertNotNull(sanitized.getDatasetName());
-    assertNotNull(sanitized.getExcludedCheckId());
+    assertNotNull(sanitized.getExcludedDatasetId());
     assertNotNull(sanitized.getDateFrom());
     assertNotNull(sanitized.getDateTo());
     assertEquals(20, sanitized.getPercentLinksInOperationFrom());

@@ -19,7 +19,7 @@ public final class FieldNames {
   public static final String DATASET_NAME = "datasetName";
   public static final String DATASET_SIZE = "size";
   public static final String DATASET_LAST_INDEX = "lastIndexTime";
-  public static final String EXCLUDED_CHECK_ID = "excludedCheckId";
+  public static final String EXCLUDED_DATASET_ID = "excludedCheckId";
   public static final String DATE_FROM = "dateFrom";
   public static final String DATE_TO = "dateTo";
   public static final String PERCENT_LINKS_IN_OPERATION_FROM = "percentLinksInOperationFrom";
@@ -40,7 +40,9 @@ public final class FieldNames {
   public static final String PERCENT_LINKS_IN_OPERATION_TO_DB = "percentLinksInOperationTo";
   public static final String STARTING_TIME_DB = "startingTime";
   public static final String ENDING_TIME_DB = "endingTime";
-  public static final String BATCH_ID_DB = "batchId";
+  public static final String STARTING_WINDOW_TIME_DB = "startingWindowTime";
+  public static final String ENDING_WINDOW_TIME_DB = "endingWindowTime";
   public static final String LINK_ID_DB = "linkId";
+  public static final String LINK_CHECKING_TIME = "checkingTime";
   public static final String ERROR_MESSAGE_DB = "error";
 }

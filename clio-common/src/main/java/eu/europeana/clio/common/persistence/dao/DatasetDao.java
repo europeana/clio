@@ -19,6 +19,7 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.ParameterExpression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -42,16 +43,15 @@ public class DatasetDao {
   /**
    * Constructor.
    *
-   * @param sessionFactory The connection to the Clio persistence. Should be connected. This
-   * object does not close the connection.
+   * @param sessionFactory The connection to the Clio persistence. Should be connected. This object does not close the
+   * connection.
    */
   public DatasetDao(SessionFactory sessionFactory) {
     this.hibernateSessionUtils = new HibernateSessionUtils(sessionFactory);
   }
 
   /**
-   * Create (i.e. persist, if a dataset with the given ID does not yet exist) or update (otherwise)
-   * a dataset.
+   * Create (i.e. persist, if a dataset with the given ID does not yet exist) or update (otherwise) a dataset.
    *
    * @param dataset The dataset to persist or update.
    * @throws PersistenceException In case there was a persistence problem.
@@ -80,7 +80,7 @@ public class DatasetDao {
 
   static Dataset convert(DatasetRow row) {
     return new Dataset(row.getDatasetId(), row.getName(), row.getSize(), row.getLastIndexTime(),
-            row.getProvider(), row.getDataProvider());
+        row.getProvider(), row.getDataProvider());
   }
 
   public static final double HUNDRED = 100.0D;
@@ -106,8 +106,23 @@ public class DatasetDao {
     if (filters.getDateTo() != null) {
       ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_TIME_DB);
       predicates.add(criteriaBuilder.lessThan(dataset.get(FieldNames.DATASET_LAST_INDEX), dateToParameter));
-      parametersMap.put(dateToParameter, filters.getDateTo().plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+      parametersMap.put(dateToParameter,
+          filters.getDateTo().plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
     }
+  }
+
+  public static void addPredicateAndParameterLastThreeMonths(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
+      Root<LinkRow> link, Map<ParameterExpression<?>, Object> parametersMap) {
+    LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC);
+    long startingWindowTime = filterPeriodWindow.minusDays(90L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+    long endingWindowTime = filterPeriodWindow.plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+    ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB);
+    predicates.add(criteriaBuilder.greaterThanOrEqualTo(link.get(FieldNames.LINK_CHECKING_TIME), dateFromParameter));
+    parametersMap.put(dateFromParameter, startingWindowTime);
+
+    ParameterExpression<Long> dateToParameter = criteriaBuilder.parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB);
+    predicates.add(criteriaBuilder.lessThan(link.get(FieldNames.LINK_CHECKING_TIME), dateToParameter));
+    parametersMap.put(dateToParameter, endingWindowTime);
   }
 
   /**
@@ -116,16 +131,16 @@ public class DatasetDao {
    * @param fieldValue the field value
    * @param criteriaBuilder the criteria builder
    * @param predicates the wherePredicates
-   * @param run the run
+   * @param dataset the dataset
    * @param parametersMap the query parameters map
    */
-  public static void addPredicateAndParameterExcludedIds(Set<Long> fieldValue, CriteriaBuilder criteriaBuilder,
+  public static void addPredicateAndParameterExcludedIds(Set<String> fieldValue, CriteriaBuilder criteriaBuilder,
       List<Predicate> predicates,
-      Join<RunRow, DatasetRow> run, Map<ParameterExpression<?>, Object> parametersMap) {
+      Join<DatasetRow, RunRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
 
     if (!CollectionUtils.isEmpty(fieldValue)) {
-      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID);
-      predicates.add(criteriaBuilder.not(run.get(FieldNames.RUN_ID_DB).in(excludeCheckIdsParameter)));
+      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID);
+      predicates.add(criteriaBuilder.not(dataset.get(FieldNames.DATASET_ID_DB).in(excludeCheckIdsParameter)));
       parametersMap.put(excludeCheckIdsParameter, fieldValue);
     }
   }
@@ -190,20 +205,21 @@ public class DatasetDao {
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
     Join<RunRow, DatasetRow> run = link.join("run", JoinType.INNER);
-    Join<DatasetRow, RunRow> dataset = run.join("dataset",JoinType.INNER);
+    Join<DatasetRow, RunRow> dataset = run.join("dataset", JoinType.INNER);
 
     List<Predicate> wherePredicates = new ArrayList<>();
     List<Predicate> havingPredicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
 
     // Compute aggregations
-    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)),0).as(Long.class);
-    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link),0).as(Long.class);
+    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)), 0)
+                                                  .as(Long.class);
+    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link), 0).as(Long.class);
 
     Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
         criteriaBuilder.prod(
             criteriaBuilder.<Double>selectCase()
-                           .when(criteriaBuilder.equal(totalLinks,0D), 0D)
+                           .when(criteriaBuilder.equal(totalLinks, 0D), 0D)
                            .otherwise(criteriaBuilder.quot(
                                criteriaBuilder.toDouble(errorsLinks),
                                criteriaBuilder.toDouble(totalLinks)
@@ -220,8 +236,9 @@ public class DatasetDao {
         dataset, parametersMap, FieldNames.DATASET_ID);
     addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates,
         dataset, parametersMap, FieldNames.DATASET_NAME_DB);
-    addPredicateAndParameterExcludedIds(filters.getExcludedCheckId(), criteriaBuilder,
-        wherePredicates, run, parametersMap);
+    addPredicateAndParameterExcludedIds(filters.getExcludedDatasetId(), criteriaBuilder,
+        wherePredicates, dataset, parametersMap);
+    addPredicateAndParameterLastThreeMonths(criteriaBuilder, wherePredicates, link, parametersMap);
     addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates,
         dataset, parametersMap);
     addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates,
@@ -259,21 +276,21 @@ public class DatasetDao {
           .forEach(fieldName -> {
             Set<String> stringSet = switch (fieldName) {
               case DATASET_NAME -> datasetSummaries.stream()
-                                               .map(DatasetSummary::datasetName)
+                                                   .map(DatasetSummary::datasetName)
+                                                   .filter(value -> value != null && !value.isEmpty())
+                                                   .collect(Collectors.toSet());
+              case DATASET_ID -> datasetSummaries.stream()
+                                                 .map(DatasetSummary::datasetId)
+                                                 .filter(value -> value != null && !value.isEmpty())
+                                                 .collect(Collectors.toSet());
+              case PROVIDER -> datasetSummaries.stream()
+                                               .map(DatasetSummary::provider)
                                                .filter(value -> value != null && !value.isEmpty())
                                                .collect(Collectors.toSet());
-              case DATASET_ID -> datasetSummaries.stream()
-                                             .map(DatasetSummary::datasetId)
-                                             .filter(value -> value != null && !value.isEmpty())
-                                             .collect(Collectors.toSet());
-              case PROVIDER -> datasetSummaries.stream()
-                                           .map(DatasetSummary::provider)
-                                           .filter(value -> value != null && !value.isEmpty())
-                                           .collect(Collectors.toSet());
               case DATA_PROVIDER -> datasetSummaries.stream()
-                                                .map(DatasetSummary::dataProvider)
-                                                .filter(value -> value != null && !value.isEmpty())
-                                                .collect(Collectors.toSet());
+                                                    .map(DatasetSummary::dataProvider)
+                                                    .filter(value -> value != null && !value.isEmpty())
+                                                    .collect(Collectors.toSet());
               default -> Set.of();
             };
             result.put(fieldName, stringSet);
@@ -283,7 +300,7 @@ public class DatasetDao {
           new TreeSet<>(result.get(ClioFilterField.DATA_PROVIDER)),
           new TreeSet<>(result.get(ClioFilterField.DATASET_ID)),
           new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)),
-          filters.getExcludedCheckId(),
+          filters.getExcludedDatasetId(),
           filters.getDateFrom(),
           filters.getDateTo(),
           filters.getPercentLinksInOperationFrom(),
@@ -305,8 +322,8 @@ public class DatasetDao {
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<DatasetSummary> query = getDatasetSummaryTypedQuery(filters, session);
       List<DatasetSummary> tempDatasetSummaries = query.setFirstResult(filters.getOffset())
-                                                   .setMaxResults(filters.getLimit() + 1)
-                                                   .getResultList();
+                                                       .setMaxResults(filters.getLimit() + 1)
+                                                       .getResultList();
 
       return pagingHasMoreAvailable(filters, tempDatasetSummaries);
     });
@@ -326,7 +343,7 @@ public class DatasetDao {
 
   public static TypedQuery<DatasetSummary> getDatasetSummaryTypedQuery(FieldFilters filters, Session session) {
     CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-   CommonDatasetQueryParts<DatasetSummary> queryParts = buildCommonDatasetQueryWithPredicates(
+    CommonDatasetQueryParts<DatasetSummary> queryParts = buildCommonDatasetQueryWithPredicates(
         criteriaBuilder, DatasetSummary.class, filters);
 
     CriteriaQuery<DatasetSummary> criteriaQuery = queryParts.criteriaQuery();
@@ -392,5 +409,6 @@ public class DatasetDao {
       List<Predicate> wherePredicates,
       List<Predicate> havingPredicates,
       Map<ParameterExpression<?>, Object> parametersMap) {
+
   }
 }

@@ -165,14 +165,14 @@ class DatasetDaoTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<RunRow, DatasetRow> run = mock(Join.class);
-    Set<Long> excludedIds = Set.of(1L, 2L, 3L);
+    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Set<String> excludedIds = Set.of("datasetId1", "datasetId2", "datasetId3");
 
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID)).thenReturn(paramExpression);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID)).thenReturn(paramExpression);
 
     Path<?> path = mock(Path.class);
-    doReturn(path).when(run).get(FieldNames.RUN_ID_DB);
+    doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
 
     Predicate inPredicate = mock(Predicate.class);
     when(path.in(paramExpression)).thenReturn(inPredicate);
@@ -181,7 +181,7 @@ class DatasetDaoTest {
     when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
 
     // When
-    DatasetDao.addPredicateAndParameterExcludedIds(excludedIds, criteriaBuilder, predicates, run, parametersMap);
+    DatasetDao.addPredicateAndParameterExcludedIds(excludedIds, criteriaBuilder, predicates, dataset, parametersMap);
 
     // Then
     assertEquals(1, predicates.size());
@@ -194,10 +194,10 @@ class DatasetDaoTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<RunRow, DatasetRow> run = mock(Join.class);
+    Join<DatasetRow, RunRow> dataset = mock(Join.class);
 
     // When
-    DatasetDao.addPredicateAndParameterExcludedIds(null, criteriaBuilder, predicates, run, parametersMap);
+    DatasetDao.addPredicateAndParameterExcludedIds(null, criteriaBuilder, predicates, dataset, parametersMap);
 
     // Then
     assertTrue(predicates.isEmpty());
@@ -210,10 +210,10 @@ class DatasetDaoTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<RunRow, DatasetRow> run = mock(Join.class);
+    Join<DatasetRow, RunRow> dataset = mock(Join.class);
 
     // When
-    DatasetDao.addPredicateAndParameterExcludedIds(Set.of(), criteriaBuilder, predicates, run, parametersMap);
+    DatasetDao.addPredicateAndParameterExcludedIds(Set.of(), criteriaBuilder, predicates, dataset, parametersMap);
 
     // Then
     assertTrue(predicates.isEmpty());

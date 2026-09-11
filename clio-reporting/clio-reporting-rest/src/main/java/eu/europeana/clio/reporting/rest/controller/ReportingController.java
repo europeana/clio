@@ -250,40 +250,4 @@ public class ReportingController {
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
     return new ResponseEntity<>( new FilterResponse(datasetsSummary, sanitizedFilters), HttpStatus.OK);
   }
-
-
-  /**
-   * Export the runs links matching the given {@link FilterRequest} as a CSV file.
-   *
-   * @param request the request
-   * @return the response entity
-   * @throws ClioException the clio exception
-   */
-  @PostMapping(value = CHECKS_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @Operation(summary = "Export filtered report of Clio runs dataset summaries with pagination",
-      description = "The links in the report may be part of multiple runs.")
-  @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
-      @ApiResponse(responseCode = "404", description = "Report not found",
-          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-              mediaType = MediaType.APPLICATION_JSON_VALUE)),
-      @ApiResponse(responseCode = "500", description = "Persistence error",
-          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-              mediaType = MediaType.APPLICATION_JSON_VALUE))
-  })
-  public ResponseEntity<byte[]> exportRunsLinks(
-      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
-      throws ClioException {
-    if (request == null || request.getFilters() == null) {
-      return ResponseEntity.badRequest().build();
-    }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final String report = reportingEngine.generateReport(sanitizedFilters);
-    if (report == null) {
-      throw new ReportNotFoundException("Report not found.");
-    }
-    final byte[] reportBytes = report.getBytes(StandardCharsets.UTF_8);
-    return getHttpEntity(reportBytes);
-  }
 }

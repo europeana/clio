@@ -73,19 +73,6 @@ public final class ReportingEngine {
     }
 
     /**
-     * Generate report string.
-     *
-     * @param filters the filters
-     * @return the string
-     * @throws ClioException the clio exception
-     */
-    public String generateReport(FieldFilters filters) throws ClioException {
-        StringWriter stringWriter = new StringWriter();
-        generateReport(stringWriter, filters);
-        return stringWriter.toString();
-    }
-
-    /**
      *  Generates a report and saves it to the output file.
      *
      *  @param writer The destination/output writer.

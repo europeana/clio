@@ -4,11 +4,13 @@ import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.StreamResult;
 import eu.europeana.clio.common.persistence.dao.BatchDao;
+import eu.europeana.clio.common.persistence.dao.DatasetDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
@@ -67,20 +69,7 @@ public final class ReportingEngine {
      */
     public String generateReport() throws ClioException {
         StringWriter stringWriter = new StringWriter();
-        generateReport(stringWriter, null);
-        return stringWriter.toString();
-    }
-
-    /**
-     * Generate report string.
-     *
-     * @param filters the filters
-     * @return the string
-     * @throws ClioException the clio exception
-     */
-    public String generateReport(FieldFilters filters) throws ClioException {
-        StringWriter stringWriter = new StringWriter();
-        generateReport(stringWriter, filters);
+        generateReport(stringWriter, null, null);
         return stringWriter.toString();
     }
 
@@ -91,11 +80,11 @@ public final class ReportingEngine {
      * @param filters the filters
      * @throws ClioException In case of a problem with accessing or saving the required data.
      */
-    public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
+    public void generateReport(Writer writer, FieldFilters filters, Pagination pagination) throws ClioException {
 
         final long startTime = System.nanoTime();
         // Write the report. We use a try-with-resources block to ensure that all resources are properly closed after use.
-        try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters);
+        try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters, pagination);
             final CSVWriter csvWriter = new CSVWriter(writer)) {
             // Write header
             csvWriter.writeNext(new String[]{
@@ -148,9 +137,9 @@ public final class ReportingEngine {
         log.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
     }
 
-    private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters) throws PersistenceException {
+    private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters, Pagination pagination) throws PersistenceException {
         final LinkDao linkDao = new LinkDao(reportingEngineConfiguration.sessionFactory());
-        return filters == null ? linkDao.getBrokenLinksInLatestCompletedRuns() : linkDao.getLinksWithRunsForFilters(filters);
+        return filters == null ? linkDao.getBrokenLinksInLatestCompletedRuns() : linkDao.getLinksWithRunsForFilters(filters, pagination);
     }
 
     private static String convert(Instant instant) {
@@ -235,26 +224,26 @@ public final class ReportingEngine {
 
 
     /**
-     * Get a summary of runs for the given filters by finding records processed
+     * Get a summary of datasets for the given filters by finding records processed
      * by the Clio Link Checking Service.
      *
      * @param clioFilters the clio filters
-     * @return the run summary
+     * @return the dataset summary
      * @throws PersistenceException the persistence exception
      */
-    public List<RunSummary> findRunsSummary(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummary(clioFilters);
+    public List<DatasetSummary> findDatasetsSummary(FieldFilters clioFilters, Pagination pagination) throws PersistenceException {
+        return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummary(clioFilters, pagination);
     }
 
     /**
-     * Find runs summary filter options field filters.
+     * Find datasets summary filter options field filters.
      *
      * @param clioFilters the clio filters
      * @return the field filters
      * @throws PersistenceException the persistence exception
      */
-    public FieldFilters findRunsSummaryFilterOptions(FieldFilters clioFilters) throws PersistenceException {
-        return new RunDao(reportingEngineConfiguration.sessionFactory()).findRunsSummaryFilterOptions(clioFilters);
+    public FieldFilters findDatasetsSummaryFilterOptions(FieldFilters clioFilters) throws PersistenceException {
+        return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummaryFilterOptions(clioFilters);
     }
 
     /**

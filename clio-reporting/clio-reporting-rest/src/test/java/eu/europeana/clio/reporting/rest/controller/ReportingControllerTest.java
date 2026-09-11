@@ -22,8 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
@@ -260,12 +261,13 @@ class ReportingControllerTest {
   void findRunsSummary_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
-    RunSummary runSummary = mock(RunSummary.class);
-    when(reportingEngine.findRunsSummary(any(FieldFilters.class))).thenReturn(List.of(runSummary));
-    when(reportingEngine.findRunsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    DatasetSummary datasetSummary = mock(DatasetSummary.class);
+    when(reportingEngine.findDatasetsSummary(any(FieldFilters.class), any(Pagination.class))).thenReturn(List.of(datasetSummary));
+    when(reportingEngine.findDatasetsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
     // When
-    var responseEntity = controller.findRunsSummary(request);
+    var responseEntity = controller.findDatasetsSummary(request);
 
     // Then
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -275,36 +277,6 @@ class ReportingControllerTest {
     // Verify that a sanitized FieldFilters object is returned (not the original mock)
     assertNotNull(response.getFilterOptions());
     // The returned filters are a new sanitized copy, not the original mock
-  }
-
-  @Test
-  void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
-    // Given
-    FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
-    String csv = "x,y\n1,2\n";
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
-
-    // When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
-
-    // Then
-    assertArrayEquals(csv.getBytes(), entity.getBody());
-    assertEquals(ReportingEngine.getReportFileNameSuggestion(), entity.getHeaders().getContentDisposition().getFilename());
-    assertEquals(csv.getBytes().length, entity.getHeaders().getContentLength());
-  }
-
-  @Test
-  void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
-    // Given
-    FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
-    ClioException expectedException = new ClioException("boom");
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
-
-    // When / Then
-    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
-    assertEquals(expectedException, actualException);
   }
 
   String normalizeDate(String s) {

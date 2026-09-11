@@ -6,7 +6,7 @@ import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHtt
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
@@ -55,8 +55,8 @@ public class ReportingController {
   public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
-  public static final String RUNS_SUMMARY_ENDPOINT_PATH = "/runs/summary";
-  public static final String RUNS_LINKS_EXPORT_ENDPOINT_PATH = "/runs/links/export";
+  public static final String DATASETS_ENDPOINT_PATH = "/datasets";
+  public static final String CHECKS_ENDPOINT_PATH = "/checks";
 
   private final ReportingEngine reportingEngine;
 
@@ -224,17 +224,17 @@ public class ReportingController {
 
 
   /**
-   * Get the run summary of the given {@link FilterRequest}.
+   * Get the dataset summaries of the given {@link FilterRequest}.
    *
    * @param request the request
-   * @return the run dataset summaries
+   * @return the dataset summaries
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = RUNS_SUMMARY_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = DATASETS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
-  @Operation(summary = "Returns a complete filtered view of Clio runs dataset summaries with pagination")
+  @Operation(summary = "Returns a complete filtered view of Clio datasets summaries with pagination")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<FilterResponse> findRunsSummary(
+  public ResponseEntity<FilterResponse> findDatasetsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
     if (request.getFilters() == null) {
@@ -242,48 +242,12 @@ public class ReportingController {
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final FieldFilters filterOptions = this.reportingEngine.findRunsSummaryFilterOptions(sanitizedFilters);
-    final List<RunSummary> runSummaries = this.reportingEngine.findRunsSummary(sanitizedFilters);
+    final FieldFilters filterOptions = this.reportingEngine.findDatasetsSummaryFilterOptions(sanitizedFilters);
+    final List<DatasetSummary> datasetsSummary = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
     sanitizedFilters.setProvider(filterOptions.getProvider());
     sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
     sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
-    return new ResponseEntity<>( new FilterResponse(runSummaries, sanitizedFilters), HttpStatus.OK);
-  }
-
-
-  /**
-   * Export the runs links matching the given {@link FilterRequest} as a CSV file.
-   *
-   * @param request the request
-   * @return the response entity
-   * @throws ClioException the clio exception
-   */
-  @PostMapping(value = RUNS_LINKS_EXPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @Operation(summary = "Export filtered report of Clio runs dataset summaries with pagination",
-      description = "The links in the report may be part of multiple runs.")
-  @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "OK",
-          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
-      @ApiResponse(responseCode = "404", description = "Report not found",
-          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-              mediaType = MediaType.APPLICATION_JSON_VALUE)),
-      @ApiResponse(responseCode = "500", description = "Persistence error",
-          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
-              mediaType = MediaType.APPLICATION_JSON_VALUE))
-  })
-  public ResponseEntity<byte[]> exportRunsLinks(
-      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
-      throws ClioException {
-    if (request == null || request.getFilters() == null) {
-      return ResponseEntity.badRequest().build();
-    }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final String report = reportingEngine.generateReport(sanitizedFilters);
-    if (report == null) {
-      throw new ReportNotFoundException("Report not found.");
-    }
-    final byte[] reportBytes = report.getBytes(StandardCharsets.UTF_8);
-    return getHttpEntity(reportBytes);
+    return new ResponseEntity<>( new FilterResponse(datasetsSummary, sanitizedFilters, request.getPagination()), HttpStatus.OK);
   }
 }

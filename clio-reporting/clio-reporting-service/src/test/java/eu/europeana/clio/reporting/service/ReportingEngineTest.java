@@ -67,7 +67,7 @@ class ReportingEngineTest {
       ReportingEngine engine = new ReportingEngine(config);
       StringWriter sw = new StringWriter();
       // When
-      engine.generateReport(sw, null);
+      engine.generateReport(sw, null, null);
       String out = sw.toString();
       // Then
       assertTrue(out.contains("Dataset ID"), "CSV header must be present");

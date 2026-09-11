@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -280,6 +282,36 @@ class DatasetDaoTest {
   }
 
   @Test
+  void addPredicateAndParameterLastThreeMonths() {
+    // Given
+    CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
+    List<Predicate> predicates = new ArrayList<>();
+    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+    Root<LinkRow> link = mock(Root.class);
+
+    ParameterExpression<Long> fromParamExpression = mock(ParameterExpression.class);
+    ParameterExpression<Long> toParamExpression = mock(ParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB)).thenReturn(fromParamExpression);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB)).thenReturn(toParamExpression);
+
+    Predicate fromPredicate = mock(Predicate.class);
+    Predicate toPredicate = mock(Predicate.class);
+    Path<Long> pathS = mock(Path.class);
+    doReturn(pathS).when(link).get(FieldNames.STARTING_WINDOW_TIME_DB);
+    when(criteriaBuilder.greaterThanOrEqualTo(pathS, fromParamExpression)).thenReturn(fromPredicate);
+    Path<Long> pathE = mock(Path.class);
+    doReturn(pathE).when(link).get(FieldNames.ENDING_WINDOW_TIME_DB);
+    when(criteriaBuilder.lessThan(pathE, toParamExpression)).thenReturn(toPredicate);
+
+    // When
+    DatasetDao.addPredicateAndParameterLastThreeMonths(criteriaBuilder, predicates, link, parametersMap);
+
+    // Then
+    assertEquals(2, predicates.size());
+    assertEquals(2, parametersMap.size());
+  }
+
+  @Test
   void buildRunSummaryQueryParts_buildsAllPartsSuccessfully() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
@@ -489,9 +521,26 @@ class DatasetDaoTest {
     when(link.get(FieldNames.ERROR_MESSAGE_DB)).thenReturn(linkErrorPath);
     JpaExpression<Long> countLinkErrors = mock(JpaExpression.class);
     when(criteriaBuilder.count(linkErrorPath)).thenReturn(countLinkErrors);
+    JpaPath<Object> linkCheckTimePath = mock(JpaPath.class);
+    when(link.get(FieldNames.LINK_CHECKING_TIME)).thenReturn(linkCheckTimePath);
 
     JpaExpression<Long> countLink = mock(JpaExpression.class);
     when(criteriaBuilder.count(link)).thenReturn(countLink);
+
+    // Mock three-month period
+    JpaParameterExpression<Long> toParamExpressionB = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB)).thenReturn(toParamExpressionB);
+    JpaPredicate toPredicateB = mock(JpaPredicate.class);
+    JpaPath<Long> pathB = mock(JpaPath.class);
+    doReturn(pathB).when(dataset).get(FieldNames.STARTING_WINDOW_TIME_DB);
+    when(criteriaBuilder.greaterThanOrEqualTo(pathB, toParamExpressionB)).thenReturn(toPredicateB);
+
+    JpaParameterExpression<Long> toParamExpressionE = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB)).thenReturn(toParamExpressionE);
+    JpaPredicate toPredicateE = mock(JpaPredicate.class);
+    JpaPath<Long> pathE = mock(JpaPath.class);
+    doReturn(pathE).when(dataset).get(FieldNames.ENDING_WINDOW_TIME_DB);
+    when(criteriaBuilder.lessThan(pathE, toParamExpressionE)).thenReturn(toPredicateE);
 
     // Mock coalesce for errorsLinks: coalesce(count(errorMessage), 0).as(Long.class)
     JpaCoalesce coalescedErrorsTemp = mock(JpaCoalesce.class);
@@ -828,45 +877,45 @@ class DatasetDaoTest {
     assertTrue(result.getDatasetName().contains("DatasetName2"));
   }
 
-  //  @Test
-  //  void findDatasetsSummaryFilterOptions_preservesExcludedCheckId() throws Exception {
-  //    // Given
-  //    SessionFactory sessionFactory = mock(SessionFactory.class);
-  //    DatasetDao datasetDao = new DatasetDao(sessionFactory);
-  //    FieldFilters inputFilters = new FieldFilters();
-  //    SortedSet<Long> excludedCheckIds = new TreeSet<>(Set.of(1L, 2L, 3L));
-  //    inputFilters.setExcludedCheckId(excludedCheckIds);
-  //    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
-  //
-  //    Session session = mock(Session.class);
-  //    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
-  //    JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
-  //    Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
-  //
-  //    DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
-  //        "provider", "dataProvider", 75);
-  //
-  //    JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
-  //    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_CHECK_ID)).thenReturn(paramExpression);
-  //
-  //    JpaPath<?> path = mock(JpaPath.class);
-  //    doReturn(path).when(dataset).get(FieldNames.RUN_ID_DB);
-  //
-  //    JpaPredicate inPredicate = mock(JpaPredicate.class);
-  //    when(path.in(paramExpression)).thenReturn(inPredicate);
-  //
-  //    JpaPredicate notPredicate = mock(JpaPredicate.class);
-  //    when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
-  //
-  //    when(query.getResultStream()).thenReturn(Stream.of(datasetSummary));
-  //
-  //    // When
-  //    FieldFilters result = datasetDao.findDatasetsSummaryFilterOptions(inputFilters);
-  //
-  //    // Then
-  //    assertNotNull(result);
-  //    assertEquals(excludedCheckIds, result.getExcludedCheckId());
-  //  }
+    @Test
+    void findDatasetsSummaryFilterOptions_preservesExcludedCheckId() throws Exception {
+      // Given
+      SessionFactory sessionFactory = mock(SessionFactory.class);
+      DatasetDao datasetDao = new DatasetDao(sessionFactory);
+      FieldFilters inputFilters = new FieldFilters();
+      SortedSet<String> excludedCheckIds = new TreeSet<>(Set.of("datasetId1L", "datasetId2L", "datasetId3L"));
+      inputFilters.setExcludedDatasetId(excludedCheckIds);
+      inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+
+      Session session = mock(Session.class);
+      HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+      JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
+      Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
+
+      DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
+          "provider", "dataProvider", 75);
+
+      JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
+      when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID)).thenReturn(paramExpression);
+
+      JpaPath<?> path = mock(JpaPath.class);
+      doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
+
+      JpaPredicate inPredicate = mock(JpaPredicate.class);
+      when(path.in(paramExpression)).thenReturn(inPredicate);
+
+      JpaPredicate notPredicate = mock(JpaPredicate.class);
+      when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
+
+      when(query.getResultStream()).thenReturn(Stream.of(datasetSummary));
+
+      // When
+      FieldFilters result = datasetDao.findDatasetsSummaryFilterOptions(inputFilters);
+
+      // Then
+      assertNotNull(result);
+      assertEquals(excludedCheckIds, result.getExcludedDatasetId());
+    }
 
   @Test
   void findDatasetsSummaryFilterOptions_preservesDateFrom() throws Exception {

@@ -111,6 +111,14 @@ public class DatasetDao {
     }
   }
 
+  /**
+   * Add predicate and parameter last three months.
+   *
+   * @param criteriaBuilder the criteria builder
+   * @param predicates the predicates
+   * @param link the link
+   * @param parametersMap the parameters map
+   */
   public static void addPredicateAndParameterLastThreeMonths(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
       Root<LinkRow> link, Map<ParameterExpression<?>, Object> parametersMap) {
     LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC);

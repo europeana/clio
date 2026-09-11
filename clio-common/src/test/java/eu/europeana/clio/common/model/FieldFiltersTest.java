@@ -28,14 +28,11 @@ class FieldFiltersTest {
     LocalDate dateTo = LocalDate.now(ZoneOffset.UTC).plus(1, ChronoUnit.DAYS);
     Integer percentLinksInOperationFrom = 10;
     Integer percentLinksInOperationTo = 90;
-    Integer offset = 0;
-    Integer limit = 50;
 
     // When
     FieldFilters fieldFilters = new FieldFilters(
         provider, dataProvider, datasetId, datasetName, excludedCheckId,
-        dateFrom, dateTo, percentLinksInOperationFrom, percentLinksInOperationTo,
-        offset, limit, false
+        dateFrom, dateTo, percentLinksInOperationFrom, percentLinksInOperationTo
     );
 
     // Then
@@ -49,8 +46,6 @@ class FieldFiltersTest {
     assertEquals(dateTo, fieldFilters.getDateTo());
     assertEquals(percentLinksInOperationFrom, fieldFilters.getPercentLinksInOperationFrom());
     assertEquals(percentLinksInOperationTo, fieldFilters.getPercentLinksInOperationTo());
-    assertEquals(offset, fieldFilters.getOffset());
-    assertEquals(limit, fieldFilters.getLimit());
   }
 
   @Test
@@ -61,8 +56,7 @@ class FieldFiltersTest {
     // When
     FieldFilters fieldFilters = new FieldFilters(
         null, null, null, null, null,
-        null, null, null, null,
-        null, null, false
+        null, null, null, null
     );
 
     // Then
@@ -76,8 +70,6 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
     assertNull(fieldFilters.getPercentLinksInOperationTo());
-    assertNull(fieldFilters.getOffset());
-    assertNull(fieldFilters.getLimit());
   }
 
   @Test
@@ -88,8 +80,7 @@ class FieldFiltersTest {
     // When
     FieldFilters fieldFilters = new FieldFilters(
         provider, null, null, null, null,
-        null, null, null, null,
-        null, null, false
+        null, null, null, null
     );
 
     // Then
@@ -109,8 +100,7 @@ class FieldFiltersTest {
     // When
     FieldFilters fieldFilters = new FieldFilters(
         null, null, null, null, excludedCheckId,
-        null, null, null, null,
-        null, null, false
+        null, null, null, null
     );
 
     // Then
@@ -136,7 +126,7 @@ class FieldFiltersTest {
     SortedSet<String> provider = new TreeSet<>(Set.of("<script>alert('xss')</script>", "provider&test"));
     FieldFilters filters = new FieldFilters(
         provider, null, null, null, null,
-        null, null, null, null, null, null, false
+        null, null, null, null
     );
 
     // When
@@ -155,7 +145,7 @@ class FieldFiltersTest {
     SortedSet<String> dataProvider = new TreeSet<>(Set.of("provider<tag>", "provider\"quoted\""));
     FieldFilters filters = new FieldFilters(
         null, dataProvider, null, null, null,
-        null, null, null, null, null, null, false
+        null, null, null, null
     );
 
     // When
@@ -169,123 +159,11 @@ class FieldFiltersTest {
   }
 
   @Test
-  void testSanitizeFieldFilters_withNegativeOffset_setsToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, -10, null, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getOffset());
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withNullOffset_setsToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, null, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getOffset());
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withLimitBelowMinimum_setsToMinimumPageLimit() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, 2, false  // Below MIN_PAGE_LIMIT (5)
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(5, sanitized.getLimit());  // MIN_PAGE_LIMIT
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withLimitAboveMaximum_setsToMaximumPageLimit() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, 150, false  // Above MAX_PAGE_LIMIT (100)
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(100, sanitized.getLimit());  // MAX_PAGE_LIMIT
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withValidLimit_preservesLimit() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, 50, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(50, sanitized.getLimit());
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withNullLimit_setsToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, null, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getLimit());
-  }
-
-  @Test
-  void testSanitizeFieldFilters_withNegativeLimit_setsToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, null, -5, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getLimit());
-  }
-
-  @Test
   void testSanitizeFieldFilters_withValidPercentValues_preservesValues() {
     // Given
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        null, null, 10, 90, null, null, false
+        null, null, 10, 90
     );
 
     // When
@@ -306,7 +184,7 @@ class FieldFiltersTest {
     ));
     FieldFilters filters = new FieldFilters(
         null, null, null, datasetName, null,
-        null, null, null, null, null, null, false
+        null, null, null, null
     );
 
     // When
@@ -328,7 +206,7 @@ class FieldFiltersTest {
     SortedSet<String> provider = new TreeSet<>();
     FieldFilters filters = new FieldFilters(
         provider, null, null, null, null,
-        null, null, null, null, null, null, false
+        null, null, null, null
     );
 
     // When
@@ -347,7 +225,7 @@ class FieldFiltersTest {
     LocalDate dateTo = LocalDate.now().plus(7, ChronoUnit.DAYS);
     FieldFilters filters = new FieldFilters(
         null, null, null, null, null,
-        dateFrom, dateTo, null, null, null, null, false
+        dateFrom, dateTo, null, null
     );
 
     // When
@@ -365,7 +243,7 @@ class FieldFiltersTest {
     SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset1","dataset2","dataset3"));
     FieldFilters filters = new FieldFilters(
         null, null, null, null, excludedCheckId,
-        null, null, null, null, null, null, false
+        null, null, null, null
     );
 
     // When
@@ -395,8 +273,6 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
     assertNull(fieldFilters.getPercentLinksInOperationTo());
-    assertNull(fieldFilters.getOffset());
-    assertNull(fieldFilters.getLimit());
   }
 
   @Test
@@ -404,32 +280,12 @@ class FieldFiltersTest {
     // Given
     FieldFilters fieldFilters = new FieldFilters();
     SortedSet<String> provider = new TreeSet<>(Set.of("provider1"));
-    Integer limit = 25;
 
     // When
     fieldFilters.setProvider(provider);
-    fieldFilters.setLimit(limit);
 
     // Then
     assertEquals(provider, fieldFilters.getProvider());
-    assertEquals(limit, fieldFilters.getLimit());
-  }
-
-  @Test
-  void testConstructor_sanitizesNumberInputs_convertingNegativeToZero() {
-    // Given
-    FieldFilters filters = new FieldFilters(
-        null, null, null, null, null,
-        null, null, null, null, -1, -1, false
-    );
-
-    // When
-    FieldFilters sanitized = FieldFilters.sanitizeFieldFilters(filters);
-
-    // Then
-    assertNotNull(sanitized);
-    assertEquals(0, sanitized.getOffset());
-    assertEquals(0, sanitized.getLimit());
   }
 
   @Test
@@ -442,12 +298,10 @@ class FieldFiltersTest {
     SortedSet<String> excludedCheckId = new TreeSet<>(Set.of("dataset1"));
     LocalDate dateFrom = LocalDate.now(ZoneOffset.UTC);
     LocalDate dateTo = LocalDate.from(Instant.now().plus(1, ChronoUnit.DAYS).atZone(ZoneOffset.UTC));
-    Integer offset = 0;
-    Integer limit = 50;
 
     FieldFilters filters = new FieldFilters(
         provider, dataProvider, datasetId, datasetName, excludedCheckId,
-        dateFrom, dateTo, 20, 80, offset, limit, false
+        dateFrom, dateTo, 20, 80
     );
 
     // When
@@ -464,7 +318,5 @@ class FieldFiltersTest {
     assertNotNull(sanitized.getDateTo());
     assertEquals(20, sanitized.getPercentLinksInOperationFrom());
     assertEquals(80, sanitized.getPercentLinksInOperationTo());
-    assertEquals(0, sanitized.getOffset());
-    assertEquals(50, sanitized.getLimit());
   }
 }

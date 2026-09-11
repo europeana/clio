@@ -24,6 +24,7 @@ import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
@@ -260,9 +261,10 @@ class ReportingControllerTest {
   void findRunsSummary_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
     DatasetSummary datasetSummary = mock(DatasetSummary.class);
-    when(reportingEngine.findDatasetsSummary(any(FieldFilters.class))).thenReturn(List.of(datasetSummary));
+    when(reportingEngine.findDatasetsSummary(any(FieldFilters.class), any(Pagination.class))).thenReturn(List.of(datasetSummary));
     when(reportingEngine.findDatasetsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
     // When
     var responseEntity = controller.findDatasetsSummary(request);

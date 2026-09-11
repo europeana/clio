@@ -24,17 +24,6 @@ import tools.jackson.databind.annotation.JsonSerialize;
 public class FieldFilters {
 
   /**
-   * The minimum and maximum page limits. These constants are used to ensure that the limit filter is within a reasonable range,
-   * preventing potential performance issues or abuse of the API by requesting too many records at once.
-   */
-  private static final int MIN_PAGE_LIMIT = 5;
-  /**
-   * The minimum and maximum page limits. These constants are used to ensure that the limit filter is within a reasonable range,
-   * preventing potential performance issues or abuse of the API by requesting too many records at once.
-   */
-  private static final int MAX_PAGE_LIMIT = 100;
-
-  /**
    * The provider filter is a set of strings, which means that they can be used to filter by multiple values at the same time. For
    * example, if the provider filter contains the values "provider1" and "provider2", the filtering will return all the records
    * that have either "provider1" or "provider2" as their provider.
@@ -101,21 +90,6 @@ public class FieldFilters {
    */
   @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO)
   private Integer percentLinksInOperationTo;
-  /**
-   * The offset filter is an integer, which means that they can be used to paginate the results.
-   */
-  @JsonProperty(FieldNames.OFFSET)
-  @Schema(example = "0")
-  private Integer offset;
-  /**
-   * The limit filter is an integer, which means that they can be used to filter the number of results returned.
-   */
-  @JsonProperty(FieldNames.LIMIT)
-  @Schema(example = "5")
-  private Integer limit;
-
-  @JsonProperty(FieldNames.HAS_MORE_AVAILABLE)
-  private boolean moreAvailable;
 
   /**
    * Instantiates a new Clio filter.
@@ -129,8 +103,6 @@ public class FieldFilters {
    * @param dateTo the date to
    * @param percentLinksInOperationFrom the percent links in operation from
    * @param percentLinksInOperationTo the percent links in operation to
-   * @param offset the offset
-   * @param limit the limit
    */
   @JsonCreator
   public FieldFilters(
@@ -146,10 +118,7 @@ public class FieldFilters {
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_TO) LocalDate dateTo,
       @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_FROM) Integer percentLinksInOperationFrom,
-      @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO) Integer percentLinksInOperationTo,
-      @JsonProperty(FieldNames.OFFSET) Integer offset,
-      @JsonProperty(FieldNames.LIMIT) Integer limit,
-      @JsonProperty(FieldNames.HAS_MORE_AVAILABLE) Boolean moreAvailable) {
+      @JsonProperty(FieldNames.PERCENT_LINKS_IN_OPERATION_TO) Integer percentLinksInOperationTo) {
     this.dataProvider = dataProvider == null ? null : new TreeSet<>(dataProvider);
     this.provider = provider == null ? null : new TreeSet<>(provider);
     this.datasetId = datasetId == null ? null : new TreeSet<>(datasetId);
@@ -159,9 +128,6 @@ public class FieldFilters {
     this.dateTo = dateTo;
     this.percentLinksInOperationFrom = percentLinksInOperationFrom;
     this.percentLinksInOperationTo = percentLinksInOperationTo;
-    this.offset = offset;
-    this.limit = limit;
-    this.moreAvailable = moreAvailable != null && moreAvailable;
   }
 
   /**
@@ -181,14 +147,11 @@ public class FieldFilters {
         sanitizeStringSet(filters.getDataProvider()),
         sanitizeStringSet(filters.getDatasetId()),
         sanitizeStringSet(filters.getDatasetName()),
-        filters.getExcludedDatasetId(),             // No sanitization needed for numbers
+        sanitizeStringSet(filters.getExcludedDatasetId()),
         filters.getDateFrom(),                    // No sanitization needed for dates
         filters.getDateTo(),                      // No sanitization needed for dates
         filters.getPercentLinksInOperationFrom(), // No sanitization needed for range
-        filters.getPercentLinksInOperationTo(),   // No sanitization needed for range
-        sanitizeNumber(filters.getOffset()),
-        sanitizeLimit(filters.getLimit()),
-        filters.isMoreAvailable()
+        filters.getPercentLinksInOperationTo()    // No sanitization needed for range
     );
   }
 
@@ -206,38 +169,6 @@ public class FieldFilters {
     return stringSet.stream()
                     .map(FieldFilters::escapeHtml)
                     .collect(Collectors.toCollection(TreeSet::new));
-  }
-
-  /**
-   * Sanitize number integer.
-   *
-   * @param value the value
-   * @return the integer
-   */
-  private static Integer sanitizeNumber(Integer value) {
-    if (value == null || value < 0) {
-      return 0;
-    }
-    return value;
-  }
-
-  /**
-   * Sanitize limit integer.
-   *
-   * @param value the value
-   * @return the integer
-   */
-  private static Integer sanitizeLimit(Integer value) {
-    if (value == null || value < 0) {
-      return 0;
-    }
-    if (value < MIN_PAGE_LIMIT) {
-      return MIN_PAGE_LIMIT;
-    }
-    if (value > MAX_PAGE_LIMIT) {
-      return MAX_PAGE_LIMIT;
-    }
-    return value;
   }
 
   /**

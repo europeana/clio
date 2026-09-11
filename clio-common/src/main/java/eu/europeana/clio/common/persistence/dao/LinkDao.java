@@ -7,6 +7,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Link;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -163,7 +164,7 @@ public class LinkDao {
    * @return the links with runs for filters
    * @throws PersistenceException the persistence exception
    */
-  public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
+  public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters, Pagination pagination) throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
       CommonDatasetQueryParts<RunWithLink> queryParts = buildCommonDatasetQueryWithPredicates(
@@ -198,8 +199,8 @@ public class LinkDao {
       TypedQuery<RunWithLink> query = session.createQuery(criteriaQuery);
       queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
 
-      return query.setFirstResult(filters.getOffset())
-                  .setMaxResults(filters.getLimit())
+      return query.setFirstResult(pagination.offset())
+                  .setMaxResults(pagination.limit())
                   .getResultStream();
     });
   }

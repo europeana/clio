@@ -6,6 +6,7 @@ import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -312,10 +313,7 @@ public class DatasetDao {
           filters.getDateFrom(),
           filters.getDateTo(),
           filters.getPercentLinksInOperationFrom(),
-          filters.getPercentLinksInOperationTo(),
-          filters.getOffset(),
-          filters.getLimit(),
-          filters.isMoreAvailable());
+          filters.getPercentLinksInOperationTo());
     });
   }
 
@@ -326,25 +324,24 @@ public class DatasetDao {
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public List<DatasetSummary> findDatasetsSummary(FieldFilters filters) throws PersistenceException {
+  public List<DatasetSummary> findDatasetsSummary(FieldFilters filters, Pagination pagination) throws PersistenceException {
     return hibernateSessionUtils.performInSession(session -> {
       TypedQuery<DatasetSummary> query = getDatasetSummaryTypedQuery(filters, session);
-      List<DatasetSummary> tempDatasetSummaries = query.setFirstResult(filters.getOffset())
-                                                       .setMaxResults(filters.getLimit() + 1)
+      List<DatasetSummary> tempDatasetSummaries = query.setFirstResult(pagination.offset())
+                                                       .setMaxResults(pagination.limit() + 1)
                                                        .getResultList();
-
-      return pagingHasMoreAvailable(filters, tempDatasetSummaries);
+      return pagingHasMoreAvailable(pagination, tempDatasetSummaries);
     });
   }
 
-  private List<DatasetSummary> pagingHasMoreAvailable(FieldFilters filters, List<DatasetSummary> tempDatasetSummaries) {
+  private List<DatasetSummary> pagingHasMoreAvailable(Pagination pagination, List<DatasetSummary> tempDatasetSummaries) {
     List<DatasetSummary> datasetSummaries;
-    if ((long) tempDatasetSummaries.size() < filters.getLimit()) {
-      filters.setMoreAvailable(false);
+    if ((long) tempDatasetSummaries.size() < pagination.limit()) {
+      pagination = new Pagination(pagination.offset(), pagination.limit(), false);
       datasetSummaries = tempDatasetSummaries;
     } else {
-      filters.setMoreAvailable(true);
-      datasetSummaries = tempDatasetSummaries.subList(0, filters.getLimit());
+      pagination = new Pagination(pagination.offset(), pagination.limit(), true);
+      datasetSummaries = tempDatasetSummaries.subList(0, pagination.limit());
     }
     return datasetSummaries;
   }

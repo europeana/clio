@@ -47,7 +47,7 @@ public class ReportingRunner implements CommandLineRunner {
         // Generate the report
         log.info("Saving the report to output file: {}", path);
         try (final BufferedWriter fileWriter = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-            new ReportingEngine(reportingEngineConfiguration).generateReport(fileWriter, null);
+            new ReportingEngine(reportingEngineConfiguration).generateReport(fileWriter, null, null);
         } catch (IOException e) {
             throw new ClioException("Error occurred while compiling the report.", e);
         }

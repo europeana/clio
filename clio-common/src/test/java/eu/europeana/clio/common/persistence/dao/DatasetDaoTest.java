@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.persistence.dao.DatasetDao.CommonDatasetQueryParts;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
@@ -623,8 +624,7 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(1);
-    inputFilters.setOffset(0);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -653,8 +653,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(2);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -688,8 +686,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(2);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -720,8 +716,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(2);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -753,8 +747,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(3);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -785,8 +777,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(3);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -817,8 +807,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(3);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -850,8 +838,6 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(3);
-    inputFilters.setOffset(0);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -964,8 +950,6 @@ class DatasetDaoTest {
 
     FieldFilters inputFilters = new FieldFilters();
     LocalDate testDate = LocalDate.now();
-    inputFilters.setLimit(5);
-    inputFilters.setOffset(0);
     inputFilters.setDateTo(testDate);
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
@@ -1061,7 +1045,8 @@ class DatasetDaoTest {
 
     FieldFilters inputFilters = new FieldFilters();
     Integer offset = 10;
-    inputFilters.setOffset(offset);
+    Pagination pagination = new Pagination(offset,5,false);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
     DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
@@ -1074,7 +1059,7 @@ class DatasetDaoTest {
 
     // Then
     assertNotNull(result);
-    assertEquals(offset, result.getOffset());
+    assertEquals(offset, pagination.offset());
   }
 
   @Test
@@ -1089,8 +1074,8 @@ class DatasetDaoTest {
 
     FieldFilters inputFilters = new FieldFilters();
     Integer limit = 5;
-    inputFilters.setLimit(limit);
-    inputFilters.setOffset(0);
+    Pagination pagination = new Pagination(0,limit,false);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
     DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
@@ -1103,7 +1088,7 @@ class DatasetDaoTest {
 
     // Then
     assertNotNull(result);
-    assertEquals(limit, result.getLimit());
+    assertEquals(limit, pagination.limit());
   }
 
   @Test
@@ -1112,8 +1097,7 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(2);
-    inputFilters.setOffset(0);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -1144,8 +1128,7 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(1);
-    inputFilters.setOffset(0);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
@@ -1174,8 +1157,7 @@ class DatasetDaoTest {
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
     FieldFilters inputFilters = new FieldFilters();
-    inputFilters.setLimit(3);
-    inputFilters.setOffset(0);
+
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);

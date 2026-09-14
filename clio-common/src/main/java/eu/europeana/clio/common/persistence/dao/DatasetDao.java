@@ -6,6 +6,7 @@ import eu.europeana.clio.common.model.Dataset;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
@@ -324,26 +325,21 @@ public class DatasetDao {
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public List<DatasetSummary> findDatasetsSummary(FieldFilters filters, Pagination pagination) throws PersistenceException {
-    return hibernateSessionUtils.performInSession(session -> {
+  public PagedDatasetResult findDatasetsSummary(FieldFilters filters, Pagination pagination) throws PersistenceException {
+    List<DatasetSummary> datasetSummaries = hibernateSessionUtils.performInSession(session -> {
       TypedQuery<DatasetSummary> query = getDatasetSummaryTypedQuery(filters, session);
-      List<DatasetSummary> tempDatasetSummaries = query.setFirstResult(pagination.offset())
-                                                       .setMaxResults(pagination.limit() + 1)
-                                                       .getResultList();
-      return pagingHasMoreAvailable(pagination, tempDatasetSummaries);
+      return query.setFirstResult(pagination.offset())
+                  .setMaxResults(pagination.limit() + 1)
+                  .getResultList();
     });
-  }
+    PagedDatasetResult pagedDatasetResult;
+    if ((long) datasetSummaries.size() < pagination.limit()) {
+      pagedDatasetResult = new PagedDatasetResult(datasetSummaries,new Pagination(pagination.offset(), pagination.limit(), false));
 
-  private List<DatasetSummary> pagingHasMoreAvailable(Pagination pagination, List<DatasetSummary> tempDatasetSummaries) {
-    List<DatasetSummary> datasetSummaries;
-    if ((long) tempDatasetSummaries.size() < pagination.limit()) {
-      pagination = new Pagination(pagination.offset(), pagination.limit(), false);
-      datasetSummaries = tempDatasetSummaries;
-    } else {
-      pagination = new Pagination(pagination.offset(), pagination.limit(), true);
-      datasetSummaries = tempDatasetSummaries.subList(0, pagination.limit());
+    }  else {
+      pagedDatasetResult = new PagedDatasetResult(datasetSummaries.subList(0, pagination.limit()),new Pagination(pagination.offset(), pagination.limit(), true));
     }
-    return datasetSummaries;
+    return pagedDatasetResult;
   }
 
   public static TypedQuery<DatasetSummary> getDatasetSummaryTypedQuery(FieldFilters filters, Session session) {
@@ -360,8 +356,8 @@ public class DatasetDao {
         queryParts.dataset().get(FieldNames.DATASET_NAME_DB),
         queryParts.dataset().get(FieldNames.DATASET_SIZE),
         queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX),
-        queryParts.dataset().get(FieldNames.DATA_PROVIDER),
         queryParts.dataset().get(FieldNames.PROVIDER),
+        queryParts.dataset().get(FieldNames.DATA_PROVIDER),
         queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
     ));
 

@@ -8,6 +8,7 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
 import eu.europeana.clio.reporting.rest.api.response.FilterResponse;
@@ -243,11 +244,11 @@ public class ReportingController {
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
     final FieldFilters filterOptions = this.reportingEngine.findDatasetsSummaryFilterOptions(sanitizedFilters);
-    final List<DatasetSummary> datasetsSummary = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
+    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
     sanitizedFilters.setProvider(filterOptions.getProvider());
     sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
     sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
-    return new ResponseEntity<>( new FilterResponse(datasetsSummary, sanitizedFilters, request.getPagination()), HttpStatus.OK);
+    return new ResponseEntity<>( new FilterResponse(pagedDatasetResult.datasetSummaries(), sanitizedFilters, pagedDatasetResult.pagination()), HttpStatus.OK);
   }
 }

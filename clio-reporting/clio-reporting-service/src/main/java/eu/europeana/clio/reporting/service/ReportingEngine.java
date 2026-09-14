@@ -6,6 +6,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.BatchWithCounters;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -231,7 +232,7 @@ public final class ReportingEngine {
      * @return the dataset summary
      * @throws PersistenceException the persistence exception
      */
-    public List<DatasetSummary> findDatasetsSummary(FieldFilters clioFilters, Pagination pagination) throws PersistenceException {
+    public PagedDatasetResult findDatasetsSummary(FieldFilters clioFilters, Pagination pagination) throws PersistenceException {
         return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummary(clioFilters, pagination);
     }
 

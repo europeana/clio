@@ -3,6 +3,7 @@ package eu.europeana.clio.common.persistence.dao;
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.ClioFilterField;
 import eu.europeana.clio.common.model.Dataset;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
@@ -268,7 +269,6 @@ public class DatasetDao {
     );
   }
 
-
   /**
    * Find datasets summary filter options field filters.
    *
@@ -334,10 +334,12 @@ public class DatasetDao {
     });
     PagedDatasetResult pagedDatasetResult;
     if ((long) datasetSummaries.size() < pagination.limit()) {
-      pagedDatasetResult = new PagedDatasetResult(datasetSummaries,new Pagination(pagination.offset(), pagination.limit(), false));
+      pagedDatasetResult = new PagedDatasetResult(datasetSummaries,
+          new Pagination(pagination.offset(), pagination.limit(), false));
 
-    }  else {
-      pagedDatasetResult = new PagedDatasetResult(datasetSummaries.subList(0, pagination.limit()),new Pagination(pagination.offset(), pagination.limit(), true));
+    } else {
+      pagedDatasetResult = new PagedDatasetResult(datasetSummaries.subList(0, pagination.limit()),
+          new Pagination(pagination.offset(), pagination.limit(), true));
     }
     return pagedDatasetResult;
   }
@@ -411,5 +413,98 @@ public class DatasetDao {
       List<Predicate> havingPredicates,
       Map<ParameterExpression<?>, Object> parametersMap) {
 
+  }
+
+  public static <T> CommonDatasetQueryParts<T> buildCommonDatasetChecksQueryWithPredicates(
+      CriteriaBuilder criteriaBuilder, Class<T> clazz, FieldFilters filters) {
+    // Build base query parts
+    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
+    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
+    Join<RunRow, DatasetRow> run = link.join("run", JoinType.INNER);
+
+    List<Predicate> wherePredicates = new ArrayList<>();
+    List<Predicate> havingPredicates = new ArrayList<>();
+    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+
+    // Compute aggregations
+    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)), 0)
+                                                  .as(Long.class);
+    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link), 0).as(Long.class);
+
+    Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
+        criteriaBuilder.prod(
+            criteriaBuilder.<Double>selectCase()
+                           .when(criteriaBuilder.equal(totalLinks, 0D), 0D)
+                           .otherwise(criteriaBuilder.quot(
+                               criteriaBuilder.toDouble(errorsLinks),
+                               criteriaBuilder.toDouble(totalLinks)
+                           ).as(Double.class)),
+            HUNDRED
+        )).cast(Integer.class);
+
+    // Apply filters
+    String datasetId = filters.getDatasetId().first();
+    ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, FieldNames.DATASET_ID_DB + "Parameter");
+    wherePredicates.add(run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
+    parametersMap.put(parameter, datasetId);
+
+    addPredicateAndParameterLastThreeMonths(criteriaBuilder, wherePredicates, link, parametersMap);
+
+    addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
+
+    return new CommonDatasetQueryParts<>(
+        criteriaQuery,
+        link,
+        run,
+        null,
+        errorsLinks,
+        totalLinks,
+        percentLinksInOperation,
+        wherePredicates,
+        havingPredicates,
+        parametersMap
+    );
+  }
+
+  public List<DatasetCheckSummary> findDatasetCheckSummary(FieldFilters filters) throws PersistenceException {
+    return hibernateSessionUtils.performInSession(session -> {
+      TypedQuery<DatasetCheckSummary> query = getDatasetCheckSummaryTypedQuery(filters, session);
+      return query.getResultList();
+    });
+
+  }
+
+  public static TypedQuery<DatasetCheckSummary> getDatasetCheckSummaryTypedQuery(FieldFilters filters, Session session) {
+    CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
+    CommonDatasetQueryParts<DatasetCheckSummary> queryParts = buildCommonDatasetChecksQueryWithPredicates(criteriaBuilder,
+        DatasetCheckSummary.class, filters);
+
+    CriteriaQuery<DatasetCheckSummary> criteriaQuery = queryParts.criteriaQuery();
+
+    // select
+    criteriaQuery.select(criteriaBuilder.construct(
+        DatasetCheckSummary.class,
+        queryParts.run().get(FieldNames.RUN_ID_DB),
+        queryParts.run().get(FieldNames.STARTING_TIME_DB),
+        queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)
+    ));
+
+    // where & having
+    criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
+    criteriaQuery.having(queryParts.havingPredicates());
+
+    // order by (specific to LinkDao)
+    criteriaQuery.orderBy(criteriaBuilder.desc(queryParts.run().get(FieldNames.STARTING_TIME_DB)));
+
+    // group by
+    criteriaQuery.groupBy(
+        queryParts.run().get(FieldNames.STARTING_TIME_DB),
+        queryParts.run().get(FieldNames.RUN_ID_DB)
+    );
+
+    // execute query
+    TypedQuery<DatasetCheckSummary> query = session.createQuery(criteriaQuery);
+    queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
+    return query;
   }
 }

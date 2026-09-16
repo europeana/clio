@@ -6,7 +6,7 @@ import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHtt
 
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.DatasetSummary;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Report;
@@ -27,6 +27,8 @@ import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -223,7 +225,6 @@ public class ReportingController {
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
-
   /**
    * Get the dataset summaries of the given {@link FilterRequest}.
    *
@@ -231,7 +232,8 @@ public class ReportingController {
    * @return the dataset summaries
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = DATASETS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = DATASETS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {
+      MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
   @Operation(summary = "Returns a complete filtered view of Clio datasets summaries with pagination")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
@@ -244,11 +246,37 @@ public class ReportingController {
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
     final FieldFilters filterOptions = this.reportingEngine.findDatasetsSummaryFilterOptions(sanitizedFilters);
-    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
+    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters,
+        request.getPagination());
     sanitizedFilters.setProvider(filterOptions.getProvider());
     sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
     sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
-    return new ResponseEntity<>( new FilterResponse(pagedDatasetResult.datasetSummaries(), sanitizedFilters, pagedDatasetResult.pagination()), HttpStatus.OK);
+    return new ResponseEntity<>(
+        new FilterResponse(pagedDatasetResult.datasetSummaries(), sanitizedFilters, pagedDatasetResult.pagination()),
+        HttpStatus.OK);
+  }
+
+  @GetMapping(value = CHECKS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Get a dataset link checking detail.",
+      description = "The check runs are returned in reverse chronological order.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "OK",
+          content = @Content(schema = @Schema(implementation = BatchesRequestResult.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE)),
+      @ApiResponse(responseCode = "500", description = "Persistence error",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE))
+  })
+  public ResponseEntity<List<DatasetCheckSummary>> findDatasetsCheckRuns(
+      @RequestParam(value = "datasetId", required = true, defaultValue = "")
+      @Parameter(description = "The dataset identifier.", example = "")
+      String datasetId)
+      throws ClioException {
+    FieldFilters fieldFilters = new FieldFilters(null, null, new TreeSet<>(Set.of(datasetId)), null, null, null, null, 0,
+        100);
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(fieldFilters);
+    final List<DatasetCheckSummary> datasetCheckSummaries = this.reportingEngine.findDatasetCheckSummary(sanitizedFilters);
+    return new ResponseEntity<>(datasetCheckSummaries, HttpStatus.OK);
   }
 }

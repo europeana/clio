@@ -56,8 +56,8 @@ public class FieldFilters {
    * time. For example, if the excluded check ids filter contains the values "checkId1" and "checkId2", the filtering will return
    * all the records that do not have either "checkId1" or "checkId2" as their check id.
    */
-  @JsonProperty(FieldNames.EXCLUDED_DATASET_ID)
-  private SortedSet<String> excludedDatasetId;
+  @JsonProperty(FieldNames.EXCLUDED_ID)
+  private SortedSet<String> excludedId;
   /**
    * The date from and date to filters are dates, which means that they can be used to filter by a range of dates. For example, if
    * the date from filter is set to "2026-01-01" and the date to filter is set to "2026-12-31", the filtering will return all the
@@ -98,7 +98,7 @@ public class FieldFilters {
    * @param dataProvider the data provider
    * @param datasetId the dataset id
    * @param datasetName the dataset name
-   * @param excludedDatasetId the excluded check ids
+   * @param excludedId the excluded check ids
    * @param dateFrom the date from
    * @param dateTo the date to
    * @param percentLinksInOperationFrom the percent links in operation from
@@ -110,7 +110,7 @@ public class FieldFilters {
       @JsonProperty(FieldNames.DATA_PROVIDER) SortedSet<String> dataProvider,
       @JsonProperty(FieldNames.DATASET_ID) SortedSet<String> datasetId,
       @JsonProperty(FieldNames.DATASET_NAME) SortedSet<String> datasetName,
-      @JsonProperty(FieldNames.EXCLUDED_DATASET_ID) SortedSet<String> excludedDatasetId,
+      @JsonProperty(FieldNames.EXCLUDED_ID) SortedSet<String> excludedId,
       @Schema(pattern = "yyyy-MM-dd")
       @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
       @JsonProperty(FieldNames.DATE_FROM) LocalDate dateFrom,
@@ -123,7 +123,7 @@ public class FieldFilters {
     this.provider = provider == null ? null : new TreeSet<>(provider);
     this.datasetId = datasetId == null ? null : new TreeSet<>(datasetId);
     this.datasetName = datasetName == null ? null : new TreeSet<>(datasetName);
-    this.excludedDatasetId = excludedDatasetId == null ? null : new TreeSet<>(excludedDatasetId);
+    this.excludedId = excludedId == null ? null : new TreeSet<>(excludedId);
     this.dateFrom = dateFrom;
     this.dateTo = dateTo;
     this.percentLinksInOperationFrom = percentLinksInOperationFrom;
@@ -147,7 +147,7 @@ public class FieldFilters {
         sanitizeStringSet(filters.getDataProvider()),
         sanitizeStringSet(filters.getDatasetId()),
         sanitizeStringSet(filters.getDatasetName()),
-        sanitizeStringSet(filters.getExcludedDatasetId()),
+        sanitizeStringSet(filters.getExcludedId()),
         filters.getDateFrom(),                    // No sanitization needed for dates
         filters.getDateTo(),                      // No sanitization needed for dates
         filters.getPercentLinksInOperationFrom(), // No sanitization needed for range

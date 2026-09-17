@@ -172,7 +172,7 @@ class DatasetDaoTest {
     Set<String> excludedIds = Set.of("datasetId1", "datasetId2", "datasetId3");
 
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID)).thenReturn(paramExpression);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID)).thenReturn(paramExpression);
 
     Path<?> path = mock(Path.class);
     doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
@@ -870,7 +870,7 @@ class DatasetDaoTest {
       DatasetDao datasetDao = new DatasetDao(sessionFactory);
       FieldFilters inputFilters = new FieldFilters();
       SortedSet<String> excludedCheckIds = new TreeSet<>(Set.of("datasetId1L", "datasetId2L", "datasetId3L"));
-      inputFilters.setExcludedDatasetId(excludedCheckIds);
+      inputFilters.setExcludedId(excludedCheckIds);
       inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
       Session session = mock(Session.class);
@@ -882,7 +882,7 @@ class DatasetDaoTest {
           "provider", "dataProvider", 75);
 
       JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
-      when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID)).thenReturn(paramExpression);
+      when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID)).thenReturn(paramExpression);
 
       JpaPath<?> path = mock(JpaPath.class);
       doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
@@ -900,7 +900,7 @@ class DatasetDaoTest {
 
       // Then
       assertNotNull(result);
-      assertEquals(excludedCheckIds, result.getExcludedDatasetId());
+      assertEquals(excludedCheckIds, result.getExcludedId());
     }
 
   @Test

@@ -74,6 +74,18 @@ public final class ReportingEngine {
   }
 
   /**
+   * Generate an im memory {@link String} report.
+   *
+   * @return the report
+   * @throws ClioException if an error occurred during generating the report
+   */
+  public String generateReport(FieldFilters filters, Pagination pagination) throws ClioException {
+    StringWriter stringWriter = new StringWriter();
+    generateReport(stringWriter, filters, pagination);
+    return stringWriter.toString();
+  }
+
+  /**
    * Generates a report and saves it to the output file.
    *
    * @param writer The destination/output writer.

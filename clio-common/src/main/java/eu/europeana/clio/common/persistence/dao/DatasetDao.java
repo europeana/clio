@@ -150,7 +150,7 @@ public class DatasetDao {
       Join<DatasetRow, RunRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
 
     if (!CollectionUtils.isEmpty(fieldValue)) {
-      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID);
+      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID);
       predicates.add(criteriaBuilder.not(dataset.get(FieldNames.DATASET_ID_DB).in(excludeCheckIdsParameter)));
       parametersMap.put(excludeCheckIdsParameter, fieldValue);
     }
@@ -247,7 +247,7 @@ public class DatasetDao {
         dataset, parametersMap, FieldNames.DATASET_ID);
     addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates,
         dataset, parametersMap, FieldNames.DATASET_NAME_DB);
-    addPredicateAndParameterExcludedIds(filters.getExcludedDatasetId(), criteriaBuilder,
+    addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder,
         wherePredicates, dataset, parametersMap);
     addPredicateAndParameterLastThreeMonths(criteriaBuilder, wherePredicates, link, parametersMap);
     addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates,
@@ -310,7 +310,7 @@ public class DatasetDao {
           new TreeSet<>(result.get(ClioFilterField.DATA_PROVIDER)),
           new TreeSet<>(result.get(ClioFilterField.DATASET_ID)),
           new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)),
-          filters.getExcludedDatasetId(),
+          filters.getExcludedId(),
           filters.getDateFrom(),
           filters.getDateTo(),
           filters.getPercentLinksInOperationFrom(),

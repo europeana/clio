@@ -3,7 +3,6 @@ package eu.europeana.clio.reporting.rest.controller;
 import static eu.europeana.clio.common.model.FieldFilters.sanitizeFieldFilters;
 import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
 
-
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.DatasetCheckSummary;
@@ -59,7 +58,8 @@ public class ReportingController {
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
   public static final String DATASETS_ENDPOINT_PATH = "/datasets";
-  public static final String CHECKS_ENDPOINT_PATH = "/checks";
+  public static final String RUNS_ENDPOINT_PATH = "/runs";
+  public static final String RUNS_LINKS_EXPORT_ENDPOINT_PATH = "/runs/links/export";
 
   private final ReportingEngine reportingEngine;
 
@@ -257,7 +257,14 @@ public class ReportingController {
         HttpStatus.OK);
   }
 
-  @GetMapping(value = CHECKS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+  /**
+   * Find datasets check runs response entity.
+   *
+   * @param datasetId the dataset id
+   * @return the response entity
+   * @throws ClioException the clio exception
+   */
+  @GetMapping(value = RUNS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "Get a dataset link checking detail.",
       description = "The check runs are returned in reverse chronological order.")
   @ApiResponses(value = {
@@ -273,10 +280,47 @@ public class ReportingController {
       @Parameter(description = "The dataset identifier.", example = "")
       String datasetId)
       throws ClioException {
-    FieldFilters fieldFilters = new FieldFilters(null, null, new TreeSet<>(Set.of(datasetId)), null, null, null, null, 0,
-        100);
+    final int minPercent = 0;
+    final int maxPercent = 100;
+    FieldFilters fieldFilters = new FieldFilters(null, null, new TreeSet<>(Set.of(datasetId)),
+        null, null, null, null, minPercent, maxPercent);
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(fieldFilters);
     final List<DatasetCheckSummary> datasetCheckSummaries = this.reportingEngine.findDatasetCheckSummary(sanitizedFilters);
     return new ResponseEntity<>(datasetCheckSummaries, HttpStatus.OK);
+  }
+
+  /**
+   * Export the runs links matching the given {@link FilterRequest} as a CSV file.
+   *
+   * @param request the request
+   * @return the response entity
+   * @throws ClioException the clio exception
+   */
+  @PostMapping(value = RUNS_LINKS_EXPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
+  @Operation(summary = "Export filtered report of Clio runs dataset summaries with pagination",
+      description = "The links in the report may be part of multiple runs.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "OK",
+          content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
+      @ApiResponse(responseCode = "404", description = "Report not found",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE)),
+      @ApiResponse(responseCode = "500", description = "Persistence error",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE))
+  })
+  public ResponseEntity<byte[]> exportRunsLinks(
+      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
+      throws ClioException {
+    if (request == null || request.getFilters() == null) {
+      return ResponseEntity.badRequest().build();
+    }
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
+    final String report = reportingEngine.generateReport(sanitizedFilters, request.getPagination());
+    if (report == null) {
+      throw new ReportNotFoundException("Report not found.");
+    }
+    final byte[] reportBytes = report.getBytes(StandardCharsets.UTF_8);
+    return getHttpEntity(reportBytes);
   }
 }

@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.PagedDatasetResult;
@@ -280,7 +281,23 @@ class ReportingControllerTest {
     assertEquals(1, response.getResults().size());
     // Verify that a sanitized FieldFilters object is returned (not the original mock)
     assertNotNull(response.getFilterOptions());
-    // The returned filters are a new sanitized copy, not the original mock
+  }
+
+  @Test
+  void findDatasetCheckSummary() throws Exception {
+    // Given
+    String datasetId="datasetId1";
+    DatasetCheckSummary datasetCheckSummary = mock(DatasetCheckSummary.class);
+    when(reportingEngine.findDatasetCheckSummary(any(FieldFilters.class))).thenReturn(List.of(datasetCheckSummary));
+
+    // When
+    var responseEntity = controller.findDatasetsCheckRuns(datasetId);
+
+    // Then
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    List<DatasetCheckSummary> datasetCheckSummaries = responseEntity.getBody();
+    assertNotNull(datasetCheckSummaries);
+    assertEquals(1, datasetCheckSummaries.size());
   }
 
   String normalizeDate(String s) {

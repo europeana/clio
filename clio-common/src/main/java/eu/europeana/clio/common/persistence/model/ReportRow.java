@@ -28,12 +28,16 @@ import org.hibernate.annotations.OnDeleteAction;
     name = ReportRow.GET_ALL_REPORT_DETAILS_QUERY)
 @NamedQuery(name = ReportRow.GET_REPORT_BY_BATCH_ID_QUERY,
     query = "FROM ReportRow AS r WHERE r.batch.batchId = :" + ReportRow.BATCH_ID_PARAMETER)
+@NamedQuery(name = ReportRow.GET_REPORT_BY_REPORT_ID_QUERY,
+    query = "FROM ReportRow AS r WHERE r.reportId = :" + ReportRow.REPORT_ID_PARAMETER)
 public class ReportRow {
 
   public static final String GET_LATEST_REPORT_QUERY = "getLatestReport";
   public static final String GET_ALL_REPORT_DETAILS_QUERY = "getAllReportDetails";
   public static final String GET_REPORT_BY_BATCH_ID_QUERY = "getReportByBatchId";
+  public static final String GET_REPORT_BY_REPORT_ID_QUERY = "getReportByReportId";
   public static final String BATCH_ID_PARAMETER = "batchId";
+  public static final String REPORT_ID_PARAMETER = "reportId";
 
   @Id
   @Column(name = "report_id")

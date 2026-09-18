@@ -1,5 +1,8 @@
 package eu.europeana.clio.link.checking.service.dao;
 
+import static eu.europeana.metis.core.common.DaoFieldNames.DATASET_ID;
+import static eu.europeana.metis.core.common.DaoFieldNames.ID;
+
 import com.mongodb.client.MongoClient;
 import dev.morphia.aggregation.Aggregation;
 import dev.morphia.aggregation.expressions.Expressions;
@@ -16,16 +19,20 @@ import eu.europeana.metis.core.mongo.MorphiaDatastoreProvider;
 import eu.europeana.metis.core.mongo.MorphiaDatastoreProviderImpl;
 import eu.europeana.metis.core.workflow.WorkflowExecution;
 import eu.europeana.metis.core.workflow.WorkflowStatus;
-import eu.europeana.metis.core.workflow.plugins.*;
+import eu.europeana.metis.core.workflow.plugins.DataStatus;
+import eu.europeana.metis.core.workflow.plugins.ExecutablePlugin;
+import eu.europeana.metis.core.workflow.plugins.ExecutablePluginType;
+import eu.europeana.metis.core.workflow.plugins.MetisPlugin;
+import eu.europeana.metis.core.workflow.plugins.PluginType;
 import eu.europeana.metis.network.ExternalRequestUtil;
-
 import java.time.Instant;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static eu.europeana.metis.core.common.DaoFieldNames.DATASET_ID;
-import static eu.europeana.metis.core.common.DaoFieldNames.ID;
 
 /**
  * Data access object for the Metis core Mongo.
@@ -55,8 +62,7 @@ public class MongoCoreDao {
     public Dataset getPublishedDatasetById(String datasetId) throws ClioException {
 
         // Find the dataset from Metis.
-        final eu.europeana.metis.core.dataset.Dataset metisDataset = new DatasetDao(datastoreProvider,
-                null).getDatasetByDatasetId(datasetId);
+        final eu.europeana.metis.core.dataset.Dataset metisDataset = new DatasetDao(datastoreProvider).getDatasetByDatasetId(datasetId);
         if (metisDataset == null) {
             throw new ClioException("Cannot process dataset " + datasetId + ": it does not exist.");
         }
@@ -81,14 +87,14 @@ public class MongoCoreDao {
         final PluginWithExecutionId<ExecutablePlugin> latestSuccessfulExecutableIndex = workflowExecutionDao
                 .getLatestSuccessfulExecutablePlugin(datasetId, Set.of(ExecutablePluginType.PUBLISH),
                         false);
-        final int datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
+        final long datasetSize = Optional.ofNullable(latestSuccessfulExecutableIndex)
                 .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getExecutionProgress)
-                .map(progress -> progress.getProcessedRecords() - progress.getErrors()).orElse(-1);
+                .map(progress -> progress.getProcessedRecords() - (progress.getFailRecords()+progress.getFailDepublishRecords())).orElse(-1L);
 
         // Convert to the dataset object we're interested in.
         final Instant lastIndexTime = Optional.ofNullable(latestSuccessfulExecutableIndex)
                 .map(PluginWithExecutionId::getPlugin).map(ExecutablePlugin::getFinishedDate)
-                .map(Date::toInstant).orElse(null);
+                .orElse(null);
         return new Dataset(metisDataset.getDatasetId(), metisDataset.getDatasetName(), datasetSize,
                 lastIndexTime, metisDataset.getProvider(), metisDataset.getDataProvider());
     }
@@ -130,8 +136,8 @@ public class MongoCoreDao {
         final ResultList<WorkflowExecution> executions = new WorkflowExecutionDao(datastoreProvider)
                 .getAllWorkflowExecutions(null, EnumSet.of(WorkflowStatus.FINISHED),
                         DaoFieldNames.FINISHED_DATE, false, 0, 1, false);
-        return executions.getResults().stream().findFirst().map(WorkflowExecution::getFinishedDate)
-                .map(Date::toInstant).orElse(Instant.EPOCH);
+        return executions.results().stream().findFirst().map(WorkflowExecution::getFinishedDate)
+                .orElse(Instant.EPOCH);
     }
 
     /**

@@ -22,6 +22,7 @@ truststore.password=
 
 #Solr/Zookeeper published records
 publish.solr.hosts=
+publish.solr.useHttp1=
 publish.solr.zookeeper.hosts=
 publish.solr.zookeeper.ports=
 publish.solr.zookeeper.chroot=

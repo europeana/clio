@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  *{@link ControllerAdvice} class that handles exceptions through spring.
  */
 @ControllerAdvice
-//@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-public class GlobalControllerAdvice {
+public class RestResponseExceptionHandler {
 
     /**
      * Exception handler.

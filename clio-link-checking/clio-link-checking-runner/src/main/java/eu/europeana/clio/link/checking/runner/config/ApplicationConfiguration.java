@@ -1,6 +1,6 @@
 package eu.europeana.clio.link.checking.runner.config;
 
-import eu.europeana.clio.common.config.properties.ReportingEngineConfigurationProperties;
+import eu.europeana.clio.common.config.properties.ClioConfigurationProperties;
 import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
@@ -10,20 +10,18 @@ import eu.europeana.clio.link.checking.runner.execution.LinkCheckingRunner;
 import eu.europeana.clio.link.checking.service.config.LinkCheckingEngineConfiguration;
 import eu.europeana.clio.link.checking.service.config.properties.LinkCheckingConfigurationProperties;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
+import eu.europeana.metis.common.config.properties.TruststoreConfigurationProperties;
+import eu.europeana.metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
+import eu.europeana.metis.common.config.properties.postgres.HibernateConfigurationProperties;
+import eu.europeana.metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
 import eu.europeana.metis.utils.CustomTruststoreAppender;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import jakarta.annotation.PreDestroy;
-import metis.common.config.properties.TruststoreConfigurationProperties;
-import metis.common.config.properties.mongo.MetisCoreMongoConfigurationProperties;
-import metis.common.config.properties.postgres.HibernateConfigurationProperties;
-import metis.common.config.properties.solr.PublishSolrZookeeperConfigurationProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.service.ServiceRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,12 +33,12 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties({
-    LinkCheckingConfigurationProperties.class, ReportingEngineConfigurationProperties.class,
+    LinkCheckingConfigurationProperties.class, ClioConfigurationProperties.class,
     TruststoreConfigurationProperties.class, HibernateConfigurationProperties.class,
     MetisCoreMongoConfigurationProperties.class, PublishSolrZookeeperConfigurationProperties.class})
+@Slf4j
 public class ApplicationConfiguration {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SessionFactory sessionFactory;
 
   /**
@@ -67,7 +65,7 @@ public class ApplicationConfiguration {
         .isNotEmpty(truststoreConfigurationProperties.getPassword())) {
       CustomTruststoreAppender.appendCustomTruststoreToDefault(truststoreConfigurationProperties.getPath(),
           truststoreConfigurationProperties.getPassword());
-      LOGGER.info("Custom truststore appended to default truststore");
+      log.info("Custom truststore appended to default truststore");
     }
   }
 
@@ -108,9 +106,9 @@ public class ApplicationConfiguration {
 
   @Bean
   protected ReportingEngineConfiguration getReportingEngineConfiguration(
-      ReportingEngineConfigurationProperties reportingEngineConfigurationProperties,
+      ClioConfigurationProperties clioConfigurationProperties,
       SessionFactory sessionFactory) {
-    return new ReportingEngineConfiguration(reportingEngineConfigurationProperties, sessionFactory);
+    return new ReportingEngineConfiguration(clioConfigurationProperties, sessionFactory);
   }
 
   @Bean

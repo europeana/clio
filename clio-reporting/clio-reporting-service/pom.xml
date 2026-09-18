@@ -5,29 +5,34 @@
     <parent>
         <artifactId>clio-reporting</artifactId>
         <groupId>eu.europeana.clio</groupId>
-        <version>10</version>
+        <version>11</version>
     </parent>
     <artifactId>clio-reporting-service</artifactId>
 
     <dependencies>
         <dependency>
-            <artifactId>clio-common</artifactId>
             <groupId>eu.europeana.clio</groupId>
-            <version>10</version>
+            <artifactId>clio-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.europeana.metis</groupId>
             <artifactId>metis-common-spring-properties</artifactId>
-            <version>${version.metis}</version>
+            <version>${version.metis-common}</version>
         </dependency>
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>5.0</version>
+            <version>${version.opencsv}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

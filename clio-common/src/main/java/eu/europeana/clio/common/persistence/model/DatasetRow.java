@@ -28,7 +28,7 @@ public class DatasetRow {
   private String name;
 
   @Column(name = "size")
-  private Integer size;
+  private Long size;
 
   @Column(name = "last_index_time")
   private Long lastIndexTime;
@@ -65,7 +65,7 @@ public class DatasetRow {
     return name;
   }
 
-  public Integer getSize() {
+  public Long getSize() {
     return size;
   }
 
@@ -85,7 +85,7 @@ public class DatasetRow {
     this.name = StringUtils.truncate(name, MAX_NAME_LENGTH);
   }
 
-  public void setSize(Integer size) {
+  public void setSize(Long size) {
     this.size = size;
   }
 

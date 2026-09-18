@@ -10,7 +10,7 @@ public class Dataset {
 
   private final String datasetId;
   private final String name;
-  private final Integer size;
+  private final Long size;
   private final Instant lastIndexTime;
   private final String provider;
   private final String dataProvider;
@@ -25,7 +25,7 @@ public class Dataset {
    * @param provider The provider of the dataset.
    * @param dataProvider The data provider of the dataset.
    */
-  public Dataset(String datasetId, String name, Integer size, Instant lastIndexTime,
+  public Dataset(String datasetId, String name, Long size, Instant lastIndexTime,
           String provider, String dataProvider) {
     this.datasetId = datasetId;
     this.name = name;
@@ -43,7 +43,7 @@ public class Dataset {
     return name;
   }
 
-  public Integer getSize() {
+  public Long getSize() {
     return size;
   }
 

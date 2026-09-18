@@ -1,21 +1,19 @@
 package eu.europeana.clio.common.persistence;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import java.io.Closeable;
+import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.util.stream.Stream;
 
 /**
  * Hibernate session utilities.
  */
+@Slf4j
 public class HibernateSessionUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HibernateSessionUtils.class);
     private final SessionFactory sessionFactory;
 
     /**
@@ -82,7 +80,7 @@ public class HibernateSessionUtils {
                         transaction.rollback();
                     }
                 } catch (RuntimeException e1) {
-                    LOGGER.warn("Suppressing exception that occurred while rolling back transaction.", e1);
+                    log.warn("Suppressing exception that occurred while rolling back transaction.", e1);
                 }
                 throw e;
             }

@@ -1,13 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="clio-reporting-rest" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" folderName="spring-run-configuration">
+  <configuration default="false" name="clio-reporting-rest (local)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" folderName="spring-run-configuration">
     <option name="ALTERNATIVE_JRE_PATH" value="temurin-21" />
-    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <envs>
-      <env name="logging.config" value="file:///data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml" />
-      <env name="spring.config.location" value="file:///data/metis-configuration/clio/clio-reporting/clio-reporting-rest/k8s/overlays/local/components/properties/application.properties" />
-      <env name="truststore_path" value="/data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks" />
-    </envs>
     <module name="clio-reporting-rest" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.config.location=file:///data/metis-configuration/clio/clio-reporting/clio-reporting-rest/k8s/overlays/local/components/properties/application.properties --server.servlet.context-path=/clio-reporting --logging.config=file:///data/metis-configuration/k8s/common-components/log4j2-xml/log4j2.xml --truststore.path=/data/metis-configuration/k8s/common-components/custom-truststore-jks/custom-truststore.jks" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="eu.europeana.clio.reporting.rest.Application" />
     <extension name="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
@@ -21,6 +16,7 @@
     </extension>
     <method v="2">
       <option name="Make" enabled="true" />
+      <option name="LaunchBrowser.Before.Run" url="http://localhost:8080/clio-reporting" />
     </method>
   </configuration>
 </component>

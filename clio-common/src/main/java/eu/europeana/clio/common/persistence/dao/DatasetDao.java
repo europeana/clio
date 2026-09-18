@@ -32,7 +32,7 @@ public class DatasetDao {
    */
   public void createOrUpdateDataset(Dataset dataset) throws PersistenceException {
     hibernateSessionUtils.performInTransaction(session -> {
-      final DatasetRow existingRow = session.get(DatasetRow.class, dataset.getDatasetId());
+      final DatasetRow existingRow = session.find(DatasetRow.class, dataset.getDatasetId());
       if (existingRow == null) {
         final DatasetRow newRow = new DatasetRow(dataset.getDatasetId());
         setPropertiesToRow(dataset, newRow);

@@ -8,7 +8,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -67,9 +66,9 @@ public class ParallelTaskExecutor {
         final ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
         final CompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
         final List<Future<Void>> futures = IntStream.range(0, numberOfThreads)
-                .mapToObj(callableSupplier).map(completionService::submit).collect(Collectors.toList());
+                .mapToObj(callableSupplier).map(completionService::submit).toList();
 
-        // Wait for all futures to be finished, checking whether any one throws an exception.
+        // Wait for all futures to be finished, checking whether any throws an exception.
         try {
             for (int i = 0; i < futures.size(); i++) {
                 completionService.take().get();

@@ -16,6 +16,7 @@ import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -372,7 +373,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, null);
 
       // Then
       assertNotNull(result);
@@ -383,8 +384,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withZeroOffsetAndSmallLimit() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    filters.setOffset(0);
-    filters.setLimit(10);
+    Pagination pagination = new Pagination(0, 10,false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -395,7 +395,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, pagination);
 
       // Then
       assertNotNull(result);
@@ -406,8 +406,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withLargeOffsetAndLimit() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    filters.setOffset(100);
-    filters.setLimit(50);
+    Pagination pagination = new Pagination(100,50,false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -418,7 +417,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, pagination);
 
       // Then
       assertNotNull(result);
@@ -429,8 +428,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_callsPerformForStreamWithDatabaseAction() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    filters.setOffset(5);
-    filters.setLimit(25);
+    Pagination pagination = new Pagination(5, 25,false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -441,7 +439,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, pagination);
 
       // Then
       assertNotNull(result);
@@ -463,7 +461,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, null);
 
       // Then
       assertNotNull(result);
@@ -474,8 +472,8 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withMaxOffset() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    filters.setOffset(Integer.MAX_VALUE);
-    filters.setLimit(100);
+    Pagination pagination = new Pagination(Integer.MAX_VALUE,100,false);
+
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -486,7 +484,7 @@ class LinkDaoTest {
       LinkDao linkDao = new LinkDao(mock(SessionFactory.class));
 
       // When
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters, pagination);
 
       // Then
       assertNotNull(result);

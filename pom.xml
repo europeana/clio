@@ -32,9 +32,9 @@
     <version.maven.release.plugin>2.5.3</version.maven.release.plugin>
 
     <!--Internal-->
-    <version.metis-common>20-SNAPSHOT</version.metis-common>
-    <version.metis>18-SNAPSHOT</version.metis>
-    <version.metis-core>17-SNAPSHOT</version.metis-core>
+    <version.metis-common>21-SNAPSHOT</version.metis-common>
+    <version.metis>18</version.metis>
+    <version.metis-core>17</version.metis-core>
 
     <!--External-->
     <version.postgresql>42.7.7</version.postgresql>

@@ -300,6 +300,38 @@ class ReportingControllerTest {
     assertEquals(1, datasetCheckSummaries.size());
   }
 
+  @Test
+  void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    String csv = "x,y\n1,2\n";
+    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenReturn(csv);
+
+    // When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+
+    // Then
+    assertArrayEquals(csv.getBytes(), entity.getBody());
+    assertEquals(ReportingEngine.getReportFileNameSuggestion(), entity.getHeaders().getContentDisposition().getFilename());
+    assertEquals(csv.getBytes().length, entity.getHeaders().getContentLength());
+  }
+
+  @Test
+  void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    ClioException expectedException = new ClioException("boom");
+    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenThrow(expectedException);
+
+    // When / Then
+    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
+    assertEquals(expectedException, actualException);
+  }
+
   String normalizeDate(String s) {
     return s.replaceFirst("(\\.\\d{8})0(\\+\\d{2}:\\d{2})$", "$1$2");
   }

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.persistence.dao.DatasetDao.CommonDatasetQueryParts;
 import eu.europeana.clio.common.persistence.model.BatchRow;
@@ -495,6 +496,56 @@ class DatasetDaoTest {
     assertNotNull(parts.errorsLinks());
     assertNotNull(parts.totalLinks());
     assertNotNull(parts.percentLinksInOperation());
+  }
+
+  @Test
+  void findDatasetsSummary_returnsAllResultsWhenPageHasNoMoreResults() throws Exception {
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    DatasetDao datasetDao = new DatasetDao(sessionFactory);
+    FieldFilters filters = FieldFilters.sanitizeFieldFilters(new FieldFilters());
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
+    List<DatasetSummary> summaries = List.of(
+        new DatasetSummary("dataset1", "Dataset 1", 100L, LocalDate.now(), "provider1", "dataProvider1", 75),
+        new DatasetSummary("dataset2", "Dataset 2", 200L, LocalDate.now(), "provider2", "dataProvider2", 80)
+    );
+    when(query.setFirstResult(0)).thenReturn(query);
+    when(query.setMaxResults(6)).thenReturn(query);
+    when(query.getResultList()).thenReturn(summaries);
+
+    PagedDatasetResult result = datasetDao.findDatasetsSummary(filters, new Pagination(0, 5, false));
+
+    assertEquals(summaries, result.datasetSummaries());
+    assertEquals(new Pagination(0, 5, false), result.pagination());
+  }
+
+  @Test
+  void findDatasetsSummary_trimsLookAheadResultWhenMoreResultsExist() throws Exception {
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    DatasetDao datasetDao = new DatasetDao(sessionFactory);
+    FieldFilters filters = FieldFilters.sanitizeFieldFilters(new FieldFilters());
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
+    List<DatasetSummary> summaries = List.of(
+        new DatasetSummary("dataset1", "Dataset 1", 100L, LocalDate.now(), "provider1", "dataProvider1", 75),
+        new DatasetSummary("dataset2", "Dataset 2", 200L, LocalDate.now(), "provider2", "dataProvider2", 80),
+        new DatasetSummary("dataset3", "Dataset 3", 300L, LocalDate.now(), "provider3", "dataProvider3", 85),
+        new DatasetSummary("dataset4", "Dataset 4", 400L, LocalDate.now(), "provider4", "dataProvider4", 90),
+        new DatasetSummary("dataset5", "Dataset 5", 500L, LocalDate.now(), "provider5", "dataProvider5", 95),
+        new DatasetSummary("dataset6", "Dataset 6", 600L, LocalDate.now(), "provider6", "dataProvider6", 100)
+    );
+    when(query.setFirstResult(0)).thenReturn(query);
+    when(query.setMaxResults(6)).thenReturn(query);
+    when(query.getResultList()).thenReturn(summaries);
+
+    PagedDatasetResult result = datasetDao.findDatasetsSummary(filters, new Pagination(0, 5, false));
+
+    assertEquals(summaries.subList(0, 5), result.datasetSummaries());
+    assertEquals(new Pagination(0, 5, true), result.pagination());
   }
 
 

@@ -2,12 +2,14 @@ package eu.europeana.clio.common.persistence.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
@@ -407,7 +409,7 @@ class DatasetDaoTest {
   }
 
   @Test
-  void buildRunSummaryQueryParts_hasEmptyPredicatesAndParameter() {
+  void buildDatasetSummaryQueryParts_hasEmptyPredicatesAndParameter() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     CriteriaQuery<DatasetSummary> criteriaQuery = mock(CriteriaQuery.class);
@@ -1253,4 +1255,98 @@ class DatasetDaoTest {
     assertNotNull(result);
     assertTrue(result.getProvider() == null || result.getProvider().isEmpty());
   }
+
+  @Test
+  void buildDatasetCheckSummaryQueryParts_buildsAllPartsSuccessfully() {
+    // Given
+    CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
+    CriteriaQuery<DatasetCheckSummary> criteriaQuery = mock(CriteriaQuery.class);
+    FieldFilters filters = new FieldFilters();
+    filters.setDatasetId(new TreeSet<>(Set.of("datasetId1")));
+    filters = FieldFilters.sanitizeFieldFilters(filters);
+    when(criteriaBuilder.createQuery(DatasetCheckSummary.class)).thenReturn(criteriaQuery);
+
+    Root<LinkRow> link = mock(Root.class);
+    when(criteriaQuery.from(LinkRow.class)).thenReturn(link);
+
+    Join<LinkRow, RunRow> run = mock(Join.class);
+    doReturn(run).when(link).join("run", JoinType.INNER);
+
+    Path<Object> datasetPth = mock(Path.class);
+    when(run.get("dataset")).thenReturn(datasetPth);
+    Path<Object> datasetValue = mock(Path.class);
+    when(datasetPth.get(FieldNames.DATASET_ID_DB)).thenReturn(datasetValue);
+
+        // Mock the path methods for aggregations
+    Path<Object> linkErrorPath = mock(Path.class);
+    when(link.get(FieldNames.ERROR_MESSAGE_DB)).thenReturn(linkErrorPath);
+    Expression<Long> countLinkErrors = mock(Expression.class);
+    when(criteriaBuilder.count(linkErrorPath)).thenReturn(countLinkErrors);
+
+    Expression<Long> countLink = mock(Expression.class);
+    when(criteriaBuilder.count(link)).thenReturn(countLink);
+
+    // Mock coalesce for errorsLinks: coalesce(count(errorMessage), 0).as(Long.class)
+    Expression<?> coalescedErrorsTemp = mock(Expression.class);
+    doReturn(coalescedErrorsTemp).when(criteriaBuilder).coalesce(countLinkErrors, 0);
+    Expression<Long> coalescedErrors = mock(Expression.class);
+    when(coalescedErrorsTemp.as(Long.class)).thenReturn(coalescedErrors);
+
+    // Mock coalesce for totalLinks: coalesce(count(link), 0).as(Long.class)
+    Expression<?> coalescedTotalTemp = mock(Expression.class);
+    doReturn(coalescedTotalTemp).when(criteriaBuilder).coalesce(countLink, 0);
+    Expression<Long> coalescedTotal = mock(Expression.class);
+    when(coalescedTotalTemp.as(Long.class)).thenReturn(coalescedTotal);
+
+    // Mock selectCase for percentLinksInOperation
+    CriteriaBuilder.Case<Double> selectCaseWhen = mock(CriteriaBuilder.Case.class);
+    doReturn(selectCaseWhen).when(criteriaBuilder).selectCase();
+
+    Expression<Double> doubleErrors = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedErrors)).thenReturn(doubleErrors);
+    Expression<Double> doubleTotal = mock(Expression.class);
+    when(criteriaBuilder.toDouble(coalescedTotal)).thenReturn(doubleTotal);
+
+    Expression<Double> quotResult = mock(Expression.class);
+    doReturn(quotResult).when(criteriaBuilder).quot(doubleErrors, doubleTotal);
+
+    Expression<Double> quotResultCasted = mock(Expression.class);
+    when(quotResult.as(Double.class)).thenReturn(quotResultCasted);
+
+    Predicate equalExpr = mock(Predicate.class);
+    doReturn(equalExpr).when(criteriaBuilder).equal(coalescedTotal, 0D);
+
+    CriteriaBuilder.Case<Double> caseWhenThen = mock(CriteriaBuilder.Case.class);
+    doReturn(caseWhenThen).when(selectCaseWhen).when(equalExpr, 0D);
+
+    Expression<Double> caseResult = mock(Expression.class);
+    doReturn(caseResult).when(caseWhenThen).otherwise(quotResultCasted);
+
+    Expression<Double> prodResult = mock(Expression.class);
+    doReturn(prodResult).when(criteriaBuilder).prod(caseResult, DatasetDao.HUNDRED);
+
+    Expression<Double> diffResult = mock(Expression.class);
+    doReturn(diffResult).when(criteriaBuilder).diff(DatasetDao.HUNDRED, prodResult);
+
+    Expression<Integer> percentExpr = mock(Expression.class);
+    when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
+
+    // When
+    CommonDatasetQueryParts<DatasetCheckSummary> parts = DatasetDao.buildCommonDatasetChecksQueryWithPredicates(criteriaBuilder,
+        DatasetCheckSummary.class, filters);
+
+    // Then
+    assertNotNull(parts);
+    assertNotNull(parts.criteriaQuery());
+    assertNotNull(parts.link());
+    assertNotNull(parts.run());
+    assertNull(parts.dataset());
+    assertNotNull(parts.wherePredicates());
+    assertNotNull(parts.havingPredicates());
+    assertNotNull(parts.parametersMap());
+    assertNotNull(parts.errorsLinks());
+    assertNotNull(parts.totalLinks());
+    assertNotNull(parts.percentLinksInOperation());
+  }
+
 }

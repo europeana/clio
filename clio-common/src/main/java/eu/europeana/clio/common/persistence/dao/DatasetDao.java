@@ -363,11 +363,17 @@ public class DatasetDao {
    *
    * @param <T> the type parameter e.g., a RunSummary
    */
-  public record CommonDatasetQueryParts<T>(CriteriaQuery<T> criteriaQuery, Root<LinkRow> link, Join<RunRow, DatasetRow> run,
-                                           Join<DatasetRow, RunRow> dataset, Expression<Long> errorsLinks,
-                                           Expression<Long> totalLinks, Expression<Integer> percentLinksInOperation,
-                                           List<Predicate> wherePredicates, List<Predicate> havingPredicates,
-                                           Map<ParameterExpression<?>, Object> parametersMap) {
+  public record CommonDatasetQueryParts<T>(
+      CriteriaQuery<T> criteriaQuery,
+      Root<LinkRow> link,
+      Join<RunRow, DatasetRow> run,
+      Join<DatasetRow, RunRow> dataset,
+      Expression<Long> errorsLinks,
+      Expression<Long> totalLinks,
+      Expression<Integer> percentLinksInOperation,
+      List<Predicate> wherePredicates,
+      List<Predicate> havingPredicates,
+      Map<ParameterExpression<?>, Object> parametersMap) {
 
   }
 

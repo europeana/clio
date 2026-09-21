@@ -5,7 +5,7 @@
 
   <groupId>eu.europeana.clio</groupId>
   <artifactId>clio</artifactId>
-  <version>11-SNAPSHOT</version>
+  <version>12-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -33,8 +33,8 @@
 
     <!--Internal-->
     <version.metis-common>21-SNAPSHOT</version.metis-common>
-    <version.metis>18-SNAPSHOT</version.metis>
-    <version.metis-core>17-SNAPSHOT</version.metis-core>
+    <version.metis>18</version.metis>
+    <version.metis-core>17</version.metis-core>
 
     <!--External-->
     <version.postgresql>42.7.7</version.postgresql>

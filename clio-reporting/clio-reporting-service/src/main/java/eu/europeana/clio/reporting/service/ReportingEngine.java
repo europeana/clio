@@ -76,6 +76,8 @@ public final class ReportingEngine {
   /**
    * Generate an im memory {@link String} report.
    *
+   * @param filters the filters
+   * @param pagination the pagination
    * @return the report
    * @throws ClioException if an error occurred during generating the report
    */

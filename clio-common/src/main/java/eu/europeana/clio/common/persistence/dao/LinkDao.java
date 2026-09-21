@@ -161,6 +161,7 @@ public class LinkDao {
    * Gets links with runs for filters.
    *
    * @param filters the filters
+   * @param pagination the pagination
    * @return the links with runs for filters
    * @throws PersistenceException the persistence exception
    */

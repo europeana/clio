@@ -5,7 +5,7 @@
   <parent>
     <artifactId>clio-link-checking</artifactId>
     <groupId>eu.europeana.clio</groupId>
-    <version>11</version>
+    <version>11.1</version>
   </parent>
 
   <artifactId>clio-link-checking-service</artifactId>

@@ -409,7 +409,7 @@ public class DatasetDao {
 
     // Apply filters
     String datasetId = filters.getDatasetId().first();
-    ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, FieldNames.DATASET_ID_DB + "Parameter");
+    ParameterExpression<String> parameter = criteriaBuilder.parameter(String.class, FieldNames.DATASET_ID_DB + "Parameter");
     wherePredicates.add(run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
     parametersMap.put(parameter, datasetId);
 

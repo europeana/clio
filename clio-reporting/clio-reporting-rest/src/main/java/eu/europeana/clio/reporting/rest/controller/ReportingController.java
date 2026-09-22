@@ -240,7 +240,7 @@ public class ReportingController {
   public ResponseEntity<FilterResponse> findDatasetsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request.getFilters() == null) {
+    if (request.getFilters() == null || request.getPagination() == null) {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values

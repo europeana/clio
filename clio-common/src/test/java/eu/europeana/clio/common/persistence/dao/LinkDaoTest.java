@@ -384,7 +384,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withZeroOffsetAndSmallLimit() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    Pagination pagination = new Pagination(0, 10,false);
+    Pagination pagination = new Pagination(0, 10, false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -406,7 +406,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withLargeOffsetAndLimit() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    Pagination pagination = new Pagination(100,50,false);
+    Pagination pagination = new Pagination(100, 50, false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -428,7 +428,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_callsPerformForStreamWithDatabaseAction() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    Pagination pagination = new Pagination(5, 25,false);
+    Pagination pagination = new Pagination(5, 25, false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {
@@ -472,8 +472,7 @@ class LinkDaoTest {
   void getLinksWithRunsForFilters_withMaxOffset() throws PersistenceException {
     // Given
     FieldFilters filters = new FieldFilters();
-    Pagination pagination = new Pagination(Integer.MAX_VALUE,100,false);
-
+    Pagination pagination = new Pagination(Integer.MAX_VALUE, 100, false);
 
     try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
         (mock, ctx) -> {

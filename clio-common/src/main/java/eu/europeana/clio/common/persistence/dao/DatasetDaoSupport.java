@@ -70,7 +70,7 @@ public class DatasetDaoSupport {
    * @param link the link
    * @param parametersMap the parameters map
    */
-  public static void addPredicateAndParameterLastThreeMonths(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
+  public static void addPredicateAndParameterLastNinetyDays(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
       Root<LinkRow> link, Map<ParameterExpression<?>, Object> parametersMap) {
     LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC);
     long startingWindowTime = filterPeriodWindow.minusDays(NINETY_DAYS_PERIOD_WINDOW).atStartOfDay(ZoneOffset.UTC).toInstant()
@@ -190,7 +190,7 @@ public class DatasetDaoSupport {
     addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates, dataset, parametersMap,
         FieldNames.DATASET_NAME_DB);
     addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder, wherePredicates, dataset, parametersMap);
-    addPredicateAndParameterLastThreeMonths(criteriaBuilder, wherePredicates, link, parametersMap);
+    addPredicateAndParameterLastNinetyDays(criteriaBuilder, wherePredicates, link, parametersMap);
     addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates, dataset, parametersMap);
     addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
 
@@ -293,7 +293,7 @@ public class DatasetDaoSupport {
     wherePredicates.add(run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
     parametersMap.put(parameter, datasetId);
 
-    addPredicateAndParameterLastThreeMonths(criteriaBuilder, wherePredicates, link, parametersMap);
+    addPredicateAndParameterLastNinetyDays(criteriaBuilder, wherePredicates, link, parametersMap);
 
     addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
 

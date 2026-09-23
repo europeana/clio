@@ -104,7 +104,6 @@ public class DatasetDao {
           case DATA_PROVIDER ->
               datasetSummaries.stream().map(DatasetSummary::dataProvider).filter(value -> value != null && !value.isEmpty())
                               .collect(Collectors.toSet());
-          default -> Set.of();
         };
         result.put(fieldName, stringSet);
       });
@@ -124,7 +123,7 @@ public class DatasetDao {
    * @return the check runs
    * @throws PersistenceException the persistence exception
    */
-  public PagedDatasetResult findDatasetsSummary(FieldFilters filters, Pagination pagination) throws PersistenceException {
+  public PagedDatasetResult findDatasetSummaries(FieldFilters filters, Pagination pagination) throws PersistenceException {
     List<DatasetSummary> datasetSummaries = hibernateSessionUtils.performInSession(session -> {
       TypedQuery<DatasetSummary> query = getDatasetSummaryTypedQuery(filters, session);
       return query.setFirstResult(pagination.offset()).setMaxResults(pagination.limit() + 1).getResultList();

@@ -1,7 +1,6 @@
 package eu.europeana.clio.common.persistence.dao;
 
 import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.HUNDRED;
-import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonDatasetQueryWithPredicates;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -11,33 +10,19 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Pagination;
-import eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.CommonDatasetQueryParts;
-import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.ParameterExpression;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -76,7 +61,7 @@ class DatasetDaoTest {
     when(query.setMaxResults(6)).thenReturn(query);
     when(query.getResultList()).thenReturn(summaries);
 
-    PagedDatasetResult result = datasetDao.findDatasetsSummary(filters, new Pagination(0, 5, false));
+    PagedDatasetResult result = datasetDao.findDatasetSummaries(filters, new Pagination(0, 5, false));
 
     assertEquals(summaries, result.datasetSummaries());
     assertEquals(new Pagination(0, 5, false), result.pagination());
@@ -103,7 +88,7 @@ class DatasetDaoTest {
     when(query.setMaxResults(6)).thenReturn(query);
     when(query.getResultList()).thenReturn(summaries);
 
-    PagedDatasetResult result = datasetDao.findDatasetsSummary(filters, new Pagination(0, 5, false));
+    PagedDatasetResult result = datasetDao.findDatasetSummaries(filters, new Pagination(0, 5, false));
 
     assertEquals(summaries.subList(0, 5), result.datasetSummaries());
     assertEquals(new Pagination(0, 5, true), result.pagination());

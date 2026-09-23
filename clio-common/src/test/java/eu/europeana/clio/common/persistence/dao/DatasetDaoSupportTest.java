@@ -292,7 +292,7 @@ public class DatasetDaoSupportTest {
     when(criteriaBuilder.lessThan(pathE, toParamExpression)).thenReturn(toPredicate);
 
     // When
-    DatasetDaoSupport.addPredicateAndParameterLastThreeMonths(criteriaBuilder, predicates, link, parametersMap);
+    DatasetDaoSupport.addPredicateAndParameterLastNinetyDays(criteriaBuilder, predicates, link, parametersMap);
 
     // Then
     assertEquals(2, predicates.size());

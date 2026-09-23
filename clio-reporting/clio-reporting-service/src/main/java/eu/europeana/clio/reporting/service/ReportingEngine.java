@@ -250,7 +250,7 @@ public final class ReportingEngine {
    * @throws PersistenceException the persistence exception
    */
   public PagedDatasetResult findDatasetsSummary(FieldFilters clioFilters, Pagination pagination) throws PersistenceException {
-    return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetsSummary(clioFilters, pagination);
+    return new DatasetDao(reportingEngineConfiguration.sessionFactory()).findDatasetSummaries(clioFilters, pagination);
   }
 
   /**

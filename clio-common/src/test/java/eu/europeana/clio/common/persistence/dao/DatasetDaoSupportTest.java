@@ -270,7 +270,7 @@ public class DatasetDaoSupportTest {
   }
 
   @Test
-  void addPredicateAndParameterLastThreeMonths() {
+  void addPredicateAndParameterLastNinetyDays() {
     // Given
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();

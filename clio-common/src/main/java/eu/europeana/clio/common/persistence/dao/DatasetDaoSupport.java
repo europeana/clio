@@ -73,8 +73,7 @@ public class DatasetDaoSupport {
   public static void addPredicateAndParameterLastNinetyDays(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
       Root<LinkRow> link, Map<ParameterExpression<?>, Object> parametersMap) {
     LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC);
-    long startingWindowTime = filterPeriodWindow.minusDays(NINETY_DAYS_PERIOD_WINDOW).atStartOfDay(ZoneOffset.UTC).toInstant()
-                                                .toEpochMilli();
+    long startingWindowTime = filterPeriodWindow.minusDays(NINETY_DAYS_PERIOD_WINDOW).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     long endingWindowTime = filterPeriodWindow.plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB);
     predicates.add(criteriaBuilder.greaterThanOrEqualTo(link.get(FieldNames.LINK_CHECKING_TIME), dateFromParameter));

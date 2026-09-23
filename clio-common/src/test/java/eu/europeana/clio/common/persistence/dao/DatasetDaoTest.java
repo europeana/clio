@@ -3,7 +3,6 @@ package eu.europeana.clio.common.persistence.dao;
 import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.HUNDRED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -93,7 +92,6 @@ class DatasetDaoTest {
     assertEquals(summaries.subList(0, 5), result.datasetSummaries());
     assertEquals(new Pagination(0, 5, true), result.pagination());
   }
-
 
   private Query mockQuery(SessionFactory sessionFactory,
       Session session,
@@ -245,7 +243,7 @@ class DatasetDaoTest {
   }
 
   @Test
-  void findDatasetsSummaryFilterOptions_withMultipleRunSummaries_returnsMultipleFilterOptions() throws Exception {
+  void findDatasetsSummaryFilterOptions_withMultipleDatasetSummaries_returnsMultipleFilterOptions() throws Exception {
     // Given
     SessionFactory sessionFactory = mock(SessionFactory.class);
     DatasetDao datasetDao = new DatasetDao(sessionFactory);
@@ -460,45 +458,45 @@ class DatasetDaoTest {
     assertTrue(result.getDatasetName().contains("DatasetName2"));
   }
 
-    @Test
-    void findDatasetsSummaryFilterOptions_preservesExcludedCheckId() throws Exception {
-      // Given
-      SessionFactory sessionFactory = mock(SessionFactory.class);
-      DatasetDao datasetDao = new DatasetDao(sessionFactory);
-      FieldFilters inputFilters = new FieldFilters();
-      SortedSet<String> excludedCheckIds = new TreeSet<>(Set.of("datasetId1L", "datasetId2L", "datasetId3L"));
-      inputFilters.setExcludedId(excludedCheckIds);
-      inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
+  @Test
+  void findDatasetsSummaryFilterOptions_preservesExcludedCheckId() throws Exception {
+    // Given
+    SessionFactory sessionFactory = mock(SessionFactory.class);
+    DatasetDao datasetDao = new DatasetDao(sessionFactory);
+    FieldFilters inputFilters = new FieldFilters();
+    SortedSet<String> excludedCheckIds = new TreeSet<>(Set.of("datasetId1L", "datasetId2L", "datasetId3L"));
+    inputFilters.setExcludedId(excludedCheckIds);
+    inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
-      Session session = mock(Session.class);
-      HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
-      JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
-      Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class);
+    JpaJoin<DatasetRow, RunRow> dataset = mock(JpaJoin.class);
+    Query query = mockQuery(sessionFactory, session, criteriaBuilder, dataset);
 
-      DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
-          "provider", "dataProvider", 75);
+    DatasetSummary datasetSummary = new DatasetSummary("dataset", "Dataset", 100L, LocalDate.now(),
+        "provider", "dataProvider", 75);
 
-      JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
-      when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID)).thenReturn(paramExpression);
+    JpaParameterExpression<Set> paramExpression = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID)).thenReturn(paramExpression);
 
-      JpaPath<?> path = mock(JpaPath.class);
-      doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
+    JpaPath<?> path = mock(JpaPath.class);
+    doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);
 
-      JpaPredicate inPredicate = mock(JpaPredicate.class);
-      when(path.in(paramExpression)).thenReturn(inPredicate);
+    JpaPredicate inPredicate = mock(JpaPredicate.class);
+    when(path.in(paramExpression)).thenReturn(inPredicate);
 
-      JpaPredicate notPredicate = mock(JpaPredicate.class);
-      when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
+    JpaPredicate notPredicate = mock(JpaPredicate.class);
+    when(criteriaBuilder.not(inPredicate)).thenReturn(notPredicate);
 
-      when(query.getResultStream()).thenReturn(Stream.of(datasetSummary));
+    when(query.getResultStream()).thenReturn(Stream.of(datasetSummary));
 
-      // When
-      FieldFilters result = datasetDao.findDatasetsSummaryFilterOptions(inputFilters);
+    // When
+    FieldFilters result = datasetDao.findDatasetsSummaryFilterOptions(inputFilters);
 
-      // Then
-      assertNotNull(result);
-      assertEquals(excludedCheckIds, result.getExcludedId());
-    }
+    // Then
+    assertNotNull(result);
+    assertEquals(excludedCheckIds, result.getExcludedId());
+  }
 
   @Test
   void findDatasetsSummaryFilterOptions_preservesDateFrom() throws Exception {
@@ -642,7 +640,7 @@ class DatasetDaoTest {
 
     FieldFilters inputFilters = new FieldFilters();
     Integer offset = 10;
-    Pagination pagination = new Pagination(offset,5,false);
+    Pagination pagination = new Pagination(offset, 5, false);
 
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
@@ -671,7 +669,7 @@ class DatasetDaoTest {
 
     FieldFilters inputFilters = new FieldFilters();
     Integer limit = 5;
-    Pagination pagination = new Pagination(0,limit,false);
+    Pagination pagination = new Pagination(0, limit, false);
 
     inputFilters = FieldFilters.sanitizeFieldFilters(inputFilters);
 
@@ -799,5 +797,4 @@ class DatasetDaoTest {
     assertNotNull(result);
     assertTrue(result.getProvider() == null || result.getProvider().isEmpty());
   }
-
 }

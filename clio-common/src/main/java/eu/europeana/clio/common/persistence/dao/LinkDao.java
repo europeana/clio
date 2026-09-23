@@ -1,7 +1,7 @@
 package eu.europeana.clio.common.persistence.dao;
 
 
-import static eu.europeana.clio.common.persistence.dao.DatasetDao.buildCommonDatasetQueryWithPredicates;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonDatasetQueryWithPredicates;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -12,7 +12,7 @@ import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
 
-import eu.europeana.clio.common.persistence.dao.DatasetDao.CommonDatasetQueryParts;
+import eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.CommonDatasetQueryParts;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;

@@ -42,7 +42,7 @@ import org.springframework.util.CollectionUtils;
 public class DatasetDao {
 
   public static final double HUNDRED = 100.0D;
-  public static final long NINETY_DAYS_PERIOD_WINDOW = 90L;
+  public static final long NINETY_DAYS_PERIOD_WINDOW = 89L;
   private final HibernateSessionUtils hibernateSessionUtils;
 
 

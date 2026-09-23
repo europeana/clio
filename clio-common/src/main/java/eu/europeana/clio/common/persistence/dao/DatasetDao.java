@@ -130,7 +130,7 @@ public class DatasetDao {
       return query.setFirstResult(pagination.offset()).setMaxResults(pagination.limit() + 1).getResultList();
     });
     PagedDatasetResult pagedDatasetResult;
-    if ((long) datasetSummaries.size() < pagination.limit()) {
+    if ((long) datasetSummaries.size() <= pagination.limit()) {
       pagedDatasetResult = new PagedDatasetResult(datasetSummaries,
           new Pagination(pagination.offset(), pagination.limit(), false));
 

@@ -246,14 +246,15 @@ public class ReportingController {
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
     final FieldFilters filterOptions = this.reportingEngine.findDatasetsSummaryFilterOptions(sanitizedFilters);
-    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters,
-        request.getPagination());
+    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
     sanitizedFilters.setProvider(filterOptions.getProvider());
     sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
     sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
     return new ResponseEntity<>(
-        new FilterResponse(pagedDatasetResult.datasetSummaries(), sanitizedFilters, pagedDatasetResult.pagination()),
+        new FilterResponse(pagedDatasetResult.datasetSummaries(),
+            sanitizedFilters,
+            pagedDatasetResult.pagination()),
         HttpStatus.OK);
   }
 

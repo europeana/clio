@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -260,7 +261,7 @@ class ReportingControllerTest {
   }
 
   @Test
-  void findRunsSummary_returnsFilteringResponse() throws Exception {
+  void findDatasetsSummary_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
     Pagination pagination = mock(Pagination.class);
@@ -281,6 +282,36 @@ class ReportingControllerTest {
     assertEquals(1, response.getResults().size());
     // Verify that a sanitized FieldFilters object is returned (not the original mock)
     assertNotNull(response.getFilterOptions());
+  }
+
+  @Test
+  void findDatasetsSummary_NoPaginationReturnsBadRequest() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = null;
+    FilterRequest request = new FilterRequest(filters, pagination);
+    // When
+    var responseEntity = controller.findDatasetsSummary(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    FilterResponse response = responseEntity.getBody();
+    assertNull(response);
+  }
+
+  @Test
+  void findDatasetsSummary_NoFiltersReturnsBadRequest() throws Exception {
+    // Given
+    FieldFilters filters = null;
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    // When
+    var responseEntity = controller.findDatasetsSummary(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    FilterResponse response = responseEntity.getBody();
+    assertNull(response);
   }
 
   @Test

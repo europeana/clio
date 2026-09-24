@@ -47,7 +47,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
     LocalDate testDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
@@ -75,7 +75,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
     LocalDate testDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
@@ -103,7 +103,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
     LocalDate fromDate = Instant.ofEpochMilli(1000000L).atZone(ZoneOffset.UTC).toLocalDate();
@@ -137,7 +137,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     FieldFilters filters = new FieldFilters();
 
@@ -155,7 +155,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
     Set<String> excludedIds = Set.of("datasetId1", "datasetId2", "datasetId3");
 
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
@@ -184,7 +184,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     // When
     DatasetDaoSupport.addPredicateAndParameterExcludedIds(null, criteriaBuilder, predicates, dataset, parametersMap);
@@ -200,7 +200,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
 
     // When
     DatasetDaoSupport.addPredicateAndParameterExcludedIds(Set.of(), criteriaBuilder, predicates, dataset, parametersMap);
@@ -216,7 +216,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
     Set<String> fieldValue = Set.of("value1", "value2");
     String fieldName = "testField";
 
@@ -241,7 +241,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
     String fieldName = "testField";
 
     // When
@@ -258,7 +258,7 @@ public class DatasetDaoSupportTest {
     CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
     List<Predicate> predicates = new ArrayList<>();
     Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-    Join<DatasetRow, RunRow> dataset = mock(Join.class);
+    Join<RunRow, DatasetRow> dataset = mock(Join.class);
     String fieldName = "testField";
 
     // When

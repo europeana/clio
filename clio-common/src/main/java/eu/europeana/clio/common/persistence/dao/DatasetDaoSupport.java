@@ -47,7 +47,7 @@ public class DatasetDaoSupport {
    * @param parametersMap the query parameters map
    */
   public static void addPredicateAndParameterDateRange(FieldFilters filters, CriteriaBuilder criteriaBuilder,
-      List<Predicate> predicates, Join<DatasetRow, RunRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
+      List<Predicate> predicates, Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
     if (filters.getDateFrom() != null) {
       ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_TIME_DB);
       predicates.add(criteriaBuilder.greaterThanOrEqualTo(dataset.get(FieldNames.DATASET_LAST_INDEX), dateFromParameter));
@@ -94,7 +94,7 @@ public class DatasetDaoSupport {
    * @param parametersMap the query parameters map
    */
   public static void addPredicateAndParameterExcludedIds(Set<String> fieldValue, CriteriaBuilder criteriaBuilder,
-      List<Predicate> predicates, Join<DatasetRow, RunRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
+      List<Predicate> predicates, Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
 
     if (!CollectionUtils.isEmpty(fieldValue)) {
       ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID);
@@ -139,7 +139,7 @@ public class DatasetDaoSupport {
    * @param fieldName the field name
    */
   public static void addPredicateAndParameter(Set<String> fieldValue, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
-      Join<DatasetRow, RunRow> dataset, Map<ParameterExpression<?>, Object> parametersMap, String fieldName) {
+      Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap, String fieldName) {
     if (!(fieldValue == null || fieldValue.isEmpty())) {
       ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, fieldName + "Parameter");
       predicates.add(dataset.get(fieldName).in(parameter));
@@ -162,8 +162,8 @@ public class DatasetDaoSupport {
     // Build base query parts
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-    Join<RunRow, DatasetRow> run = link.join("run", JoinType.INNER);
-    Join<DatasetRow, RunRow> dataset = run.join("dataset", JoinType.INNER);
+    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
+    Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
 
     List<Predicate> wherePredicates = new ArrayList<>();
     List<Predicate> havingPredicates = new ArrayList<>();
@@ -245,8 +245,8 @@ public class DatasetDaoSupport {
   public record CommonDatasetQueryParts<T>(
       CriteriaQuery<T> criteriaQuery,
       Root<LinkRow> link,
-      Join<RunRow, DatasetRow> run,
-      Join<DatasetRow, RunRow> dataset,
+      Join<LinkRow, RunRow> run,
+      Join<RunRow, DatasetRow> dataset,
       Expression<Long> errorsLinks,
       Expression<Long> totalLinks,
       Expression<Integer> percentLinksInOperation,
@@ -270,7 +270,7 @@ public class DatasetDaoSupport {
     // Build base query parts
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-    Join<RunRow, DatasetRow> run = link.join("run", JoinType.INNER);
+    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
 
     List<Predicate> wherePredicates = new ArrayList<>();
     List<Predicate> havingPredicates = new ArrayList<>();

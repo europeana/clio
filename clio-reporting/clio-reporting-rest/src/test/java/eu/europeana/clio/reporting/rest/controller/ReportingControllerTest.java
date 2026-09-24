@@ -44,6 +44,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -361,6 +362,34 @@ class ReportingControllerTest {
     // When / Then
     ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
     assertEquals(expectedException, actualException);
+  }
+
+  @Test
+  void exportRunsLinks_returnsBadRequest_whenNoPagination() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = null;
+    FilterRequest request = new FilterRequest(filters, pagination);
+
+    // When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
+  }
+
+  @Test
+  void exportRunsLinks_returnsBadRequest_whenNoFilters() throws Exception {
+    // Given
+    FieldFilters filters = null;
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+
+    // When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
   }
 
   String normalizeDate(String s) {

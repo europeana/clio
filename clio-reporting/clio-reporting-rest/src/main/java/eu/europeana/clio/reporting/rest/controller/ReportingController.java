@@ -266,8 +266,8 @@ public class ReportingController {
    * @throws ClioException the clio exception
    */
   @GetMapping(value = RUNS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Get a dataset link checking detail.",
-      description = "The check runs are returned in reverse chronological order.")
+  @Operation(summary = "Get the detailed summary run of a given dataset.",
+      description = "The detailed summary run of the given dataset is returned in reverse chronological order.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
           content = @Content(schema = @Schema(implementation = BatchesRequestResult.class),
@@ -313,7 +313,7 @@ public class ReportingController {
   public ResponseEntity<byte[]> exportRunsLinks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request == null || request.getFilters() == null) {
+    if (request == null || request.getFilters() == null || request.getPagination() == null) {
       return ResponseEntity.badRequest().build();
     }
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());

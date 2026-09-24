@@ -35,7 +35,7 @@ import org.springframework.util.CollectionUtils;
 public class DatasetDaoSupport {
 
   public static final double HUNDRED = 100.0D;
-  public static final long NINETY_DAYS_PERIOD_WINDOW = 89L;
+  public static final long WINDOW_PERIOD = 90L;
 
   /**
    * Add predicate and parameter date range.
@@ -72,9 +72,10 @@ public class DatasetDaoSupport {
    */
   public static void addPredicateAndParameterLastNinetyDays(CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
       Root<LinkRow> link, Map<ParameterExpression<?>, Object> parametersMap) {
-    LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC);
-    long startingWindowTime = filterPeriodWindow.minusDays(NINETY_DAYS_PERIOD_WINDOW).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
-    long endingWindowTime = filterPeriodWindow.plusDays(1L).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+
+    LocalDate filterPeriodWindow = LocalDate.now(ZoneOffset.UTC).plusDays(1L);
+    long startingWindowTime = filterPeriodWindow.minusDays(WINDOW_PERIOD).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+    long endingWindowTime = filterPeriodWindow.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     ParameterExpression<Long> dateFromParameter = criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB);
     predicates.add(criteriaBuilder.greaterThanOrEqualTo(link.get(FieldNames.LINK_CHECKING_TIME), dateFromParameter));
     parametersMap.put(dateFromParameter, startingWindowTime);
@@ -181,11 +182,11 @@ public class DatasetDaoSupport {
 
     // Apply filters
     addPredicateAndParameter(filters.getProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.PROVIDER);
+        FieldNames.DATASET_PROVIDER_DB);
     addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATA_PROVIDER);
+        FieldNames.DATASET_DATA_PROVIDER_DB);
     addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATASET_ID);
+        FieldNames.DATASET_ID_DB);
     addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates, dataset, parametersMap,
         FieldNames.DATASET_NAME_DB);
     addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder, wherePredicates, dataset, parametersMap);
@@ -214,8 +215,8 @@ public class DatasetDaoSupport {
     // select
     criteriaQuery.select(criteriaBuilder.construct(DatasetSummary.class, queryParts.dataset().get(FieldNames.DATASET_ID_DB),
         queryParts.dataset().get(FieldNames.DATASET_NAME_DB), queryParts.dataset().get(FieldNames.DATASET_SIZE),
-        queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX), queryParts.dataset().get(FieldNames.PROVIDER),
-        queryParts.dataset().get(FieldNames.DATA_PROVIDER),
+        queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX), queryParts.dataset().get(FieldNames.DATASET_PROVIDER_DB),
+        queryParts.dataset().get(FieldNames.DATASET_DATA_PROVIDER_DB),
         queryParts.percentLinksInOperation().alias(FieldNames.PERCENT_LINKS_IN_OPERATION_DB)));
 
     // where & having
@@ -228,8 +229,8 @@ public class DatasetDaoSupport {
     // group by
     criteriaQuery.groupBy(queryParts.dataset().get(FieldNames.DATASET_ID_DB),
         queryParts.dataset().get(FieldNames.DATASET_NAME_DB), queryParts.dataset().get(FieldNames.DATASET_SIZE),
-        queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX), queryParts.dataset().get(FieldNames.PROVIDER),
-        queryParts.dataset().get(FieldNames.DATA_PROVIDER));
+        queryParts.dataset().get(FieldNames.DATASET_LAST_INDEX), queryParts.dataset().get(FieldNames.DATASET_PROVIDER_DB),
+        queryParts.dataset().get(FieldNames.DATASET_DATA_PROVIDER_DB));
 
     // execute query
     TypedQuery<DatasetSummary> query = session.createQuery(criteriaQuery);

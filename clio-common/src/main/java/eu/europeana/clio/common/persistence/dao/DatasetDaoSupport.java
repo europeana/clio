@@ -149,8 +149,8 @@ public class DatasetDaoSupport {
   }
 
   /**
-   * Builds common query parts for check runs queries with all predicates and aggregations. This method handles the construction
-   * of a criteria query with all standard filters.
+   * Builds common query parts for check runs queries with all predicates and aggregations.
+   * This method handles the construction of a criteria query with all standard filters.
    *
    * @param <T> the type parameter
    * @param criteriaBuilder the criteria builder
@@ -161,41 +161,28 @@ public class DatasetDaoSupport {
   public static <T> CommonDatasetQueryParts<T> buildCommonDatasetQueryWithPredicates(CriteriaBuilder criteriaBuilder,
       Class<T> clazz, FieldFilters filters) {
     // Build base query parts
-    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
-    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
-    Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
-
-    List<Predicate> wherePredicates = new ArrayList<>();
-    List<Predicate> havingPredicates = new ArrayList<>();
-    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-
-    // Compute aggregations
-    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)), 0)
-                                                  .as(Long.class);
-    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link), 0).as(Long.class);
-
-    Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED, criteriaBuilder.prod(
-        criteriaBuilder.<Double>selectCase().when(criteriaBuilder.equal(totalLinks, 0D), 0D).otherwise(
-            criteriaBuilder.quot(criteriaBuilder.toDouble(errorsLinks), criteriaBuilder.toDouble(totalLinks)).as(Double.class)),
-        HUNDRED)).cast(Integer.class);
-
+    CommonDatasetQueryParts<T> base = buildCommonBase(criteriaBuilder, clazz);
     // Apply filters
-    addPredicateAndParameter(filters.getProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATASET_PROVIDER_DB);
-    addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATASET_DATA_PROVIDER_DB);
-    addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATASET_ID_DB);
-    addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder, wherePredicates, dataset, parametersMap,
-        FieldNames.DATASET_NAME_DB);
-    addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder, wherePredicates, dataset, parametersMap);
-    addPredicateAndParameterLastNinetyDays(criteriaBuilder, wherePredicates, link, parametersMap);
-    addPredicateAndParameterDateRange(filters, criteriaBuilder, wherePredicates, dataset, parametersMap);
-    addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
+    addPredicateAndParameter(filters.getProvider(), criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_PROVIDER_DB);
+    addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_DATA_PROVIDER_DB);
+    addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_ID_DB);
+    addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_NAME_DB);
+    addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap);
+    addPredicateAndParameterLastNinetyDays(criteriaBuilder,
+        base.wherePredicates, base.link, base.parametersMap);
+    addPredicateAndParameterDateRange(filters, criteriaBuilder,
+        base.wherePredicates, base.dataset, base.parametersMap);
+    addPredicatePercentLinksInOperation(filters, criteriaBuilder,
+        base.havingPredicates, base.percentLinksInOperation, base.parametersMap);
 
-    return new CommonDatasetQueryParts<>(criteriaQuery, link, run, dataset, errorsLinks, totalLinks, percentLinksInOperation,
-        wherePredicates, havingPredicates, parametersMap);
+    return new CommonDatasetQueryParts<>(base.criteriaQuery, base.link, base.run,
+        base.dataset, base.errorsLinks, base.totalLinks, base.percentLinksInOperation,
+        base.wherePredicates, base.havingPredicates, base.parametersMap);
   }
 
   /**
@@ -269,36 +256,23 @@ public class DatasetDaoSupport {
   public static <T> CommonDatasetQueryParts<T> buildCommonDatasetChecksQueryWithPredicates(CriteriaBuilder criteriaBuilder,
       Class<T> clazz, FieldFilters filters) {
     // Build base query parts
-    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
-    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
-    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
-
-    List<Predicate> wherePredicates = new ArrayList<>();
-    List<Predicate> havingPredicates = new ArrayList<>();
-    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
-
-    // Compute aggregations
-    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)), 0)
-                                                  .as(Long.class);
-    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link), 0).as(Long.class);
-
-    Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED, criteriaBuilder.prod(
-        criteriaBuilder.<Double>selectCase().when(criteriaBuilder.equal(totalLinks, 0D), 0D).otherwise(
-            criteriaBuilder.quot(criteriaBuilder.toDouble(errorsLinks), criteriaBuilder.toDouble(totalLinks)).as(Double.class)),
-        HUNDRED)).cast(Integer.class);
+    CommonDatasetQueryParts<T> base = buildCommonBase(criteriaBuilder, clazz);
 
     // Apply filters
     String datasetId = filters.getDatasetId().first();
     ParameterExpression<String> parameter = criteriaBuilder.parameter(String.class, FieldNames.DATASET_ID_DB + "Parameter");
-    wherePredicates.add(run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
-    parametersMap.put(parameter, datasetId);
+    base.wherePredicates.add(base.run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
+    base.parametersMap.put(parameter, datasetId);
 
-    addPredicateAndParameterLastNinetyDays(criteriaBuilder, wherePredicates, link, parametersMap);
+    addPredicateAndParameterLastNinetyDays(criteriaBuilder,
+        base.wherePredicates, base.link, base.parametersMap);
 
-    addPredicatePercentLinksInOperation(filters, criteriaBuilder, havingPredicates, percentLinksInOperation, parametersMap);
+    addPredicatePercentLinksInOperation(filters, criteriaBuilder,
+        base.havingPredicates, base.percentLinksInOperation, base.parametersMap);
 
-    return new CommonDatasetQueryParts<>(criteriaQuery, link, run, null, errorsLinks, totalLinks, percentLinksInOperation,
-        wherePredicates, havingPredicates, parametersMap);
+    return new CommonDatasetQueryParts<>(base.criteriaQuery, base.link, base.run, null,
+        base.errorsLinks, base.totalLinks, base.percentLinksInOperation,
+        base.wherePredicates, base.havingPredicates, base.parametersMap);
   }
 
   /**
@@ -334,5 +308,31 @@ public class DatasetDaoSupport {
     TypedQuery<DatasetCheckSummary> query = session.createQuery(criteriaQuery);
     queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
     return query;
+  }
+
+  private static <T> CommonDatasetQueryParts<T> buildCommonBase(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+    // Setup common base criteria query
+    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
+    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
+    Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
+    Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
+
+    List<Predicate> wherePredicates = new ArrayList<>();
+    List<Predicate> havingPredicates = new ArrayList<>();
+    Map<ParameterExpression<?>, Object> parametersMap = new HashMap<>();
+
+    // Compute aggregations
+    Expression<Long> errorsLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link.get(FieldNames.ERROR_MESSAGE_DB)), 0).as(Long.class);
+    Expression<Long> totalLinks = criteriaBuilder.coalesce(criteriaBuilder.count(link), 0).as(Long.class);
+
+    Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
+        criteriaBuilder.prod(criteriaBuilder.<Double>selectCase()
+                           .when(criteriaBuilder.equal(totalLinks, 0D), 0D)
+                           .otherwise(criteriaBuilder.quot(
+                               criteriaBuilder.toDouble(errorsLinks), criteriaBuilder.toDouble(totalLinks))
+                                                     .as(Double.class)), HUNDRED)).cast(Integer.class);
+    return new CommonDatasetQueryParts<>(criteriaQuery, link, run, dataset,
+        errorsLinks, totalLinks, percentLinksInOperation,
+        wherePredicates, havingPredicates, parametersMap);
   }
 }

@@ -3,11 +3,11 @@ package eu.europeana.clio.reporting.rest.controller;
 import static eu.europeana.clio.common.model.FieldFilters.sanitizeFieldFilters;
 import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
 
-
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
 import eu.europeana.clio.reporting.rest.api.response.FilterResponse;
@@ -26,6 +26,8 @@ import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -55,7 +57,8 @@ public class ReportingController {
   public static final String BATCH_ID_ENDPOINT_PARAMETER = "batchId";
   public static final String REPORT_ID_ENDPOINT_PARAMETER = "reportId";
   public static final String REPORTS_ENDPOINT_PATH = "/reports";
-  public static final String RUNS_SUMMARY_ENDPOINT_PATH = "/runs/summary";
+  public static final String DATASETS_ENDPOINT_PATH = "/datasets";
+  public static final String RUNS_ENDPOINT_PATH = "/runs";
   public static final String RUNS_LINKS_EXPORT_ENDPOINT_PATH = "/runs/links/export";
 
   private final ReportingEngine reportingEngine;
@@ -222,35 +225,70 @@ public class ReportingController {
     return new ResponseEntity<>(result, HttpStatus.OK);
   }
 
-
   /**
-   * Get the run summary of the given {@link FilterRequest}.
+   * Get the dataset summaries of the given {@link FilterRequest}.
    *
    * @param request the request
-   * @return the run dataset summaries
+   * @return the dataset summaries
    * @throws ClioException the clio exception
    */
-  @PostMapping(value = RUNS_SUMMARY_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(value = DATASETS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {
+      MediaType.APPLICATION_JSON_VALUE})
   @ResponseStatus(HttpStatus.OK)
-  @Operation(summary = "Returns a complete filtered view of Clio runs dataset summaries with pagination")
+  @Operation(summary = "Returns a complete filtered view of Clio datasets summaries with pagination")
   @ApiResponse(responseCode = "400", description = "Filtering failed")
-  public ResponseEntity<FilterResponse> findRunsSummary(
+  public ResponseEntity<FilterResponse> findDatasetsSummary(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request.getFilters() == null) {
+    if (request.getFilters() == null || request.getPagination() == null) {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
     // Sanitize filters before returning to prevent XSS injection of user-supplied filter values
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final FieldFilters filterOptions = this.reportingEngine.findRunsSummaryFilterOptions(sanitizedFilters);
-    final List<RunSummary> runSummaries = this.reportingEngine.findRunsSummary(sanitizedFilters);
+    final FieldFilters filterOptions = this.reportingEngine.findDatasetsSummaryFilterOptions(sanitizedFilters);
+    final PagedDatasetResult pagedDatasetResult = this.reportingEngine.findDatasetsSummary(sanitizedFilters, request.getPagination());
     sanitizedFilters.setProvider(filterOptions.getProvider());
     sanitizedFilters.setDataProvider(filterOptions.getDataProvider());
     sanitizedFilters.setDatasetId(filterOptions.getDatasetId());
     sanitizedFilters.setDatasetName(filterOptions.getDatasetName());
-    return new ResponseEntity<>( new FilterResponse(runSummaries, sanitizedFilters), HttpStatus.OK);
+    return new ResponseEntity<>(
+        new FilterResponse(pagedDatasetResult.datasetSummaries(),
+            sanitizedFilters,
+            pagedDatasetResult.pagination()),
+        HttpStatus.OK);
   }
 
+  /**
+   * Find datasets check runs response entity.
+   *
+   * @param datasetId the dataset id
+   * @return the response entity
+   * @throws ClioException the clio exception
+   */
+  @GetMapping(value = RUNS_ENDPOINT_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Get the detailed summary run of a given dataset.",
+      description = "The detailed summary run of the given dataset is returned in reverse chronological order.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "OK",
+          content = @Content(schema = @Schema(implementation = BatchesRequestResult.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE)),
+      @ApiResponse(responseCode = "500", description = "Persistence error",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+              mediaType = MediaType.APPLICATION_JSON_VALUE))
+  })
+  public ResponseEntity<List<DatasetCheckSummary>> findDatasetsCheckRuns(
+      @RequestParam(value = "datasetId", required = true, defaultValue = "")
+      @Parameter(description = "The dataset identifier.", example = "")
+      String datasetId)
+      throws ClioException {
+    final int minPercent = 0;
+    final int maxPercent = 100;
+    FieldFilters fieldFilters = new FieldFilters(null, null, new TreeSet<>(Set.of(datasetId)),
+        null, null, null, null, minPercent, maxPercent);
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(fieldFilters);
+    final List<DatasetCheckSummary> datasetCheckSummaries = this.reportingEngine.findDatasetCheckSummary(sanitizedFilters);
+    return new ResponseEntity<>(datasetCheckSummaries, HttpStatus.OK);
+  }
 
   /**
    * Export the runs links matching the given {@link FilterRequest} as a CSV file.
@@ -275,11 +313,11 @@ public class ReportingController {
   public ResponseEntity<byte[]> exportRunsLinks(
       @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
       throws ClioException {
-    if (request == null || request.getFilters() == null) {
+    if (request == null || request.getFilters() == null || request.getPagination() == null) {
       return ResponseEntity.badRequest().build();
     }
     final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final String report = reportingEngine.generateReport(sanitizedFilters);
+    final String report = reportingEngine.generateReport(sanitizedFilters, request.getPagination());
     if (report == null) {
       throw new ReportNotFoundException("Report not found.");
     }

@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -22,8 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.BatchWithCounters;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
+import eu.europeana.clio.common.model.PagedDatasetResult;
+import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Report;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
@@ -40,6 +44,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -257,15 +262,19 @@ class ReportingControllerTest {
   }
 
   @Test
-  void findRunsSummary_returnsFilteringResponse() throws Exception {
+  void findDatasetsSummary_returnsFilteringResponse() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
-    RunSummary runSummary = mock(RunSummary.class);
-    when(reportingEngine.findRunsSummary(any(FieldFilters.class))).thenReturn(List.of(runSummary));
-    when(reportingEngine.findRunsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    DatasetSummary datasetSummary = mock(DatasetSummary.class);
+    PagedDatasetResult pagedDatasetResult= mock(PagedDatasetResult.class);
+    when(pagedDatasetResult.datasetSummaries()).thenReturn(List.of(datasetSummary));
+    when(pagedDatasetResult.pagination()).thenReturn(pagination);
+    when(reportingEngine.findDatasetsSummary(any(FieldFilters.class), any(Pagination.class))).thenReturn(pagedDatasetResult);
+    when(reportingEngine.findDatasetsSummaryFilterOptions(any(FieldFilters.class))).thenReturn(filters);
     // When
-    var responseEntity = controller.findRunsSummary(request);
+    var responseEntity = controller.findDatasetsSummary(request);
 
     // Then
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -274,16 +283,63 @@ class ReportingControllerTest {
     assertEquals(1, response.getResults().size());
     // Verify that a sanitized FieldFilters object is returned (not the original mock)
     assertNotNull(response.getFilterOptions());
-    // The returned filters are a new sanitized copy, not the original mock
+  }
+
+  @Test
+  void findDatasetsSummary_NoPaginationReturnsBadRequest() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = null;
+    FilterRequest request = new FilterRequest(filters, pagination);
+    // When
+    var responseEntity = controller.findDatasetsSummary(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    FilterResponse response = responseEntity.getBody();
+    assertNull(response);
+  }
+
+  @Test
+  void findDatasetsSummary_NoFiltersReturnsBadRequest() throws Exception {
+    // Given
+    FieldFilters filters = null;
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+    // When
+    var responseEntity = controller.findDatasetsSummary(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    FilterResponse response = responseEntity.getBody();
+    assertNull(response);
+  }
+
+  @Test
+  void findDatasetCheckSummary() throws Exception {
+    // Given
+    String datasetId="datasetId1";
+    DatasetCheckSummary datasetCheckSummary = mock(DatasetCheckSummary.class);
+    when(reportingEngine.findDatasetCheckSummary(any(FieldFilters.class))).thenReturn(List.of(datasetCheckSummary));
+
+    // When
+    var responseEntity = controller.findDatasetsCheckRuns(datasetId);
+
+    // Then
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    List<DatasetCheckSummary> datasetCheckSummaries = responseEntity.getBody();
+    assertNotNull(datasetCheckSummaries);
+    assertEquals(1, datasetCheckSummaries.size());
   }
 
   @Test
   void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
     String csv = "x,y\n1,2\n";
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
+    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenReturn(csv);
 
     // When
     HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
@@ -298,13 +354,42 @@ class ReportingControllerTest {
   void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    FilterRequest request = new FilterRequest(filters);
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
     ClioException expectedException = new ClioException("boom");
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
+    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenThrow(expectedException);
 
     // When / Then
     ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
     assertEquals(expectedException, actualException);
+  }
+
+  @Test
+  void exportRunsLinks_returnsBadRequest_whenNoPagination() throws Exception {
+    // Given
+    FieldFilters filters = mock(FieldFilters.class);
+    Pagination pagination = null;
+    FilterRequest request = new FilterRequest(filters, pagination);
+
+    // When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
+  }
+
+  @Test
+  void exportRunsLinks_returnsBadRequest_whenNoFilters() throws Exception {
+    // Given
+    FieldFilters filters = null;
+    Pagination pagination = mock(Pagination.class);
+    FilterRequest request = new FilterRequest(filters, pagination);
+
+    // When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
   }
 
   String normalizeDate(String s) {

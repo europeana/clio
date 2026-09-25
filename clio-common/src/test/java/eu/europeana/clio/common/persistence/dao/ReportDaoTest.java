@@ -218,7 +218,7 @@ class ReportDaoTest {
       assertNotNull(mockConstruction.constructed());
       assertNotNull(report);
       assertEquals(77L, report.getReportId());
-      assertEquals( "reportBatch", report.getReportString());
+      assertEquals("reportBatch", report.getReportString());
       assertEquals(111L, report.getCreationTime());
       assertEquals(7L, report.getBatchId());
     }
@@ -255,7 +255,7 @@ class ReportDaoTest {
       assertNotNull(mockConstruction.constructed());
       assertNotNull(report);
       assertEquals(99L, report.getReportId());
-      assertEquals( "reportData", report.getReportString());
+      assertEquals("reportData", report.getReportString());
       assertEquals(222L, report.getCreationTime());
       assertEquals(8L, report.getBatchId());
     }

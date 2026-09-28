@@ -14,12 +14,12 @@ public record Pagination(@JsonProperty(FieldNames.OFFSET) @Schema(example = "0")
    * The minimum and maximum page limits. These constants are used to ensure that the limit filter is within a reasonable range,
    * preventing potential performance issues or abuse of the API by requesting too many records at once.
    */
-  private static final int MIN_PAGE_LIMIT = 5;
+  public static final int MIN_PAGE_LIMIT = 5;
   /**
    * The minimum and maximum page limits. These constants are used to ensure that the limit filter is within a reasonable range,
    * preventing potential performance issues or abuse of the API by requesting too many records at once.
    */
-  private static final int MAX_PAGE_LIMIT = 100;
+  public static final int MAX_PAGE_LIMIT = 100;
 
   /**
    * Instantiates a new Pagination.

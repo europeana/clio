@@ -336,13 +336,12 @@ class ReportingControllerTest {
   void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    Pagination pagination = mock(Pagination.class);
-    FilterRequest request = new FilterRequest(filters, pagination);
+
     String csv = "x,y\n1,2\n";
-    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenReturn(csv);
+    when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
 
     // When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(filters);
 
     // Then
     assertArrayEquals(csv.getBytes(), entity.getBody());
@@ -354,39 +353,19 @@ class ReportingControllerTest {
   void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
     // Given
     FieldFilters filters = mock(FieldFilters.class);
-    Pagination pagination = mock(Pagination.class);
-    FilterRequest request = new FilterRequest(filters, pagination);
+
     ClioException expectedException = new ClioException("boom");
-    when(reportingEngine.generateReport(any(FieldFilters.class), any(Pagination.class))).thenThrow(expectedException);
+    when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
 
     // When / Then
-    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(request));
+    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(filters));
     assertEquals(expectedException, actualException);
   }
 
   @Test
-  void exportRunsLinks_returnsBadRequest_whenNoPagination() throws Exception {
-    // Given
-    FieldFilters filters = mock(FieldFilters.class);
-    Pagination pagination = null;
-    FilterRequest request = new FilterRequest(filters, pagination);
-
-    // When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
-
-    // Then
-    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
-  }
-
-  @Test
   void exportRunsLinks_returnsBadRequest_whenNoFilters() throws Exception {
-    // Given
-    FieldFilters filters = null;
-    Pagination pagination = mock(Pagination.class);
-    FilterRequest request = new FilterRequest(filters, pagination);
-
-    // When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(request);
+    // Given & When
+    HttpEntity<byte[]> entity = controller.exportRunsLinks(null);
 
     // Then
     assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());

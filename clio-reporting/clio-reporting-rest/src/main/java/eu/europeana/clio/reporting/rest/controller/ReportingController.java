@@ -3,6 +3,7 @@ package eu.europeana.clio.reporting.rest.controller;
 import static eu.europeana.clio.common.model.FieldFilters.sanitizeFieldFilters;
 import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.DatasetCheckSummary;
@@ -310,14 +311,14 @@ public class ReportingController {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
-  public ResponseEntity<byte[]> exportRunsLinks(
-      @Parameter(description = "The filters to be applied", required = true) @Valid @RequestBody FilterRequest request)
-      throws ClioException {
-    if (request == null || request.getFilters() == null || request.getPagination() == null) {
+
+  public ResponseEntity<byte[]> exportRunsLinks(@Parameter(description = "The filters to be applied", required = true)
+  @Valid @RequestBody FieldFilters filters) throws ClioException {
+    if (filters == null) {
       return ResponseEntity.badRequest().build();
     }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(request.getFilters());
-    final String report = reportingEngine.generateReport(sanitizedFilters, request.getPagination());
+    final FieldFilters sanitizedFilters = sanitizeFieldFilters(filters);
+    final String report = reportingEngine.generateReport(sanitizedFilters);
     if (report == null) {
       throw new ReportNotFoundException("Report not found.");
     }

@@ -69,7 +69,7 @@ public final class ReportingEngine {
    */
   public String generateReport() throws ClioException {
     StringWriter stringWriter = new StringWriter();
-    generateReport(stringWriter, null, null);
+    generateReport(stringWriter, null);
     return stringWriter.toString();
   }
 
@@ -77,13 +77,12 @@ public final class ReportingEngine {
    * Generate an im memory {@link String} report.
    *
    * @param filters the filters
-   * @param pagination the pagination
    * @return the report
    * @throws ClioException if an error occurred during generating the report
    */
-  public String generateReport(FieldFilters filters, Pagination pagination) throws ClioException {
+  public String generateReport(FieldFilters filters) throws ClioException {
     StringWriter stringWriter = new StringWriter();
-    generateReport(stringWriter, filters, pagination);
+    generateReport(stringWriter, filters);
     return stringWriter.toString();
   }
 
@@ -92,14 +91,13 @@ public final class ReportingEngine {
    *
    * @param writer The destination/output writer.
    * @param filters the filters
-   * @param pagination the pagination
    * @throws ClioException In case of a problem with accessing or saving the required data.
    */
-  public void generateReport(Writer writer, FieldFilters filters, Pagination pagination) throws ClioException {
+  public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
 
     final long startTime = System.nanoTime();
     // Write the report. We use a try-with-resources block to ensure that all resources are properly closed after use.
-    try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters, pagination);
+    try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters);
         final CSVWriter csvWriter = new CSVWriter(writer)) {
       // Write header
       csvWriter.writeNext(new String[]{
@@ -152,11 +150,11 @@ public final class ReportingEngine {
     log.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
   }
 
-  private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters, Pagination pagination)
+  private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters)
       throws PersistenceException {
     final LinkDao linkDao = new LinkDao(reportingEngineConfiguration.sessionFactory());
     return filters == null ? linkDao.getBrokenLinksInLatestCompletedRuns()
-        : linkDao.getLinksWithRunsForFilters(filters, pagination);
+        : linkDao.getLinksWithRunsForFilters(filters);
   }
 
   private static String convert(Instant instant) {

@@ -1,17 +1,19 @@
 package eu.europeana.clio.common.persistence.dao;
 
 
-import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonDatasetQueryWithPredicates;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonBase;
 
 import eu.europeana.clio.common.exception.PersistenceException;
+import eu.europeana.clio.common.model.DatasetCheckSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Link;
+import eu.europeana.clio.common.model.PagedDatasetResult;
 import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
-
 import eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.CommonDatasetQueryParts;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
@@ -19,9 +21,13 @@ import eu.europeana.clio.common.persistence.model.RunRow;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.ParameterExpression;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 
@@ -161,25 +167,44 @@ public class LinkDao {
    * Gets links with runs for filters.
    *
    * @param filters the filters
-   * @param pagination the pagination
    * @return the links with runs for filters
    * @throws PersistenceException the persistence exception
    */
-  public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters, Pagination pagination) throws PersistenceException {
+  public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters)
+      throws PersistenceException {
     return hibernateSessionUtils.performForStream(session -> {
-      CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonDatasetQueryParts<RunWithLink> queryParts = buildCommonDatasetQueryWithPredicates(
-          criteriaBuilder, RunWithLink.class, filters);
+      DatasetDao datasetDao = new DatasetDao(session.getSessionFactory());
+      TreeSet<String> datasets = new TreeSet<>();
+      Pagination cursor = new Pagination(0, Pagination.MIN_PAGE_LIMIT, true);
+      while (Boolean.TRUE.equals(cursor.moreAvailable())) {
+        PagedDatasetResult pagedDatasetResult = datasetDao.findDatasetSummaries(filters, cursor);
+        datasets.addAll(pagedDatasetResult.datasetSummaries()
+                                          .stream()
+                                          .map(DatasetSummary::datasetId)
+                                          .collect(Collectors.toSet()));
 
+        cursor = new Pagination(pagedDatasetResult.pagination().offset() + pagedDatasetResult.pagination().limit(),
+              pagedDatasetResult.pagination().limit(),
+            pagedDatasetResult.pagination().moreAvailable());
+      }
+      Set<Long> runIds = new TreeSet<>();
+      FieldFilters detailFilters = new FieldFilters();
+      detailFilters.setDatasetId(datasets);
+      if (!detailFilters.getDatasetId().isEmpty()) {
+        List<DatasetCheckSummary> datasetCheckSummaryList = datasetDao.findDatasetCheckSummary(detailFilters);
+        datasetCheckSummaryList.forEach(datasetCheckSummary -> runIds.add(datasetCheckSummary.runId()));
+      }
+      CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
+      CommonDatasetQueryParts<RunWithLink> queryParts = buildCommonBase(criteriaBuilder, RunWithLink.class);
+      ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, FieldNames.RUN_ID_DB);
+      queryParts.wherePredicates().add(queryParts.run().get(FieldNames.RUN_ID_DB).in(parameter));
+      queryParts.parametersMap().put(parameter, runIds);
       CriteriaQuery<RunWithLink> criteriaQuery = queryParts.criteriaQuery();
 
       // select
-      criteriaQuery.select(criteriaBuilder.construct(
-          RunWithLink.class, queryParts.run(), queryParts.link()));
-
-      // where & having
+      criteriaQuery.select(criteriaBuilder.construct(RunWithLink.class, queryParts.run(), queryParts.link()));
+      // where
       criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
-      criteriaQuery.having(queryParts.havingPredicates());
 
       // order by (specific to LinkDao)
       criteriaQuery.orderBy(
@@ -189,20 +214,9 @@ public class LinkDao {
           criteriaBuilder.asc(queryParts.link().get(FieldNames.LINK_URL_DB))
       );
 
-      // group by
-      criteriaQuery.groupBy(
-          queryParts.dataset().get(FieldNames.DATASET_ID_DB),
-          queryParts.link().get(FieldNames.LINK_ID_DB),
-          queryParts.run().get(FieldNames.RUN_ID_DB)
-      );
-
-      // execute query
       TypedQuery<RunWithLink> query = session.createQuery(criteriaQuery);
       queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
-
-      return query.setFirstResult(pagination.offset())
-                  .setMaxResults(pagination.limit())
-                  .getResultStream();
+      return query.getResultStream();
     });
   }
 

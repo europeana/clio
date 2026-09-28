@@ -36,6 +36,7 @@ public class DatasetDaoSupport {
 
   public static final double HUNDRED = 100.0D;
   public static final long WINDOW_PERIOD = 90L;
+  private static final String PREFIX_PARAMETER = "Parameter";
 
   /**
    * Add predicate and parameter date range.
@@ -142,15 +143,15 @@ public class DatasetDaoSupport {
   public static void addPredicateAndParameter(Set<String> fieldValue, CriteriaBuilder criteriaBuilder, List<Predicate> predicates,
       Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap, String fieldName) {
     if (!(fieldValue == null || fieldValue.isEmpty())) {
-      ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, fieldName + "Parameter");
+      ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, fieldName + PREFIX_PARAMETER);
       predicates.add(dataset.get(fieldName).in(parameter));
       parametersMap.put(parameter, fieldValue);
     }
   }
 
   /**
-   * Builds common query parts for check runs queries with all predicates and aggregations.
-   * This method handles the construction of a criteria query with all standard filters.
+   * Builds common query parts for check runs queries with all predicates and aggregations. This method handles the construction
+   * of a criteria query with all standard filters.
    *
    * @param <T> the type parameter
    * @param criteriaBuilder the criteria builder
@@ -245,7 +246,7 @@ public class DatasetDaoSupport {
   }
 
   /**
-   * Build common dataset checks query with predicates common dataset query parts.
+   * Build common dataset checks query common dataset query parts.
    *
    * @param <T> the type parameter
    * @param criteriaBuilder the criteria builder
@@ -253,26 +254,57 @@ public class DatasetDaoSupport {
    * @param filters the filters
    * @return the common dataset query parts
    */
-  public static <T> CommonDatasetQueryParts<T> buildCommonDatasetChecksQueryWithPredicates(CriteriaBuilder criteriaBuilder,
-      Class<T> clazz, FieldFilters filters) {
-    // Build base query parts
+  public static <T> CommonDatasetQueryParts<T> buildCommonOneDatasetChecksQuery(
+      CriteriaBuilder criteriaBuilder, Class<T> clazz, FieldFilters filters) {
     CommonDatasetQueryParts<T> base = buildCommonBase(criteriaBuilder, clazz);
+    addSingleDatasetPredicate(criteriaBuilder, base, filters);
+    return restOfPredicatesCommonDatasetChecksQuery(criteriaBuilder, base, filters);
+  }
 
-    // Apply filters
-    String datasetId = filters.getDatasetId().first();
-    ParameterExpression<String> parameter = criteriaBuilder.parameter(String.class, FieldNames.DATASET_ID_DB + "Parameter");
-    base.wherePredicates.add(base.run.get("dataset").get(FieldNames.DATASET_ID_DB).equalTo(parameter));
-    base.parametersMap.put(parameter, datasetId);
+  /**
+   * Build common datasets checks query common dataset query parts.
+   *
+   * @param <T> the type parameter
+   * @param criteriaBuilder the criteria builder
+   * @param clazz the clazz
+   * @param filters the filters
+   * @return the common dataset query parts
+   */
+  public static <T> CommonDatasetQueryParts<T> buildCommonMultipleDatasetsChecksQuery(
+      CriteriaBuilder criteriaBuilder, Class<T> clazz, FieldFilters filters) {
+    CommonDatasetQueryParts<T> base = buildCommonBase(criteriaBuilder, clazz);
+    addMultipleDatasetsPredicate(criteriaBuilder, base, filters);
+    return restOfPredicatesCommonDatasetChecksQuery(criteriaBuilder, base, filters);
+  }
 
-    addPredicateAndParameterLastNinetyDays(criteriaBuilder,
-        base.wherePredicates, base.link, base.parametersMap);
+  private static <T> void addSingleDatasetPredicate(CriteriaBuilder criteriaBuilder, CommonDatasetQueryParts<T> base, FieldFilters filters) {
+    ParameterExpression<String> parameter = criteriaBuilder.parameter(String.class, FieldNames.DATASET_ID_DB + PREFIX_PARAMETER);
+    base.parametersMap.put(parameter, filters.getDatasetId().first());
+    base.wherePredicates.add(base.run.get(FieldNames.DATASET_TABLE_NAME_DB).get(FieldNames.DATASET_ID_DB).equalTo(parameter));
+  }
 
-    addPredicatePercentLinksInOperation(filters, criteriaBuilder,
-        base.havingPredicates, base.percentLinksInOperation, base.parametersMap);
+  private static <T> void addMultipleDatasetsPredicate(CriteriaBuilder criteriaBuilder, CommonDatasetQueryParts<T> base, FieldFilters filters) {
+    ParameterExpression<Set> parameter = criteriaBuilder.parameter(Set.class, FieldNames.DATASET_ID_DB + PREFIX_PARAMETER);
+    base.wherePredicates.add(base.run.get(FieldNames.DATASET_TABLE_NAME_DB).get(FieldNames.DATASET_ID_DB).in(parameter));
+    base.parametersMap.put(parameter, filters.getDatasetId());
+  }
 
-    return new CommonDatasetQueryParts<>(base.criteriaQuery, base.link, base.run, null,
-        base.errorsLinks, base.totalLinks, base.percentLinksInOperation,
-        base.wherePredicates, base.havingPredicates, base.parametersMap);
+  private static <T> CommonDatasetQueryParts<T> restOfPredicatesCommonDatasetChecksQuery(CriteriaBuilder criteriaBuilder,
+      CommonDatasetQueryParts<T> base, FieldFilters filters) {
+    addPredicateAndParameterLastNinetyDays(criteriaBuilder, base.wherePredicates, base.link, base.parametersMap);
+    addPredicatePercentLinksInOperation(filters, criteriaBuilder, base.havingPredicates, base.percentLinksInOperation, base.parametersMap);
+
+    return new CommonDatasetQueryParts<>(
+        base.criteriaQuery,
+        base.link,
+        base.run,
+        null,
+        base.errorsLinks,
+        base.totalLinks,
+        base.percentLinksInOperation,
+        base.wherePredicates,
+        base.havingPredicates,
+        base.parametersMap);
   }
 
   /**
@@ -284,8 +316,9 @@ public class DatasetDaoSupport {
    */
   public static TypedQuery<DatasetCheckSummary> getDatasetCheckSummaryTypedQuery(FieldFilters filters, Session session) {
     CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-    CommonDatasetQueryParts<DatasetCheckSummary> queryParts = buildCommonDatasetChecksQueryWithPredicates(criteriaBuilder,
-        DatasetCheckSummary.class, filters);
+    CommonDatasetQueryParts<DatasetCheckSummary> queryParts = filters.getDatasetId().size() == 1?
+        buildCommonOneDatasetChecksQuery(criteriaBuilder, DatasetCheckSummary.class, filters) :
+        buildCommonMultipleDatasetsChecksQuery(criteriaBuilder, DatasetCheckSummary.class, filters);
 
     CriteriaQuery<DatasetCheckSummary> criteriaQuery = queryParts.criteriaQuery();
 
@@ -310,7 +343,15 @@ public class DatasetDaoSupport {
     return query;
   }
 
-  private static <T> CommonDatasetQueryParts<T> buildCommonBase(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+  /**
+   * Build common base common dataset query parts.
+   *
+   * @param <T> the type parameter
+   * @param criteriaBuilder the criteria builder
+   * @param clazz the clazz
+   * @return the common dataset query parts
+   */
+  public static <T> CommonDatasetQueryParts<T> buildCommonBase(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
     // Setup common base criteria query
     CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
     Root<LinkRow> link = criteriaQuery.from(LinkRow.class);

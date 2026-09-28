@@ -560,7 +560,7 @@ public class DatasetDaoSupportTest {
     when(diffResult.cast(Integer.class)).thenReturn(percentExpr);
 
     // When
-    CommonDatasetQueryParts<DatasetCheckSummary> parts = DatasetDaoSupport.buildCommonDatasetChecksQueryWithPredicates(criteriaBuilder,
+    CommonDatasetQueryParts<DatasetCheckSummary> parts = DatasetDaoSupport.buildCommonOneDatasetChecksQuery(criteriaBuilder,
         DatasetCheckSummary.class, filters);
 
     // Then

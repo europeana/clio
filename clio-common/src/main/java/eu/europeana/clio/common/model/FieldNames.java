@@ -29,6 +29,7 @@ public final class FieldNames {
   public static final String HAS_MORE_AVAILABLE = "hasMoreAvailable";
   public static final String DATASET_NAME_DB = "name";
   public static final String DATASET_ID_DB = "datasetId";
+  public static final String DATASET_TABLE_NAME_DB = "dataset";
   public static final String DATASET_PROVIDER_DB = "provider";
   public static final String DATASET_DATA_PROVIDER_DB = "dataProvider";
   public static final String RUN_ID_DB = "runId";

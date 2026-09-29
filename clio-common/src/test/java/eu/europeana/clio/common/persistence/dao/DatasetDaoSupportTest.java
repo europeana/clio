@@ -6,8 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import eu.europeana.clio.common.model.DatasetCheckSummary;
@@ -19,6 +23,7 @@ import eu.europeana.clio.common.persistence.model.BatchRow;
 import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.RunRow;
+import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -37,6 +42,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.hibernate.Session;
+import org.hibernate.query.Query;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaQuery;
+import org.hibernate.query.criteria.JpaParameterExpression;
 import org.junit.jupiter.api.Test;
 
 public class DatasetDaoSupportTest {
@@ -575,5 +585,37 @@ public class DatasetDaoSupportTest {
     assertNotNull(parts.errorsLinks());
     assertNotNull(parts.totalLinks());
     assertNotNull(parts.percentLinksInOperation());
+  }
+
+  @Test
+  void getDatasetCheckSummaryTypedQuery_createsQueryAndBindsParameters() {
+    // Given
+    FieldFilters filters = new FieldFilters();
+    filters.setDatasetId(new TreeSet<>(Set.of("datasetId1")));
+    filters = FieldFilters.sanitizeFieldFilters(filters);
+
+    Session session = mock(Session.class);
+    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class, RETURNS_DEEP_STUBS);
+    JpaCriteriaQuery<DatasetCheckSummary> criteriaQuery = mock(JpaCriteriaQuery.class, RETURNS_DEEP_STUBS);
+    Query<DatasetCheckSummary> query = mock(Query.class);
+    when(session.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+    when(criteriaBuilder.createQuery(DatasetCheckSummary.class)).thenReturn(criteriaQuery);
+    when(session.createQuery(criteriaQuery)).thenReturn(query);
+
+    JpaParameterExpression<Long> startingWindowTime = mock(JpaParameterExpression.class);
+    JpaParameterExpression<Long> endingWindowTime = mock(JpaParameterExpression.class);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB)).thenReturn(startingWindowTime);
+    when(criteriaBuilder.parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB)).thenReturn(endingWindowTime);
+    when(startingWindowTime.getName()).thenReturn(FieldNames.STARTING_WINDOW_TIME_DB);
+    when(endingWindowTime.getName()).thenReturn(FieldNames.ENDING_WINDOW_TIME_DB);
+
+    // When
+    TypedQuery<DatasetCheckSummary> result = DatasetDaoSupport.getDatasetCheckSummaryTypedQuery(filters, session);
+
+    // Then
+    assertEquals(query, result);
+    verify(session).createQuery(criteriaQuery);
+    verify(query).setParameter(eq(FieldNames.STARTING_WINDOW_TIME_DB), anyLong());
+    verify(query).setParameter(eq(FieldNames.ENDING_WINDOW_TIME_DB), anyLong());
   }
 }

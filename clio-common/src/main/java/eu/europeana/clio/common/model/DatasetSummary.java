@@ -36,7 +36,9 @@ public record DatasetSummary(String datasetId,
   public DatasetSummary(
       String datasetId, String datasetName, Long datasetSize, Long datasetLastIndex,
       String provider, String dataProvider, int percentLinksInOperation) {
-    this(datasetId, datasetName, datasetSize, Instant.ofEpochMilli(datasetLastIndex).atZone(ZoneOffset.UTC).toLocalDate(),
+    this(datasetId, datasetName, datasetSize,
+        datasetLastIndex == null ? null : Instant.ofEpochMilli(datasetLastIndex)
+                                                 .atZone(ZoneOffset.UTC).toLocalDate(),
         provider, dataProvider, percentLinksInOperation);
   }
 }

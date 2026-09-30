@@ -169,7 +169,7 @@ public class DatasetDaoSupportTest {
     Set<String> excludedIds = Set.of("datasetId1", "datasetId2", "datasetId3");
 
     ParameterExpression<Set> paramExpression = mock(ParameterExpression.class);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID)).thenReturn(paramExpression);
+    when(criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID)).thenReturn(paramExpression);
 
     Path<?> path = mock(Path.class);
     doReturn(path).when(dataset).get(FieldNames.DATASET_ID_DB);

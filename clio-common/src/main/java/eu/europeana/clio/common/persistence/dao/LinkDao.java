@@ -215,7 +215,7 @@ public class LinkDao {
           wherePredicatesSq1, datasetSq1, parametersMapSq1, FieldNames.DATASET_ID_DB);
       addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder,
           wherePredicatesSq1, datasetSq1, parametersMapSq1, FieldNames.DATASET_NAME_DB);
-      addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder,
+      addPredicateAndParameterExcludedIds(filters.getExcludedDatasetId(), criteriaBuilder,
           wherePredicatesSq1, datasetSq1, parametersMapSq1);
       addPredicateAndParameterLastNinetyDays(criteriaBuilder,
           wherePredicatesSq1, sublink, parametersMapSq1);

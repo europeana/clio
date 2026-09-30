@@ -41,7 +41,7 @@ class FieldFiltersTest {
     assertEquals(dataProvider, fieldFilters.getDataProvider());
     assertEquals(datasetId, fieldFilters.getDatasetId());
     assertEquals(datasetName, fieldFilters.getDatasetName());
-    assertEquals(excludedCheckId, fieldFilters.getExcludedId());
+    assertEquals(excludedCheckId, fieldFilters.getExcludedDatasetId());
     assertEquals(dateFrom, fieldFilters.getDateFrom());
     assertEquals(dateTo, fieldFilters.getDateTo());
     assertEquals(percentLinksInOperationFrom, fieldFilters.getPercentLinksInOperationFrom());
@@ -65,7 +65,7 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDataProvider());
     assertNull(fieldFilters.getDatasetId());
     assertNull(fieldFilters.getDatasetName());
-    assertNull(fieldFilters.getExcludedId());
+    assertNull(fieldFilters.getExcludedDatasetId());
     assertNull(fieldFilters.getDateFrom());
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
@@ -104,8 +104,8 @@ class FieldFiltersTest {
     );
 
     // Then
-    assertNotNull(fieldFilters.getExcludedId());
-    assertEquals(excludedCheckId, fieldFilters.getExcludedId());
+    assertNotNull(fieldFilters.getExcludedDatasetId());
+    assertEquals(excludedCheckId, fieldFilters.getExcludedDatasetId());
   }
 
   @Test
@@ -251,7 +251,7 @@ class FieldFiltersTest {
 
     // Then
     assertNotNull(sanitized);
-    assertEquals(excludedCheckId, sanitized.getExcludedId());
+    assertEquals(excludedCheckId, sanitized.getExcludedDatasetId());
   }
 
   @Test
@@ -268,7 +268,7 @@ class FieldFiltersTest {
     assertNull(fieldFilters.getDataProvider());
     assertNull(fieldFilters.getDatasetId());
     assertNull(fieldFilters.getDatasetName());
-    assertNull(fieldFilters.getExcludedId());
+    assertNull(fieldFilters.getExcludedDatasetId());
     assertNull(fieldFilters.getDateFrom());
     assertNull(fieldFilters.getDateTo());
     assertNull(fieldFilters.getPercentLinksInOperationFrom());
@@ -313,7 +313,7 @@ class FieldFiltersTest {
     assertNotNull(sanitized.getDataProvider());
     assertNotNull(sanitized.getDatasetId());
     assertNotNull(sanitized.getDatasetName());
-    assertNotNull(sanitized.getExcludedId());
+    assertNotNull(sanitized.getExcludedDatasetId());
     assertNotNull(sanitized.getDateFrom());
     assertNotNull(sanitized.getDateTo());
     assertEquals(20, sanitized.getPercentLinksInOperationFrom());

@@ -110,7 +110,7 @@ public class DatasetDao {
 
       return new FieldFilters(new TreeSet<>(result.get(ClioFilterField.PROVIDER)),
           new TreeSet<>(result.get(ClioFilterField.DATA_PROVIDER)), new TreeSet<>(result.get(ClioFilterField.DATASET_ID)),
-          new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)), filters.getExcludedId(), filters.getDateFrom(),
+          new TreeSet<>(result.get(ClioFilterField.DATASET_NAME)), filters.getExcludedDatasetId(), filters.getDateFrom(),
           filters.getDateTo(), filters.getPercentLinksInOperationFrom(), filters.getPercentLinksInOperationTo());
     });
   }

@@ -99,7 +99,7 @@ public class DatasetDaoSupport {
       List<Predicate> predicates, Join<RunRow, DatasetRow> dataset, Map<ParameterExpression<?>, Object> parametersMap) {
 
     if (!CollectionUtils.isEmpty(fieldValue)) {
-      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_ID);
+      ParameterExpression<Set> excludeCheckIdsParameter = criteriaBuilder.parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID);
       predicates.add(criteriaBuilder.not(dataset.get(FieldNames.DATASET_ID_DB).in(excludeCheckIdsParameter)));
       parametersMap.put(excludeCheckIdsParameter, fieldValue);
     }
@@ -172,7 +172,7 @@ public class DatasetDaoSupport {
         base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_ID_DB);
     addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder,
         base.wherePredicates, base.dataset, base.parametersMap, FieldNames.DATASET_NAME_DB);
-    addPredicateAndParameterExcludedIds(filters.getExcludedId(), criteriaBuilder,
+    addPredicateAndParameterExcludedIds(filters.getExcludedDatasetId(), criteriaBuilder,
         base.wherePredicates, base.dataset, base.parametersMap);
     addPredicateAndParameterLastNinetyDays(criteriaBuilder,
         base.wherePredicates, base.link, base.parametersMap);

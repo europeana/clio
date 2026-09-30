@@ -17,14 +17,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import eu.europeana.clio.common.exception.PersistenceException;
-import eu.europeana.clio.common.model.DatasetCheckSummary;
-import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
 import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.LinkType;
-import eu.europeana.clio.common.model.PagedDatasetResult;
-import eu.europeana.clio.common.model.Pagination;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
@@ -395,7 +391,7 @@ class LinkDaoTest {
     filters.setDataProvider(new TreeSet<>(Set.of("data-provider")));
     filters.setDatasetId(new TreeSet<>(Set.of("dataset-id")));
     filters.setDatasetName(new TreeSet<>(Set.of("dataset-name")));
-    filters.setExcludedId(new TreeSet<>(Set.of("excluded-dataset")));
+    filters.setExcludedDatasetId(new TreeSet<>(Set.of("excluded-dataset")));
     filters.setDateFrom(LocalDate.of(2026, 1, 1));
     filters.setDateTo(LocalDate.of(2026, 1, 31));
     filters.setPercentLinksInOperationFrom(20);
@@ -422,7 +418,7 @@ class LinkDaoTest {
       verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_DATA_PROVIDER_DB + "Parameter");
       verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_ID_DB + "Parameter");
       verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_NAME_DB + "Parameter");
-      verify(criteriaBuilder).parameter(Set.class, FieldNames.EXCLUDED_ID);
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.EXCLUDED_DATASET_ID);
       verify(criteriaBuilder, times(2)).parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB);
       verify(criteriaBuilder, times(2)).parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB);
       verify(criteriaBuilder).parameter(Long.class, FieldNames.STARTING_TIME_DB);

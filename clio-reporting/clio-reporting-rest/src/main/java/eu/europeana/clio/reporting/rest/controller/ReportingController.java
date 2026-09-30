@@ -309,7 +309,7 @@ public class ReportingController {
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
           content = {@Content(mediaType = "text/csv"), @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)}),
-      @ApiResponse(responseCode = "404", description = "Report not found",
+      @ApiResponse(responseCode = "400", description = "Bad request with filters",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE)),
       @ApiResponse(responseCode = "500", description = "Persistence error",

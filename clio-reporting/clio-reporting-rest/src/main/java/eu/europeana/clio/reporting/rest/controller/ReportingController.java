@@ -280,10 +280,13 @@ public class ReportingController {
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
   public ResponseEntity<List<DatasetCheckSummary>> findDatasetsCheckRuns(
-      @RequestParam(value = "datasetId", required = true, defaultValue = "")
-      @Parameter(description = "The dataset identifier.", example = "")
+      @RequestParam(value = "datasetId", required = true)
+      @Parameter(description = "The dataset identifier.", example = "2583")
       String datasetId)
       throws ClioException {
+    if (datasetId == null || datasetId.trim().isBlank()) {
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
     final int minPercent = 0;
     final int maxPercent = 100;
     FieldFilters fieldFilters = new FieldFilters(null, null, new TreeSet<>(Set.of(datasetId)),

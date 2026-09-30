@@ -11,8 +11,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -33,18 +39,24 @@ import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.reporting.service.ReportingEngine;
 import eu.europeana.clio.reporting.rest.api.request.FilterRequest;
 import eu.europeana.clio.reporting.rest.api.response.FilterResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -333,42 +345,69 @@ class ReportingControllerTest {
   }
 
   @Test
-  void exportRunsLinks_returnsBytes_andHeaders() throws Exception {
+  void exportRunsLinks_setsCsvHeadersAndPassesSanitizedFiltersToReportingEngine() throws Exception {
     // Given
-    FieldFilters filters = mock(FieldFilters.class);
-
-    String csv = "x,y\n1,2\n";
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenReturn(csv);
+    FieldFilters filters = new FieldFilters();
+    filters.setProvider(new TreeSet<>(Set.of("<provider&>")));
+    MockHttpServletResponse response = new MockHttpServletResponse();
 
     // When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(filters);
+    controller.exportRunsLinks(filters, response);
 
     // Then
-    assertArrayEquals(csv.getBytes(), entity.getBody());
-    assertEquals(ReportingEngine.getReportFileNameSuggestion(), entity.getHeaders().getContentDisposition().getFilename());
-    assertEquals(csv.getBytes().length, entity.getHeaders().getContentLength());
+    assertEquals("text/csv", response.getHeader(HttpHeaders.CONTENT_TYPE));
+    String contentDisposition = response.getHeader(HttpHeaders.CONTENT_DISPOSITION);
+    assertNotNull(contentDisposition);
+    assertTrue(contentDisposition.startsWith("attachment; filename=\""));
+    assertTrue(contentDisposition.endsWith(".csv\""));
+
+    ArgumentCaptor<FieldFilters> filtersCaptor = ArgumentCaptor.forClass(FieldFilters.class);
+    verify(reportingEngine).generateReport(filtersCaptor.capture(), any());
+    assertEquals(Set.of("&lt;provider&amp;&gt;"), filtersCaptor.getValue().getProvider());
   }
 
   @Test
-  void exportRunsLinks_whenEngineThrows_throwsClioException() throws Exception {
+  void exportRunsLinks_withNullFilters_returnsBadRequestWithoutGeneratingReport() throws Exception {
     // Given
-    FieldFilters filters = mock(FieldFilters.class);
+    MockHttpServletResponse response = new MockHttpServletResponse();
 
-    ClioException expectedException = new ClioException("boom");
-    when(reportingEngine.generateReport(any(FieldFilters.class))).thenThrow(expectedException);
+    // When
+    controller.exportRunsLinks(null, response);
 
-    // When / Then
-    ClioException actualException = assertThrows(ClioException.class, () -> controller.exportRunsLinks(filters));
+    // Then
+    assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatus());
+    verifyNoInteractions(reportingEngine);
+  }
+
+  @Test
+  void exportRunsLinks_whenReportingEngineFails_propagatesClioException() throws Exception {
+    // Given
+    ClioException expectedException = new ClioException();
+    doThrow(expectedException).when(reportingEngine).generateReport(any(FieldFilters.class), any());
+
+    // When
+    ClioException actualException = assertThrows(ClioException.class,
+        () -> controller.exportRunsLinks(new FieldFilters(), new MockHttpServletResponse()));
+
+    // Then
     assertEquals(expectedException, actualException);
   }
 
   @Test
-  void exportRunsLinks_returnsBadRequest_whenNoFilters() throws Exception {
-    // Given & When
-    HttpEntity<byte[]> entity = controller.exportRunsLinks(null);
+  void exportRunsLinks_whenGettingOutputStreamFails_wrapsIOExceptionInClioException() throws Exception {
+    // Given
+    IOException ioException = new IOException("Cannot access response stream");
+    HttpServletResponse response = mock(HttpServletResponse.class);
+    when(response.getOutputStream()).thenThrow(ioException);
+
+    // When
+    ClioException exception = assertThrows(ClioException.class,
+        () -> controller.exportRunsLinks(new FieldFilters(), response));
 
     // Then
-    assertEquals(HttpStatus.BAD_REQUEST, ((ResponseEntity<?>)entity).getStatusCode());
+    assertEquals(ioException, exception.getCause());
+    verify(response).setHeader(HttpHeaders.CONTENT_TYPE, "text/csv");
+    verify(response, times(2)).setHeader(anyString(), anyString());
   }
 
   String normalizeDate(String s) {

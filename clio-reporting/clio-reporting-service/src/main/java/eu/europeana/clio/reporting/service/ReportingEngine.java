@@ -1,5 +1,7 @@
 package eu.europeana.clio.reporting.service;
 
+import static eu.europeana.clio.common.persistence.dao.LinkDao.FETCH_SIZE;
+
 import com.opencsv.CSVWriter;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.PersistenceException;
@@ -16,9 +18,14 @@ import eu.europeana.clio.common.persistence.dao.LinkDao;
 import eu.europeana.clio.common.persistence.dao.LinkDao.RunWithLink;
 import eu.europeana.clio.common.persistence.dao.ReportDao;
 import eu.europeana.clio.reporting.service.config.ReportingEngineConfiguration;
+import jakarta.transaction.Transactional;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -27,9 +34,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StopWatch;
 
 /**
  * This class provides core functionality for the reporting module of Clio.
@@ -41,7 +51,9 @@ public final class ReportingEngine {
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
       .ofPattern("yyyy-MM-dd_kk-mm-ss").withZone(ZoneOffset.UTC);
   private static final String CLIO_REPORT_PREFIX = "clio_report";
+  private static final String CLIO_REPORT_INFIX = "dataset_link";
   private static final String CLIO_REPORT_SUFFIX = "csv";
+  private static final int CLIO_REPORT_BUFFER_SIZE = 64 * 1024;
   private final ReportingEngineConfiguration reportingEngineConfiguration;
 
   /**
@@ -87,6 +99,18 @@ public final class ReportingEngine {
   }
 
   /**
+   * Generate report.
+   *
+   * @param filters the filters
+   * @param outputStream the output stream
+   * @throws ClioException the clio exception
+   */
+  public void generateReport(FieldFilters filters, OutputStream outputStream) throws ClioException {
+    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8), CLIO_REPORT_BUFFER_SIZE);
+    generateReport(writer, filters);
+  }
+
+  /**
    * Generates a report and saves it to the output file.
    *
    * @param writer The destination/output writer.
@@ -94,8 +118,8 @@ public final class ReportingEngine {
    * @throws ClioException In case of a problem with accessing or saving the required data.
    */
   public void generateReport(Writer writer, FieldFilters filters) throws ClioException {
-
-    final long startTime = System.nanoTime();
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
     // Write the report. We use a try-with-resources block to ensure that all resources are properly closed after use.
     try (final StreamResult<RunWithLink> brokenLinks = getLinkDaoStreamResult(filters);
         final CSVWriter csvWriter = new CSVWriter(writer)) {
@@ -121,33 +145,41 @@ public final class ReportingEngine {
       // Create link stream ...
       final Stream<RunWithLink> linkStream = brokenLinks.get();
 
+      AtomicLong count = new AtomicLong(0);
       // Write records
-      linkStream.forEach(item -> csvWriter.writeNext(new String[]{
-          sanitizeCsvField(item.run().getDataset().getDatasetId()),
-          sanitizeCsvField(String.format(reportingEngineConfiguration
-                  .clioConfigurationProperties().datasetReportLinkTemplate(),
-              item.run().getDataset().getDatasetId())),
-          sanitizeCsvField(Optional.ofNullable(item.run().getDataset().getSize())
-                                   .map(Object::toString).orElse(null)),
-          sanitizeCsvField(item.run().getDataset().getProvider()),
-          sanitizeCsvField(item.run().getDataset().getDataProvider()),
-          sanitizeCsvField(item.link().getRecordId()),
-          sanitizeCsvField(convert(item.link().getRecordLastIndexTime())),
-          sanitizeCsvField(item.link().getRecordEdmType()),
-          sanitizeCsvField(item.link().getRecordContentTier()),
-          sanitizeCsvField(item.link().getRecordMetadataTier()),
-          sanitizeCsvField(item.link().getLinkType().getHumanReadableName()),
-          sanitizeCsvField(item.link().getLinkUrl()),
-          sanitizeCsvField(item.link().getServer()),
-          sanitizeCsvField(convert(item.link().getCheckingTime())),
-          sanitizeCsvField(item.link().getError())
-      }));
+      for(RunWithLink item: (Iterable<RunWithLink>)linkStream::iterator)  {
+          csvWriter.writeNext(new String[]{
+              sanitizeCsvField(item.run().getDataset().getDatasetId()),
+              sanitizeCsvField(String.format(reportingEngineConfiguration
+                      .clioConfigurationProperties().datasetReportLinkTemplate(),
+                  item.run().getDataset().getDatasetId())),
+              sanitizeCsvField(Optional.ofNullable(item.run().getDataset().getSize())
+                                       .map(Object::toString).orElse(null)),
+              sanitizeCsvField(item.run().getDataset().getProvider()),
+              sanitizeCsvField(item.run().getDataset().getDataProvider()),
+              sanitizeCsvField(item.link().getRecordId()),
+              sanitizeCsvField(convert(item.link().getRecordLastIndexTime())),
+              sanitizeCsvField(item.link().getRecordEdmType()),
+              sanitizeCsvField(item.link().getRecordContentTier()),
+              sanitizeCsvField(item.link().getRecordMetadataTier()),
+              sanitizeCsvField(item.link().getLinkType().getHumanReadableName()),
+              sanitizeCsvField(item.link().getLinkUrl()),
+              sanitizeCsvField(item.link().getServer()),
+              sanitizeCsvField(convert(item.link().getCheckingTime())),
+              sanitizeCsvField(item.link().getError())
+          });
+          if (count.incrementAndGet() % FETCH_SIZE == 0) {
+            csvWriter.flush();
+            log.debug("flushing records... {}", count);
+          }
+      }
+      csvWriter.flush();
+      log.debug("final flush of records... {}", count);
     } catch (IOException e) {
       throw new ClioException("Error occurred while compiling the report.", e);
     }
-
-    final long elapsedTimeInSeconds = Duration.of(System.nanoTime() - startTime, ChronoUnit.NANOS).toSeconds();
-    log.info("Total time elapsed in seconds: {}", elapsedTimeInSeconds);
+    stopWatch.stop();
+    log.info("Total time elapsed in seconds: {}", stopWatch.getTotalTimeSeconds());
   }
 
   private StreamResult<RunWithLink> getLinkDaoStreamResult(FieldFilters filters)
@@ -169,7 +201,21 @@ public final class ReportingEngine {
    * @return the report file name suggestion
    */
   public static String getReportFileNameSuggestion() {
-    return String.format("%s_%s.%s", CLIO_REPORT_PREFIX, DATE_TIME_FORMATTER.format(Instant.now()), CLIO_REPORT_SUFFIX);
+    return CLIO_REPORT_PREFIX + "_"
+        + DATE_TIME_FORMATTER.format(Instant.now()) + "."
+        + CLIO_REPORT_SUFFIX;
+  }
+
+  /**
+   * Gets report dataset file name suggestion.
+   *
+   * @return the report dataset file name suggestion
+   */
+  public static String getReportDatasetFileNameSuggestion() {
+    return CLIO_REPORT_PREFIX + "_"
+        + CLIO_REPORT_INFIX + "_"
+        + DATE_TIME_FORMATTER.format(Instant.now()) + "."
+        + CLIO_REPORT_SUFFIX;
   }
 
   /**
@@ -179,9 +225,10 @@ public final class ReportingEngine {
    * @return the file name suggestion
    */
   public static String getReportFileNameSuggestion(Report report) {
-    return String.format("%s_%s_%s.%s",
-        CLIO_REPORT_PREFIX, report.getBatchId(), DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(report.getCreationTime())),
-        CLIO_REPORT_SUFFIX);
+    return CLIO_REPORT_PREFIX + "_"
+        + report.getBatchId() + "_"
+        + DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(report.getCreationTime())) + "."
+        + CLIO_REPORT_SUFFIX;
   }
 
   /**

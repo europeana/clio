@@ -11,7 +11,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.nullable;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,13 +38,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaQuery;
-import org.hibernate.query.criteria.JpaParameterExpression;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedConstruction;
@@ -374,91 +374,61 @@ class LinkDaoTest {
   }
 
   @Test
-  void getLinksWithRunsForFilters_collectsRunsAcrossDatasetPagesAndBuildsQuery() throws PersistenceException {
+  void getLinksWithRunsForFilters_buildsFilteredQueryAndReturnsStreamResult() throws PersistenceException {
+    // Given
     SessionFactory sessionFactory = mock(SessionFactory.class);
     Session session = mock(Session.class);
     HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class, RETURNS_DEEP_STUBS);
     JpaCriteriaQuery<RunWithLink> criteriaQuery = mock(JpaCriteriaQuery.class, RETURNS_DEEP_STUBS);
     Query<RunWithLink> query = mock(Query.class);
-    JpaParameterExpression<Set> runIdParameter = mock(JpaParameterExpression.class);
-    StreamResult<RunWithLink> result;
-    DatasetDao datasetDao;
+    StreamResult<RunWithLink> streamResult = mock(StreamResult.class);
+    RunWithLink runWithLink = new RunWithLink(mock(Run.class), mock(Link.class));
+    Stream<RunWithLink> resultStream = Stream.of(runWithLink);
 
-    when(session.getSessionFactory()).thenReturn(sessionFactory);
     when(session.getCriteriaBuilder()).thenReturn(criteriaBuilder);
     when(criteriaBuilder.createQuery(RunWithLink.class)).thenReturn(criteriaQuery);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.RUN_ID_DB)).thenReturn(runIdParameter);
-    when(runIdParameter.getName()).thenReturn(FieldNames.RUN_ID_DB);
     when(session.createQuery(criteriaQuery)).thenReturn(query);
-    when(query.getResultStream()).thenReturn(java.util.stream.Stream.empty());
+    when(query.getResultStream()).thenReturn(resultStream);
 
-    DatasetSummary firstDataset = new DatasetSummary("dataset-b", "Dataset B", 1L, (LocalDate) null, null, null, 0);
-    DatasetSummary secondDataset = new DatasetSummary("dataset-a", "Dataset A", 2L, (LocalDate) null, null, null, 0);
-    DatasetCheckSummary firstRun = new DatasetCheckSummary(101L, 0L, 0);
-    DatasetCheckSummary secondRun = new DatasetCheckSummary(102L, 0L, 0);
+    FieldFilters filters = new FieldFilters();
+    filters.setProvider(new TreeSet<>(Set.of("provider")));
+    filters.setDataProvider(new TreeSet<>(Set.of("data-provider")));
+    filters.setDatasetId(new TreeSet<>(Set.of("dataset-id")));
+    filters.setDatasetName(new TreeSet<>(Set.of("dataset-name")));
+    filters.setExcludedId(new TreeSet<>(Set.of("excluded-dataset")));
+    filters.setDateFrom(LocalDate.of(2026, 1, 1));
+    filters.setDateTo(LocalDate.of(2026, 1, 31));
+    filters.setPercentLinksInOperationFrom(20);
+    filters.setPercentLinksInOperationTo(80);
 
-    try (MockedConstruction<DatasetDao> datasetDaos = mockConstruction(DatasetDao.class,
-        (mock, context) -> {
-          when(mock.findDatasetSummaries(any(), any()))
-              .thenReturn(new PagedDatasetResult(List.of(firstDataset),
-                  new Pagination(0, Pagination.MIN_PAGE_LIMIT, true)))
-              .thenReturn(new PagedDatasetResult(List.of(secondDataset),
-                  new Pagination(Pagination.MIN_PAGE_LIMIT, Pagination.MIN_PAGE_LIMIT, false)));
-          when(mock.findDatasetCheckSummary(any())).thenReturn(List.of(firstRun, secondRun));
-        });
-         MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
-             (mock, context) -> when(mock.performForStream(any()))
-                 .thenAnswer(invocation -> { ((HibernateSessionUtils.DatabaseAction<Stream<RunWithLink>>)
-                   invocation.getArgument(0)).perform(session);
-               return mock(StreamResult.class);
-             }))) {
+
+    try (MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
+        (mock, context) -> when(mock.performForStream(any())).thenAnswer(invocation -> {
+          HibernateSessionUtils.DatabaseAction<Stream<RunWithLink>> action = invocation.getArgument(0);
+          action.perform(session);
+          return streamResult;
+        }))) {
       LinkDao linkDao = new LinkDao(sessionFactory);
+      // When
+      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(filters);
 
-      result = linkDao.getLinksWithRunsForFilters(new FieldFilters());
-
-      datasetDao = datasetDaos.constructed().getFirst();
-      verify(datasetDao, times(2)).findDatasetSummaries(any(), any());
-      verify(datasetDao).findDatasetCheckSummary(any());
-      verify(query).setParameter(FieldNames.RUN_ID_DB, Set.of(101L, 102L));
-      assertNotNull(result);
-    }
-  }
-
-  @Test
-  void getLinksWithRunsForFilters_skipsRunLookupWhenNoDatasetsMatch() throws PersistenceException {
-    SessionFactory sessionFactory = mock(SessionFactory.class);
-    Session session = mock(Session.class);
-    HibernateCriteriaBuilder criteriaBuilder = mock(HibernateCriteriaBuilder.class, RETURNS_DEEP_STUBS);
-    JpaCriteriaQuery<RunWithLink> criteriaQuery = mock(JpaCriteriaQuery.class, RETURNS_DEEP_STUBS);
-    Query<RunWithLink> query = mock(Query.class);
-    JpaParameterExpression<Set> runIdParameter = mock(JpaParameterExpression.class);
-
-    when(session.getSessionFactory()).thenReturn(sessionFactory);
-    when(session.getCriteriaBuilder()).thenReturn(criteriaBuilder);
-    when(criteriaBuilder.createQuery(RunWithLink.class)).thenReturn(criteriaQuery);
-    when(criteriaBuilder.parameter(Set.class, FieldNames.RUN_ID_DB)).thenReturn(runIdParameter);
-    when(runIdParameter.getName()).thenReturn(FieldNames.RUN_ID_DB);
-    when(session.createQuery(criteriaQuery)).thenReturn(query);
-    when(query.getResultStream()).thenReturn(java.util.stream.Stream.empty());
-
-    try (MockedConstruction<DatasetDao> datasetDaos = mockConstruction(DatasetDao.class,
-        (mock, context) -> when(mock.findDatasetSummaries(any(), any()))
-            .thenReturn(new PagedDatasetResult(List.of(),
-                new Pagination(0, Pagination.MIN_PAGE_LIMIT, false))));
-         MockedConstruction<HibernateSessionUtils> ignored = mockConstruction(HibernateSessionUtils.class,
-             (mock, context) -> when(mock.performForStream(any()))
-                 .thenAnswer(invocation -> {
-               ((HibernateSessionUtils.DatabaseAction<Stream<RunWithLink>>)
-                   invocation.getArgument(0)).perform(session);
-               return mock(StreamResult.class);
-             }))) {
-      LinkDao linkDao = new LinkDao(sessionFactory);
-
-      StreamResult<RunWithLink> result = linkDao.getLinksWithRunsForFilters(new FieldFilters());
-
-      verify(datasetDaos.constructed().getFirst(), never()).findDatasetCheckSummary(any());
-      verify(query).setParameter(FieldNames.RUN_ID_DB, Set.of());
-      assertNotNull(result);
+      // Then
+      assertEquals(streamResult, result);
+      verify(query, times(13)).setParameter(nullable(String.class), any());
+      verify(query).setHint("org.hibernate.fetchSize", LinkDao.FETCH_SIZE);
+      verify(query).setHint("org.hibernate.readOnly", true);
+      verify(query).getResultStream();
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_PROVIDER_DB + "Parameter");
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_DATA_PROVIDER_DB + "Parameter");
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_ID_DB + "Parameter");
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.DATASET_NAME_DB + "Parameter");
+      verify(criteriaBuilder).parameter(Set.class, FieldNames.EXCLUDED_ID);
+      verify(criteriaBuilder, times(2)).parameter(Long.class, FieldNames.STARTING_WINDOW_TIME_DB);
+      verify(criteriaBuilder, times(2)).parameter(Long.class, FieldNames.ENDING_WINDOW_TIME_DB);
+      verify(criteriaBuilder).parameter(Long.class, FieldNames.STARTING_TIME_DB);
+      verify(criteriaBuilder).parameter(Long.class, FieldNames.ENDING_TIME_DB);
+      verify(criteriaBuilder).parameter(Integer.class, FieldNames.PERCENT_LINKS_IN_OPERATION_FROM_DB);
+      verify(criteriaBuilder).parameter(Integer.class, FieldNames.PERCENT_LINKS_IN_OPERATION_TO_DB);
     }
   }
 

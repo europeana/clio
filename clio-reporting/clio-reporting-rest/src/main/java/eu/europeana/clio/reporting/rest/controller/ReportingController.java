@@ -3,7 +3,6 @@ package eu.europeana.clio.reporting.rest.controller;
 import static eu.europeana.clio.common.model.FieldFilters.sanitizeFieldFilters;
 import static eu.europeana.clio.reporting.rest.controller.ControllerUtils.getHttpEntity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import eu.europeana.clio.common.exception.ClioException;
 import eu.europeana.clio.common.exception.ReportNotFoundException;
 import eu.europeana.clio.common.model.DatasetCheckSummary;
@@ -23,7 +22,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.tags.Tags;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -231,7 +233,7 @@ public class ReportingController {
    *
    * @param request the request
    * @return the dataset summaries
-   * @throws ClioException the clio exception
+   * @throws ClioException the Clio exception
    */
   @PostMapping(value = DATASETS_ENDPOINT_PATH, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {
       MediaType.APPLICATION_JSON_VALUE})
@@ -292,14 +294,14 @@ public class ReportingController {
   }
 
   /**
-   * Export the runs links matching the given {@link FilterRequest} as a CSV file.
+   * * Export the runs links matching the given {@link FilterRequest} as a CSV file.
    *
-   * @param request the request
-   * @return the response entity
+   * @param filters the filters
+   * @param response the response
    * @throws ClioException the clio exception
    */
   @PostMapping(value = RUNS_LINKS_EXPORT_ENDPOINT_PATH, produces = {"text/csv", MediaType.APPLICATION_JSON_VALUE})
-  @Operation(summary = "Export filtered report of Clio runs dataset summaries with pagination",
+  @Operation(summary = "Export filtered report of Clio runs dataset summaries",
       description = "The links in the report may be part of multiple runs.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "OK",
@@ -311,18 +313,22 @@ public class ReportingController {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class),
               mediaType = MediaType.APPLICATION_JSON_VALUE))
   })
-
-  public ResponseEntity<byte[]> exportRunsLinks(@Parameter(description = "The filters to be applied", required = true)
-  @Valid @RequestBody FieldFilters filters) throws ClioException {
-    if (filters == null) {
-      return ResponseEntity.badRequest().build();
+  public void exportRunsLinks(
+      @Parameter(description = "The filters to be applied", required = true)
+      @Valid @RequestBody FieldFilters filters,
+      HttpServletResponse response) throws ClioException {
+    try {
+      if (filters == null) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+      } else {
+        final FieldFilters sanitizedFilters = sanitizeFieldFilters(filters);
+        response.setHeader(HttpHeaders.CONTENT_TYPE, "text/csv");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+            String.format("attachment; filename=\"%s\"", ReportingEngine.getReportDatasetFileNameSuggestion()));
+        reportingEngine.generateReport(sanitizedFilters, response.getOutputStream());
+      }
+    } catch (IOException ioException) {
+      throw  new ClioException(ioException);
     }
-    final FieldFilters sanitizedFilters = sanitizeFieldFilters(filters);
-    final String report = reportingEngine.generateReport(sanitizedFilters);
-    if (report == null) {
-      throw new ReportNotFoundException("Report not found.");
-    }
-    final byte[] reportBytes = report.getBytes(StandardCharsets.UTF_8);
-    return getHttpEntity(reportBytes);
   }
 }

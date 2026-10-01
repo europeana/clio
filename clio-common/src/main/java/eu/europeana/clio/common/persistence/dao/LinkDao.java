@@ -1,6 +1,14 @@
 package eu.europeana.clio.common.persistence.dao;
 
-import static eu.europeana.clio.common.persistence.dao.RunDao.buildCommonRunSummaryQueryWithPredicates;
+
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.HUNDRED;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.addPredicateAndParameter;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.addPredicateAndParameterDateRange;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.addPredicateAndParameterExcludedIds;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.addPredicateAndParameterLastNinetyDays;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.addPredicatePercentLinksInOperation;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonBase;
+import static eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.buildCommonHeader;
 
 import eu.europeana.clio.common.exception.PersistenceException;
 import eu.europeana.clio.common.model.FieldFilters;
@@ -9,16 +17,27 @@ import eu.europeana.clio.common.model.Link;
 import eu.europeana.clio.common.model.Run;
 import eu.europeana.clio.common.persistence.HibernateSessionUtils;
 import eu.europeana.clio.common.persistence.StreamResult;
-import eu.europeana.clio.common.persistence.dao.RunDao.CommonRunSummaryQueryParts;
+import eu.europeana.clio.common.persistence.dao.DatasetDaoSupport.CommonDatasetQueryParts;
+import eu.europeana.clio.common.persistence.model.DatasetRow;
 import eu.europeana.clio.common.persistence.model.LinkRow;
 import eu.europeana.clio.common.persistence.model.LinkRow.LinkType;
 import eu.europeana.clio.common.persistence.model.RunRow;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.ParameterExpression;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.SessionFactory;
 
@@ -28,6 +47,7 @@ import org.hibernate.SessionFactory;
 @Slf4j
 public class LinkDao {
 
+  public static final int FETCH_SIZE = 256; // limit the amount of records per request to avoid OOM (Out of Memory)
   private final HibernateSessionUtils hibernateSessionUtils;
 
   /**
@@ -162,20 +182,75 @@ public class LinkDao {
    * @throws PersistenceException the persistence exception
    */
   public StreamResult<RunWithLink> getLinksWithRunsForFilters(FieldFilters filters) throws PersistenceException {
-    return hibernateSessionUtils.performForStream(session -> {
+    return hibernateSessionUtils.performForStream( session -> {
       CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-      CommonRunSummaryQueryParts<RunWithLink> queryParts = buildCommonRunSummaryQueryWithPredicates(
-          criteriaBuilder, RunWithLink.class, filters);
+      CommonDatasetQueryParts<RunWithLink> queryParts = buildCommonBase(criteriaBuilder, RunWithLink.class);
 
+      // Subquery 1
+      Subquery<String> datasetSummarySubquery = queryParts.criteriaQuery().subquery(String.class);
+      CommonDatasetQueryParts<Object> baseSq1 = buildCommonHeader(criteriaBuilder, null, datasetSummarySubquery.from(LinkRow.class));
+
+      // Apply filters
+      addPredicateAndParameter(filters.getProvider(), criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap(), FieldNames.DATASET_PROVIDER_DB);
+      addPredicateAndParameter(filters.getDataProvider(), criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap(), FieldNames.DATASET_DATA_PROVIDER_DB);
+      addPredicateAndParameter(filters.getDatasetId(), criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap(), FieldNames.DATASET_ID_DB);
+      addPredicateAndParameter(filters.getDatasetName(), criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap(), FieldNames.DATASET_NAME_DB);
+      addPredicateAndParameterExcludedIds(filters.getExcludedDatasetId(), criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap());
+      addPredicateAndParameterLastNinetyDays(criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.link(), baseSq1.parametersMap());
+      addPredicateAndParameterDateRange(filters, criteriaBuilder,
+          baseSq1.wherePredicates(), baseSq1.dataset(), baseSq1.parametersMap());
+      addPredicatePercentLinksInOperation(filters, criteriaBuilder,
+          baseSq1.havingPredicates(), baseSq1.percentLinksInOperation(), baseSq1.parametersMap());
+
+      // select subquery 1
+      datasetSummarySubquery.select(baseSq1.dataset().get(FieldNames.DATASET_ID_DB));
+
+      // where & having subquery 1
+      datasetSummarySubquery.where(criteriaBuilder.and(baseSq1.wherePredicates()));
+      datasetSummarySubquery.having(baseSq1.havingPredicates());
+
+      // group by
+      datasetSummarySubquery.groupBy(baseSq1.dataset().get(FieldNames.DATASET_ID_DB),
+          baseSq1.dataset().get(FieldNames.DATASET_NAME_DB), baseSq1.dataset().get(FieldNames.DATASET_SIZE),
+          baseSq1.dataset().get(FieldNames.DATASET_LAST_INDEX), baseSq1.dataset().get(FieldNames.DATASET_PROVIDER_DB),
+          baseSq1.dataset().get(FieldNames.DATASET_DATA_PROVIDER_DB));
+
+      // Subquery 2
+      Subquery<Long> datasetCheckSummarySubquery = queryParts.criteriaQuery().subquery(Long.class);
+      Root<LinkRow> sublinkSq2 = datasetCheckSummarySubquery.from(LinkRow.class);
+      Join<LinkRow, RunRow> runSq2 = sublinkSq2.join("run", JoinType.INNER);
+
+      List<Predicate> wherePredicatesSq2 = new ArrayList<>();
+      List<Predicate> havingPredicatesSq2 = new ArrayList<>();
+      Map<ParameterExpression<?>, Object> parametersMapSq2 = new HashMap<>();
+      // where subquery 2
+      wherePredicatesSq2.add(runSq2.get(FieldNames.DATASET_TABLE_NAME_DB).get(FieldNames.DATASET_ID_DB).in(datasetSummarySubquery));
+      addPredicateAndParameterLastNinetyDays(criteriaBuilder, wherePredicatesSq2, sublinkSq2, parametersMapSq2);
+
+      // select
+      datasetCheckSummarySubquery.select(runSq2.get(FieldNames.RUN_ID_DB));
+
+      // where & having
+      datasetCheckSummarySubquery.where(criteriaBuilder.and(wherePredicatesSq2));
+      datasetCheckSummarySubquery.having(havingPredicatesSq2);
+
+      // group by
+      datasetCheckSummarySubquery.groupBy(runSq2.get(FieldNames.STARTING_TIME_DB), runSq2.get(FieldNames.RUN_ID_DB));
+
+      // Main query
+      queryParts.wherePredicates().add(queryParts.run().get(FieldNames.RUN_ID_DB).in(datasetCheckSummarySubquery));
       CriteriaQuery<RunWithLink> criteriaQuery = queryParts.criteriaQuery();
 
       // select
-      criteriaQuery.select(criteriaBuilder.construct(
-          RunWithLink.class, queryParts.run(), queryParts.link()));
-
-      // where & having
+      criteriaQuery.select(criteriaBuilder.construct(RunWithLink.class, queryParts.run(), queryParts.link()));
+      // where
       criteriaQuery.where(criteriaBuilder.and(queryParts.wherePredicates()));
-      criteriaQuery.having(queryParts.havingPredicates());
 
       // order by (specific to LinkDao)
       criteriaQuery.orderBy(
@@ -185,21 +260,13 @@ public class LinkDao {
           criteriaBuilder.asc(queryParts.link().get(FieldNames.LINK_URL_DB))
       );
 
-      // group by
-      criteriaQuery.groupBy(
-          queryParts.batch().get(FieldNames.BATCH_ID_DB),
-          queryParts.dataset().get(FieldNames.DATASET_ID_DB),
-          queryParts.link().get(FieldNames.LINK_ID_DB),
-          queryParts.run().get(FieldNames.RUN_ID_DB)
-      );
-
-      // execute query
       TypedQuery<RunWithLink> query = session.createQuery(criteriaQuery);
       queryParts.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
-
-      return query.setFirstResult(filters.getOffset())
-                  .setMaxResults(filters.getLimit())
-                  .getResultStream();
+      baseSq1.parametersMap().forEach((key, value) -> query.setParameter(key.getName(), value));
+      parametersMapSq2.forEach((key, value) -> query.setParameter(key.getName(), value));
+      query.setHint("org.hibernate.fetchSize", FETCH_SIZE);
+      query.setHint("org.hibernate.readOnly", true);
+      return query.getResultStream();
     });
   }
 

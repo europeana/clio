@@ -4,9 +4,10 @@ package eu.europeana.clio.reporting.rest.api.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import eu.europeana.clio.common.model.RunSummary;
+import eu.europeana.clio.common.model.DatasetSummary;
 import eu.europeana.clio.common.model.FieldFilters;
 import eu.europeana.clio.common.model.FieldNames;
+import eu.europeana.clio.common.model.Pagination;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,9 +24,12 @@ import lombok.Setter;
 @Setter
 public class FilterResponse {
 
-  private List<RunSummary> results;
+  private List<DatasetSummary> results;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonProperty(FieldNames.FILTER_OPTIONS)
   private FieldFilters filterOptions;
 
+  @JsonProperty(FieldNames.PAGINATION)
+  private Pagination pagination;
 }

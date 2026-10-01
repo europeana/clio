@@ -344,17 +344,17 @@ public class DatasetDaoSupport {
   }
 
   /**
-   * Build common base common dataset query parts.
+   * Build common header common dataset query parts.
    *
    * @param <T> the type parameter
    * @param criteriaBuilder the criteria builder
-   * @param clazz the clazz
+   * @param criteriaQuery the criteria query
+   * @param link the link
    * @return the common dataset query parts
    */
-  public static <T> CommonDatasetQueryParts<T> buildCommonBase(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
-    // Setup common base criteria query
-    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
-    Root<LinkRow> link = criteriaQuery.from(LinkRow.class);
+  public static <T> CommonDatasetQueryParts<T> buildCommonHeader(CriteriaBuilder criteriaBuilder,
+      CriteriaQuery<T> criteriaQuery,
+      Root<LinkRow> link) {
     Join<LinkRow, RunRow> run = link.join("run", JoinType.INNER);
     Join<RunRow, DatasetRow> dataset = run.join("dataset", JoinType.INNER);
 
@@ -368,12 +368,26 @@ public class DatasetDaoSupport {
 
     Expression<Integer> percentLinksInOperation = criteriaBuilder.diff(HUNDRED,
         criteriaBuilder.prod(criteriaBuilder.<Double>selectCase()
-                           .when(criteriaBuilder.equal(totalLinks, 0D), 0D)
-                           .otherwise(criteriaBuilder.quot(
-                               criteriaBuilder.toDouble(errorsLinks), criteriaBuilder.toDouble(totalLinks))
-                                                     .as(Double.class)), HUNDRED)).cast(Integer.class);
+                                            .when(criteriaBuilder.equal(totalLinks, 0D), 0D)
+                                            .otherwise(criteriaBuilder.quot(
+                                                                          criteriaBuilder.toDouble(errorsLinks), criteriaBuilder.toDouble(totalLinks))
+                                                                      .as(Double.class)), HUNDRED)).cast(Integer.class);
     return new CommonDatasetQueryParts<>(criteriaQuery, link, run, dataset,
         errorsLinks, totalLinks, percentLinksInOperation,
         wherePredicates, havingPredicates, parametersMap);
+  }
+
+  /**
+   * Build common base common dataset query parts.
+   *
+   * @param <T> the type parameter
+   * @param criteriaBuilder the criteria builder
+   * @param clazz the clazz
+   * @return the common dataset query parts
+   */
+  public static <T> CommonDatasetQueryParts<T> buildCommonBase(CriteriaBuilder criteriaBuilder, Class<T> clazz) {
+    // Setup common base criteria query
+    CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(clazz);
+    return buildCommonHeader(criteriaBuilder, criteriaQuery, criteriaQuery.from(LinkRow.class));
   }
 }
